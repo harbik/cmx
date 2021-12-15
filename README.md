@@ -2,7 +2,7 @@
 
 # CMX: Rust Spectral Color Management Library
 
-Work in progress, check https://github.com/harbik/cmx for general project information and updates.
+Work in progress, check <https://github.com/harbik/cmx> for general project information and updates.
 
 
 ## License

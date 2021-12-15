@@ -4,7 +4,7 @@ version = "0.0.0"
 description = "Rust Spectral Color Management Library"
 authors = ["Gerard Harbers", "Harbers Bik LLC"]
 repository = "https://github.com/harbik/cmx"
-keywords = ["color management", "icc Profiles", "iccmax"]
+keywords = ["color_management", "icc_profiles", "iccmax"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 
