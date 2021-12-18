@@ -5,6 +5,7 @@ use std::ops::RangeInclusive;
 use std::convert::TryInto;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
+use half::f16;
 
 #[derive(FromPrimitive)]
 pub enum Class {
@@ -103,10 +104,51 @@ pub enum SpectralColorSpace {
     BiSpectralReflectanceSparse(u16),
 }
 
+impl SpectralColorSpace {
+    fn read(icc_buf: &mut &[u8]) -> Result<Option<Self>, Box< dyn std::error::Error + 'static>> {
+        let sig = read_be_u16(icc_buf)?;
+        let ch = read_be_u16(icc_buf)?;
+        match sig {
+            0 => Ok((None)),
+            0x7273 => Ok(Some(SpectralColorSpace::Reflectance(ch))),
+            0x7473 => Ok(Some(SpectralColorSpace::Transmission(ch))),
+            0x6573 => Ok(Some(SpectralColorSpace::RadiantEmission(ch))),
+            0x6273 => Ok(Some(SpectralColorSpace::BiSpectralReflectance(ch))),
+            0x736d => Ok(Some(SpectralColorSpace::BiSpectralReflectanceSparse(ch))),
+            _ => Err("Undefined Spectral Color Space found".into()),
+        }
+    }
+}
+
+pub struct WavelengthRange ( RangeInclusive<f64>, usize);
+
+impl WavelengthRange {
+
+    fn read(icc_buf: &mut &[u8]) -> Result<Option<Self>, Box< dyn std::error::Error + 'static>> {
+        let start = read_be_f16(icc_buf)?.to_f64();
+        let end = read_be_f16(icc_buf)?.to_f64();
+        let length = read_be_u16(icc_buf)? as usize;
+        if length == 0 {
+            Ok(None)
+        } else {
+            Ok(Some(Self(start..=end, length)))
+        }
+    }
+
+}
+
 pub struct Tag {
-    id: u32,
+    sig: String,
     data: Vec<u8>
 }
+
+impl Tag {
+    pub fn new(sig: String, size: usize) -> Self { 
+        let data = Vec::with_capacity(size);
+        Self { sig, data } 
+    }
+}
+
 
 pub struct Profile {
     pub cmm: Option<String>,
@@ -135,11 +177,9 @@ pub struct Profile {
     pub creator: Option<String>, // a manufacturer signature
     pub profile_id: Option<u128>,
     pub spectral_pcs: Option<SpectralColorSpace>,
-    pub spectral_pcs_wavelength_range: Option<RangeInclusive<f64>>,
-    pub spectral_pcs_wavelength_steps: Option<u16>,
-    pub bi_spectral_pcs_wavelength_range: Option<RangeInclusive<f64>>,
-    pub bi_spectral_pcs_wavelength_steps: Option<u16>,
-    pub multiplex_n_channels: Option<u16>,
+    pub spectral_pcs_wavelength_range: Option<WavelengthRange>,
+    pub bi_spectral_pcs_wavelength_range: Option<WavelengthRange>,
+    pub mcs: Option<u16>,
     pub profile_device_sub_class: Option<u32>,
     // tags list
     pub tags: Vec<Tag>
@@ -159,7 +199,6 @@ impl Profile {
             return Err("PCS Color Space should be 'XYZ', 'Lab', or 'NONE'".into())
         }
         let date_time = read_date_time(&mut icc_buf)?;
-        //println!("{}", date_time);
         let profile_file_signature = read_be_u32(&mut icc_buf)?;
         if profile_file_signature!=0x61637370 { return Err("Profile file signature error".into())};
         let platform = read_signature(&mut icc_buf)?;
@@ -179,22 +218,23 @@ impl Profile {
         let rendering_intent = RenderingIntent::read(&mut icc_buf)?;
         let pcs_illuminant = read_xyz(&mut icc_buf)?;
         let creator= read_signature(&mut icc_buf)?;
-        let profile_id = {
-            let id = read_be_u128(&mut icc_buf)?;
-            if id == 0 {
-            None
-            }  else {
-            Some(id)
-            }
-        };
-        let spectral_pcs = None;
-        let spectral_pcs_wavelength_range = None;
-        let spectral_pcs_wavelength_steps = None;
-        let bi_spectral_pcs_wavelength_range = None;
-        let bi_spectral_pcs_wavelength_steps = None;
-        let multiplex_n_channels = None;
-        let profile_device_sub_class = None;
-        let tags = vec![];
+        let profile_id = zero_as_none(read_be_u128(&mut icc_buf)?);
+        let spectral_pcs = SpectralColorSpace::read(&mut icc_buf)?;
+        let spectral_pcs_wavelength_range = WavelengthRange::read(&mut icc_buf)?;
+        let bi_spectral_pcs_wavelength_range = WavelengthRange::read(&mut icc_buf)?;
+        let mcs = read_mcs(&mut icc_buf)?;
+        let profile_device_sub_class = zero_as_none(read_be_u32(&mut icc_buf)?);
+        let _reserved = read_be_u32(&mut &mut icc_buf);
+
+        // read tags
+        let tag_length = read_be_u32(&mut icc_buf)? as usize;
+        let mut tags = Vec::with_capacity(tag_length);
+        for i in 0..tag_length {
+            let sig = read_signature(&mut icc_buf)?.ok_or("illegal tag signature")?;
+            let _ = read_be_u32(&mut icc_buf)?;
+            let size = read_be_u32(&mut icc_buf)? as usize;
+            tags.push(Tag::new(sig, size));
+        }
         
         Ok(Profile {
             cmm, version, class, colorspace, colorspace_channels, pcs, date_time,
@@ -202,8 +242,7 @@ impl Profile {
             manufacturer, device, media_transparent, media_matt, media_negative, media_bw,
             media_non_paper, media_textured, media_non_isotropic, media_self_luminous,
             rendering_intent, pcs_illuminant, creator, profile_id, spectral_pcs, spectral_pcs_wavelength_range,
-            spectral_pcs_wavelength_steps, bi_spectral_pcs_wavelength_range, bi_spectral_pcs_wavelength_steps, 
-            multiplex_n_channels, profile_device_sub_class, tags
+            bi_spectral_pcs_wavelength_range, mcs, profile_device_sub_class, tags
         })
 
     }
@@ -214,6 +253,19 @@ impl Profile {
     }
 }
 
+fn zero_as_none<T: num::Num + num::Zero>(v: T) -> Option<T> {
+    if v.is_zero() {
+        None
+    } else {
+        Some(v)
+    }
+}
+
+fn read_be_f16(input: &mut &[u8]) -> Result<f16, Box<dyn std::error::Error + 'static>> {
+    let (int_bytes, rest) = input.split_at(std::mem::size_of::<f16>());
+    *input = rest;
+    Ok(f16::from_be_bytes(int_bytes.try_into()?))
+}
 
 fn read_be_u16(input: &mut &[u8]) -> Result<u16, Box<dyn std::error::Error + 'static>> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<u16>());
@@ -297,4 +349,14 @@ fn read_xyz(icc_buf: &mut &[u8]) -> Result< [f64;3], Box<dyn std::error::Error +
     let y = read_be_i32(icc_buf)? as f64/65536.0;
     let z = read_be_i32(icc_buf)? as f64/65536.0;
     Ok([x,y,z])
+}
+
+fn read_mcs(icc_buf: &mut &[u8]) -> Result<Option<u16>, Box<dyn std::error::Error + 'static>> {
+    let sig = read_be_u16(icc_buf)?;
+    let n = read_be_u16(icc_buf)?;
+    if sig==0 || n==0 {
+        Ok(None)
+    } else {
+        Ok(Some(n))
+    }
 }
