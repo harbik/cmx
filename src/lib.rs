@@ -16,4 +16,5 @@
   limitations under the License.
 */
 
-pub mod icc;
+pub mod profile;
+pub mod tags;
