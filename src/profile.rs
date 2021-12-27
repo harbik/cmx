@@ -7,6 +7,8 @@ use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use half::f16;
 
+use crate::tags::{TagSignature, Tag};
+
 // ICC profile file signature, used at location 36..40 in the profile header
 const ACSP: u32 = 0x61637370; 
 const SIG_NONE: &str = "\0\0\0\0";
@@ -21,19 +23,10 @@ pub struct Profile {
     pub pcs: Option<ColorSpace>,
     pub date_time: Option<DateTime<chrono::Utc>>,
     pub platform: Option<String>,
-    pub profile_embedded: bool,
-    pub profile_embedded_dependent: bool,
-    pub profile_mcs_subset: Option<bool>, // V5 Flag
+    pub flags: ProfileFlags,
     pub manufacturer: Option<String>, // https://www.color.org/signatureRegistry/index.xalter
     pub device: Option<String>, // https://www.color.org/signatureRegistry/deviceRegistry/index.xalter
-    pub media_transparent: bool,
-    pub media_matt: bool,
-    pub media_negative: bool,
-    pub media_bw: bool,
-    pub media_non_paper: Option<bool>, // V5 flag
-    pub media_textured: Option<bool>, // V5
-    pub media_non_isotropic: Option<bool>, // V5
-    pub media_self_luminous: Option<bool>, // V5
+    pub attributes: DeviceAttributes,
     pub rendering_intent: RenderingIntent,
     pub pcs_illuminant: Option<[f64;3]>, // V2-4: X=0.964, Y=1.0, Z=0.824
     pub creator: Option<String>, // a manufacturer signature
@@ -44,7 +37,7 @@ pub struct Profile {
     pub mcs: Option<u16>,
     pub profile_device_sub_class: Option<u32>,
     // tags list
-    pub tags: Vec<TagTableRow>,
+    pub tags: Vec<crate::tags::Tag>,
 }
 
 impl Profile {
@@ -61,19 +54,10 @@ impl Profile {
         let profile_file_signature = read_be_u32(&mut icc_buf)?;
         if profile_file_signature!= ACSP { return Err("Profile file signature error".into())};
         let platform = read_signature(&mut icc_buf)?;
-        let (profile_embedded, profile_embedded_dependent, pf_mcs) = read_profile_flags(&mut icc_buf)?;
-        let profile_mcs_subset = if version[0] >= 5 {
-            Some(pf_mcs)
-        } else {
-            None
-        };
+        let flags = ProfileFlags::new(&mut icc_buf)?;
         let manufacturer = read_signature(&mut icc_buf)?;
         let device= read_signature(&mut icc_buf)?;
-        let ([media_transparent, media_matt, media_negative, media_bw], v5attr) = read_attribute_flags(&mut icc_buf)?;
-        let media_non_paper = if version[0]>=5 { Some(v5attr[0])} else {None};
-        let media_textured = if version[0]>=5 { Some(v5attr[1])} else {None};
-        let media_non_isotropic = if version[0]>=5 { Some(v5attr[2])} else {None};
-        let media_self_luminous = if version[0]>=5 { Some(v5attr[3])} else {None};
+        let attributes = DeviceAttributes::new(&mut icc_buf)?;
         let rendering_intent = RenderingIntent::read(&mut icc_buf)?;
         let pcs_illuminant = read_xyz(&mut icc_buf)?;
         let creator= read_signature(&mut icc_buf)?;
@@ -87,35 +71,30 @@ impl Profile {
 
         // read tags pass 1
         // this will fill the `sig`, `offset`, and `length` fields.
-        // as all the fixed length fields are consumed, the offset needs to be adjusted
 
         let tags_length = read_be_u32(&mut icc_buf)? as usize;
         let data_start = 128 + 4 + 12 * tags_length;
 
-        let mut tags = Vec::with_capacity(tags_length);
+        let mut tag_table = Vec::with_capacity(tags_length);
         for i in 0..tags_length {
-            let sig = read_signature(&mut icc_buf)?.ok_or("illegal tag signature")?;
+            let sig = read_tag_signature(&mut icc_buf)?;
             let offset = read_be_u32(&mut icc_buf)? as usize - data_start; // offset
             let length = read_be_u32(&mut icc_buf)? as usize;
-            tags.push(TagTableRow::new(sig, offset, length));
+            tag_table.push(TagTableRow::new(sig, offset, length));
         }
 
-
-        // fill data pass 2
-        // read tag data without consuming, as the data maybe accessed multiple times
-        // and might not be in the same order as the tags
-        for i in 0..tags_length {
-            let start = tags[i].offset;
-            let end = tags[i].offset + tags[i].length;
-           // tags[i].data = Some(icc_buf[start..end].to_vec());
-            tags[i].data = Some(crate::tags::Tag::try_new(&mut &icc_buf[start..end])?);
+        let mut tags = Vec::with_capacity(tags_length);
+        for tag_record in tag_table {
+            let start = tag_record.offset;
+            let end = start + tag_record.length;
+            // tags[i].data = Some(icc_buf[start..end].to_vec());
+            tags.push(crate::tags::Tag::try_new(tag_record.sig, &mut &icc_buf[start..end])?);
         }
         
         Ok(Profile {
             cmm, version, class, colorspace, colorspace_channels, pcs, date_time,
-            platform, profile_embedded, profile_embedded_dependent, profile_mcs_subset,
-            manufacturer, device, media_transparent, media_matt, media_negative, media_bw,
-            media_non_paper, media_textured, media_non_isotropic, media_self_luminous,
+            platform, flags, 
+            manufacturer, device, attributes,
             rendering_intent, pcs_illuminant, creator, profile_id, spectral_pcs, spectral_pcs_wavelength_range,
             bi_spectral_pcs_wavelength_range, mcs, profile_device_sub_class, tags,
         })
@@ -126,7 +105,6 @@ impl Profile {
         let icc_data = std::fs::read(iccfile)?;
         Self::from_buffer(icc_data.as_slice())
     }
-
 
     pub fn new(version: [u8;3], class: Class) -> Self {
         let mut profile = Profile::default();
@@ -142,8 +120,7 @@ impl Profile {
     }
 
     pub fn to_buffer(&self) -> Result<Vec<u8>, Box<dyn std::error::Error + 'static>> {
-        let tags_data_length = self.tags.iter().fold(0usize, |len, t| len + t.aligned_length());
-        let length = 128 + 4 + self.tags.len() * 12 + tags_data_length;
+        let length = 128 + 4 + self.tags.len() * 100;
         let mut buf: Vec<u8> = Vec::with_capacity(length); // actual length might be smaller, correct at end
         buf.extend((length as u32).to_be_bytes());
         buf.extend([self.version[0], self.version[1]<<4_u8 | self.version[2], 0, 0]);
@@ -153,10 +130,10 @@ impl Profile {
         buf.extend(datetime_to_be_bytes(self.date_time));
         buf.extend(ACSP.to_be_bytes());
         buf.extend(self.platform.clone().unwrap_or(SIG_NONE.to_string()).as_bytes());
-        buf.extend(self.profile_flags().to_be_bytes());
+        buf.extend(self.flags.0.to_be_bytes());
         buf.extend(self.manufacturer.clone().unwrap_or(SIG_NONE.to_string()).as_bytes());
         buf.extend(self.device.clone().unwrap_or(SIG_NONE.to_string()).as_bytes());
-        buf.extend(self.device_flags().to_be_bytes());
+        buf.extend(self.attributes.0.to_be_bytes());
         buf.extend((self.rendering_intent as u32).to_be_bytes());
         buf.extend(xyz_to_be_bytes(self.pcs_illuminant));
         buf.extend(self.creator.clone().unwrap_or(SIG_NONE.to_string()).as_bytes());
@@ -168,24 +145,6 @@ impl Profile {
        
         Ok(buf)
     }
-
-    pub fn profile_flags(&self) -> u32 {
-        (self.profile_embedded as u32) << 0
-        | (self.profile_embedded_dependent as u32) << 1
-        | (self.profile_mcs_subset.unwrap_or(false) as u32) << 2
-    }
-
-    pub fn device_flags(&self) -> u32 {
-        (self.media_transparent as u32) << 0
-        | (self.media_matt as u32) << 1
-        | (self.media_negative as u32) << 2
-        | (self.media_bw as u32) << 3
-        | (self.media_non_paper.unwrap_or(false) as u32) << 4
-        | (self.media_textured.unwrap_or(false) as u32) << 5
-        | (self.media_non_isotropic.unwrap_or(false) as u32) << 6
-        | (self.media_self_luminous.unwrap_or(false) as u32) << 7
-    }
-
 }
 
 #[derive(FromPrimitive, Clone, Copy, Debug)]
@@ -218,6 +177,70 @@ impl Class {
         }
     }
 }
+
+#[derive(Default, Debug)]
+pub struct ProfileFlags(u32);
+
+impl ProfileFlags {
+
+    fn new(icc_buf: &mut &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self(read_be_u32(icc_buf)?))
+    }
+
+    fn embedded(&self) -> bool {
+       (self.0 & (1<<0)) !=0
+    }
+
+    fn dependent(&self) -> bool {
+       (self.0 & (1<<1)) !=0
+    }
+
+    fn mcs(&self) -> bool {
+       (self.0 & (1<<2)) !=0
+    }
+}
+
+#[derive(Default, Debug)]
+pub struct DeviceAttributes(u64);
+
+impl DeviceAttributes {
+
+    fn new(icc_buf: &mut &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self(read_be_u64(icc_buf)?))
+    }
+
+    pub fn transparent(&self) -> bool { self.get(0) }
+    pub fn matt(&self) -> bool {self.get(1) }
+    pub fn negative(&self) -> bool { self.get(2) }
+    pub fn black_and_white(&self) -> bool { self.get(3) }
+    pub fn not_paper(&self) -> bool {self.get(4) }
+    pub fn textured(&self) -> bool { self.get(5) }
+    pub fn non_isotropic(&self) -> bool { self.get(6) }
+    pub fn self_luminous(&self) -> bool { self.get(7) }
+
+    pub fn set_transparent(&mut self) { self.set(0) }
+    pub fn set_reflective(&mut self) { self.clear(0) }
+    pub fn set_matt(&mut self) {self.set(1) }
+    pub fn set_gloss(&mut self) { self.clear(1) }
+    pub fn set_negative(&mut self) { self.set(2) }
+    pub fn set_positive(&mut self) { self.clear(2) }
+    pub fn set_black_and_white(&mut self) { self.set(3) }
+    pub fn set_color(&mut self) { self.clear(3) }
+    pub fn set_non_paper(&mut self) {self.set(4) }
+    pub fn set_paper(&mut self) { self.clear(4) }
+    pub fn set_textured(&mut self) { self.set(5) }
+    pub fn set_smooth(&mut self) { self.clear(5) }
+    pub fn set_non_isotropic(&mut self) { self.set(6) }
+    pub fn set_isotropic(&mut self) { self.clear(6) }
+    pub fn set_self_luminous(&mut self) { self.set(7) }
+    pub fn set_colorant(&mut self) { self.clear(7) }
+
+    pub fn get(&self, i: usize) -> bool { (self.0 & (1<<i)) !=0 }
+    pub fn set(&mut self, i: usize) { self.0 |= (1<<i) }
+    pub fn clear(&mut self, i: usize) { self.0 &= !(1<<i) }
+}
+
+
 
 #[derive(FromPrimitive, PartialEq, Clone, Copy, Debug)]
 pub enum ColorSpace {
@@ -376,15 +399,14 @@ impl Default for WavelengthRange {
 
 #[derive(Debug)]
 pub struct TagTableRow {
-    sig: String,
+    sig: TagSignature,
     offset: usize,
     length: usize,
-    data: Option<crate::tags::Tag>,
 }
 
 impl TagTableRow {
-    pub fn new(sig: String, offset: usize, length: usize) -> Self { 
-        Self { sig, offset, length, data: None } 
+    pub fn new(sig: TagSignature, offset: usize, length: usize) -> Self { 
+        Self { sig, offset, length } 
     }
 
     pub fn aligned_length(&self) -> usize {
@@ -411,6 +433,18 @@ pub fn read_be_f16(input: &mut &[u8]) -> Result<f16, Box<dyn std::error::Error +
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<f16>());
     *input = rest;
     Ok(f16::from_be_bytes(int_bytes.try_into()?))
+}
+
+pub fn read_be_f32(input: &mut &[u8]) -> Result<f32, Box<dyn std::error::Error + 'static>> {
+    let (int_bytes, rest) = input.split_at(std::mem::size_of::<f32>());
+    *input = rest;
+    Ok(f32::from_be_bytes(int_bytes.try_into()?))
+}
+
+pub fn read_be_f64(input: &mut &[u8]) -> Result<f64, Box<dyn std::error::Error + 'static>> {
+    let (int_bytes, rest) = input.split_at(std::mem::size_of::<f64>());
+    *input = rest;
+    Ok(f64::from_be_bytes(int_bytes.try_into()?))
 }
 
 pub fn read_be_u16(input: &mut &[u8]) -> Result<u16, Box<dyn std::error::Error + 'static>> {
@@ -501,22 +535,13 @@ pub fn read_signature(icc_buf: &mut &[u8]) -> Result<Option<String>, Box<dyn std
     }
 }
 
-fn read_profile_flags(icc_buf: &mut &[u8]) -> Result<(bool, bool, bool), Box<dyn std::error::Error + 'static>> {
-    let pf = read_be_u32(icc_buf)?;
-    Ok((
-        (pf & (1 << 0)) != 0,
-        (pf & (1 << 1)) != 0,
-        (pf & (1 << 2)) != 0,
-    ))
-}
-
-fn read_attribute_flags(icc_buf: &mut &[u8]) -> Result<([bool;4], [bool;4]), Box<dyn std::error::Error + 'static>> {
-    let pf = read_be_u64(icc_buf)?;
-    let mut flags: Vec<bool> = Vec::with_capacity(8);
-    for i in 0..8 {
-        flags.push((pf & (1 << i)) != 0)
+pub fn read_tag_signature(icc_buf: &mut &[u8]) -> Result<TagSignature, Box<dyn std::error::Error + 'static>>{
+    let s = read_be_u32(icc_buf)?;
+    match FromPrimitive::from_u32(s) {
+        Some(tag_sig) => Ok(tag_sig),
+        None => Err("Unknown tag".into()),
     }
-    Ok((flags[0..4].try_into().unwrap(), flags[4..8].try_into().unwrap()))
+    
 }
 
 pub fn read_xyz(icc_buf: &mut &[u8]) -> Result< Option<[f64;3]>, Box<dyn std::error::Error + 'static>> {
