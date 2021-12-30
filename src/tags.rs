@@ -1,52 +1,17 @@
-use crate::profile::{read_signature, read_be_f16, read_be_f32, read_be_f64, read_be_u32, read_be_u16, read_date_time, read_xyz};
+use crate::profile::{read_be_f16, read_be_f32, read_be_f64, read_be_u32, read_be_u16, read_date_time, read_xyz};
+use num::FromPrimitive;
 use num_derive::FromPrimitive;
+use serde::Serialize;
 
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Tag {
-    sig: TagSignature,
+    tag_signature: TagSignature,
+    data_signature: TagTypeSignature,
     data: TagData,
 }
 
-impl Tag {
-    pub fn try_new(sig: TagSignature, buf: &mut &[u8]) -> Result<Self, Box< dyn std::error::Error + 'static>> {
-        Ok(Self {
-            sig,
-            data: TagData::try_new(buf)?,
-        })
-    }
-
-}
-
-
-
-
-#[derive(Debug)]
-pub struct ColorantOrder(Vec<u8>);
-
-#[derive(Debug)]
-pub struct Curve(Vec<u16>);
-
-#[derive(Debug)]
-pub struct Data(Vec<u8>);
-
-#[derive(Debug)]
-pub struct DateTime(chrono::DateTime<chrono::Utc>);
-
-#[derive(Debug)]
-pub struct Float16Array(Vec<half::f16>);
-
-#[derive(Debug)]
-pub struct Float32Array(Vec<f32>);
-
-#[derive(Debug)]
-pub struct Float64Array(Vec<f64>);
-
-
-#[derive(Debug)]
-pub struct XYZ(Vec<[f64;3]>);
-
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum TagData {
     ColorantOrder(ColorantOrder), // 'clro'
     Curve(Curve), // 'data' with flag 1
@@ -78,16 +43,61 @@ pub enum TagData {
     Utf16(Vec<String>), // 'ut16'
     Utf8Zip(Vec<String>), // 'zut8'
     XYZ(XYZ), // 'XYZ'
-    Custom(String, Vec<u8>), // unknown data type
+    Custom(TagTypeSignature, Vec<u8>), // unknown data type
 }
 
-impl TagData {
-    pub fn try_new(buf: &mut &[u8]) -> Result<Self, Box< dyn std::error::Error + 'static>> {
-        let sig = read_signature(buf)?.ok_or("illegal data type")?;
+impl Tag {
+    pub fn try_new(tag_signature: TagSignature, buf: &mut &[u8]) -> Result<Self, Box< dyn std::error::Error + 'static>> {
+        let data_signature = match FromPrimitive::from_u32(read_be_u32(buf)?) {
+            Some(c) => c,
+            None => TagTypeSignature::UndefinedType,
+        };
         let _reserved = read_be_u32(buf)?;
-        match sig.as_str() {
-            "clro" => Ok(Self::ColorantOrder(ColorantOrder(buf.to_owned()))),
-            "curv" => {
+        Ok(Self {
+            tag_signature,
+            data_signature,
+            data: TagData::try_new(data_signature, buf)?,
+        })
+    }
+
+}
+
+
+
+
+#[derive(Debug, Serialize)]
+pub struct ColorantOrder(Vec<u8>);
+
+#[derive(Debug, Serialize)]
+pub struct Curve(Vec<u16>);
+
+#[derive(Debug, Serialize)]
+pub struct Data(Vec<u8>);
+
+#[derive(Debug, Serialize)]
+pub struct DateTime(chrono::DateTime<chrono::Utc>);
+
+#[derive(Debug, Serialize)]
+pub struct Float16Array(Vec<half::f16>);
+
+#[derive(Debug, Serialize)]
+pub struct Float32Array(Vec<f32>);
+
+#[derive(Debug, Serialize)]
+pub struct Float64Array(Vec<f64>);
+
+
+#[derive(Debug, Serialize)]
+pub struct XYZ(Vec<[f64;3]>);
+
+
+impl TagData {
+    pub fn try_new(sig: TagTypeSignature, buf: &mut &[u8]) -> Result<Self, Box< dyn std::error::Error + 'static>> {
+      //  let sig = read_signature(buf)?.ok_or("illegal data type")?;
+       // let _reserved = read_be_u32(buf)?;
+        match sig {
+            TagTypeSignature::ColorantOrderType => Ok(Self::ColorantOrder(ColorantOrder(buf.to_owned()))),
+            TagTypeSignature::CurveType => {
                 let n = read_be_u32(buf)? as usize;
                 let mut v: Vec<u16> = Vec::with_capacity(n);
                 for _ in 0..n {
@@ -95,35 +105,35 @@ impl TagData {
                 }
                 Ok(Self::Curve(Curve(v)))
             }
-            "data" => {
+            TagTypeSignature::DataType => {
                 let _n = read_be_u32(buf)? as usize;
                 Ok(Self::Data(Data(buf.to_owned())))
             },
-            "dtim" => {
+            TagTypeSignature::DateTimeType=> {
                 Ok(Self::DateTime(DateTime(read_date_time(buf)?.unwrap())))
             },
-            "fl16" => {
+            TagTypeSignature::Float16ArrayType=> {
                 let mut v = Vec::with_capacity(buf.len()/std::mem::size_of::<half::f16>());
                 for _ in 0..v.capacity() {
                     v.push(read_be_f16(buf)?)
                 }
                 Ok(Self::Float16Array(v))
             },
-            "fl32" => {
+            TagTypeSignature::Float32ArrayType => {
                 let mut v = Vec::with_capacity(buf.len()/std::mem::size_of::<f32>());
                 for _ in 0..v.capacity() {
                     v.push(read_be_f32(buf)?)
                 }
                 Ok(Self::Float32Array(v))
             },
-            "fl64" => {
+            TagTypeSignature::Float64ArrayType => {
                 let mut v = Vec::with_capacity(buf.len()/std::mem::size_of::<f64>());
                 for _ in 0..v.capacity() {
                     v.push(read_be_f64(buf)?)
                 }
                 Ok(Self::Float64Array(v))
             },
-            "XYZ " => {
+            TagTypeSignature::XYZArrayType => {
                 let n = buf.len()/12;
                 let mut v = Vec::with_capacity(n);
                 for _ in 0..n {
@@ -136,14 +146,14 @@ impl TagData {
                 Ok(Self::XYZ(XYZ(v)))
 
             }
-            _ => Ok(Self::Custom(sig.to_owned(), buf.to_owned())),
+            _ => Ok(Self::Custom(sig, buf.to_owned())),
         } 
     }
 }
 
 
 
-#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug)]
+#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize)]
 
 pub enum TagSignature {
     Unknown                           = 0x0isize,
@@ -274,4 +284,61 @@ pub enum TagSignature {
     ViewingCondDescTag                = 0x76756564,  /* 'vued' */
     ViewingConditionsTag              = 0x76696577,  /* 'view' */
     EmbeddedV5ProfileTag              = 0x49434335,  /* 'ICC5' */
+}
+
+#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize)]
+pub enum TagTypeSignature {
+    UndefinedType                  = 0x00000000,
+    ChromaticityType               = 0x6368726D,  /* 'chrm' */
+    ColorantOrderType              = 0x636C726F,  /* 'clro' */
+    ColorantTableType              = 0x636C7274,  /* 'clrt' */
+    CrdInfoType                    = 0x63726469,  /* 'crdi' Removed in V4 */
+    CurveType                      = 0x63757276,  /* 'curv' */
+    DataType                       = 0x64617461,  /* 'data' */
+    DictType                       = 0x64696374,  /* 'dict' */
+    DateTimeType                   = 0x6474696D,  /* 'dtim' */
+    DeviceSettingsType             = 0x64657673,  /* 'devs' Removed in V4 */
+    EmbeddedHeightImageType        = 0x6568696D,  /* 'ehim' */
+    EmbeddedNormalImageType        = 0x656e696d,  /* 'enim' */
+    Float16ArrayType               = 0x666c3136,  /* 'fl16' */
+    Float32ArrayType               = 0x666c3332,  /* 'fl32' */
+    Float64ArrayType               = 0x666c3634,  /* 'fl64' */
+    GamutBoundaryDescType	       = 0x67626420,  /* 'gbd ' */
+    Lut16Type                      = 0x6d667432,  /* 'mft2' */
+    Lut8Type                       = 0x6d667431,  /* 'mft1' */
+    LutAtoBType                    = 0x6d414220,  /* 'mAB ' */
+    LutBtoAType                    = 0x6d424120,  /* 'mBA ' */
+    MeasurementType                = 0x6D656173,  /* 'meas' */
+    MultiLocalizedUnicodeType      = 0x6D6C7563,  /* 'mluc' */
+    MultiProcessElementType        = 0x6D706574,  /* 'mpet' */
+    NamedColor2Type                = 0x6E636C32,  /* 'ncl2' use v2-v4*/
+    ParametricCurveType            = 0x70617261,  /* 'para' */
+    ProfileSequenceDescType        = 0x70736571,  /* 'pseq' */
+    ProfileSequceIdType            = 0x70736964,  /* 'psid' */
+    ResponseCurveSet16Type         = 0x72637332,  /* 'rcs2' */
+    S15Fixed16ArrayType            = 0x73663332,  /* 'sf32' */
+    ScreeningType                  = 0x7363726E,  /* 'scrn' Removed in V4 */
+    SegmentedCurveType             = 0x63757266,  /* 'curf' */
+    SignatureType                  = 0x73696720,  /* 'sig ' */
+    SparseMatrixArrayType          = 0x736D6174,  /* 'smat' */
+    SpectralViewingConditionsType  = 0x7376636e,  /* 'svcn' */
+    SpectralDataInfoType           = 0x7364696e,  /* 'sdin' */
+    TagArrayType                   = 0x74617279,  /* 'tary' */
+    TagStructType                  = 0x74737472,  /* 'tstr' */
+    TextType                       = 0x74657874,  /* 'text' */
+    TextDescriptionType            = 0x64657363,  /* 'desc' Removed in V4 */
+    U16Fixed16ArrayType            = 0x75663332,  /* 'uf32' */
+    UcrBgType                      = 0x62666420,  /* 'bfd ' Removed in V4 */
+    UInt16ArrayType                = 0x75693136,  /* 'ui16' */
+    UInt32ArrayType                = 0x75693332,  /* 'ui32' */
+    UInt64ArrayType                = 0x75693634,  /* 'ui64' */
+    UInt8ArrayType                 = 0x75693038,  /* 'ui08' */
+    ViewingConditionsType          = 0x76696577,  /* 'view' */
+    Utf8TextType                   = 0x75746638,  /* 'utf8' */
+    Utf16TextType                  = 0x75743136,  /* 'ut16' */
+    /* XYZType                      = 0x58595A20, // 'XYZ ' Name changed to XYZArrayType */ 
+    XYZArrayType                   = 0x58595A20,  /* 'XYZ ' */
+    ZipUtf8TextType                = 0x7a757438,  /* 'zut8' */
+    ZipXmlType                     = 0x5a584d4c,  /* 'ZXML' */      
+    EmbeddedProfileType            = 0x49434370,  /* 'ICCp' */
 }

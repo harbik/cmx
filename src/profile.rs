@@ -1,11 +1,14 @@
 
 #![allow(unused)]
 use chrono::{DateTime, Datelike, Timelike, Utc};
+use serde::Serializer;
+use serde::ser::SerializeStruct;
 use std::ops::{RangeInclusive, Deref, DerefMut};
 use std::convert::TryInto;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 use half::f16;
+use serde::Serialize;
 
 use crate::tags::{TagSignature, Tag};
 
@@ -13,13 +16,13 @@ use crate::tags::{TagSignature, Tag};
 const ACSP: u32 = 0x61637370; 
 const SIG_NONE: &str = "\0\0\0\0";
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Serialize)]
 pub struct Profile {
     pub cmm: Option<String>,
     pub version: [u8;3],
     pub class: Class,
     pub colorspace: Option<ColorSpace>, // V5: if none use spectral_pcs as A side spectra
-    pub colorspace_channels: Option<u16>, // 1 to 0xFFFF
+   // pub colorspace_channels: Option<u16>, // 1 to 0xFFFF
     pub pcs: Option<ColorSpace>,
     pub date_time: Option<DateTime<chrono::Utc>>,
     pub platform: Option<String>,
@@ -28,13 +31,29 @@ pub struct Profile {
     pub device: Option<String>, // https://www.color.org/signatureRegistry/deviceRegistry/index.xalter
     pub attributes: DeviceAttributes,
     pub rendering_intent: RenderingIntent,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub pcs_illuminant: Option<[f64;3]>, // V2-4: X=0.964, Y=1.0, Z=0.824
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub creator: Option<String>, // a manufacturer signature
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub profile_id: Option<u128>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub spectral_pcs: Option<SpectralColorSpace>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub spectral_pcs_wavelength_range: Option<WavelengthRange>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub bi_spectral_pcs_wavelength_range: Option<WavelengthRange>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub mcs: Option<u16>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub profile_device_sub_class: Option<u32>,
     // tags list
     pub tags: Vec<crate::tags::Tag>,
@@ -48,8 +67,9 @@ impl Profile {
         let cmm = read_signature(&mut icc_buf)?;
         let version = read_version(&mut icc_buf)?;
         let class = Class::read(&mut icc_buf)?;
-        let (colorspace, colorspace_channels) = ColorSpace::read(&mut icc_buf)?;
-        let (pcs, _)= ColorSpace::read(&mut icc_buf)?;
+        let colorspace = ColorSpace::read(&mut icc_buf)?;
+        //let (colorspace, colorspace_channels) = ColorSpaceSignature::read(&mut icc_buf)?;
+        let pcs= ColorSpace::read(&mut icc_buf)?;
         let date_time = read_date_time(&mut icc_buf)?;
         let profile_file_signature = read_be_u32(&mut icc_buf)?;
         if profile_file_signature!= ACSP { return Err("Profile file signature error".into())};
@@ -57,7 +77,7 @@ impl Profile {
         let flags = ProfileFlags::new(&mut icc_buf)?;
         let manufacturer = read_signature(&mut icc_buf)?;
         let device= read_signature(&mut icc_buf)?;
-        let attributes = DeviceAttributes::new(&mut icc_buf)?;
+        let attributes = DeviceAttributes::new(&mut icc_buf, version[0])?;
         let rendering_intent = RenderingIntent::read(&mut icc_buf)?;
         let pcs_illuminant = read_xyz(&mut icc_buf)?;
         let creator= read_signature(&mut icc_buf)?;
@@ -92,7 +112,7 @@ impl Profile {
         }
         
         Ok(Profile {
-            cmm, version, class, colorspace, colorspace_channels, pcs, date_time,
+            cmm, version, class, colorspace, pcs, date_time,
             platform, flags, 
             manufacturer, device, attributes,
             rendering_intent, pcs_illuminant, creator, profile_id, spectral_pcs, spectral_pcs_wavelength_range,
@@ -125,15 +145,15 @@ impl Profile {
         buf.extend((length as u32).to_be_bytes());
         buf.extend([self.version[0], self.version[1]<<4_u8 | self.version[2], 0, 0]);
         buf.extend((self.class as u32).to_be_bytes());
-        buf.extend(self.colorspace.unwrap_or(ColorSpace::NONE).to_be_bytes(self.colorspace_channels.unwrap_or(0)));
-        buf.extend(self.pcs.unwrap_or(ColorSpace::NONE).to_be_bytes(0));
+        buf.extend(self.colorspace.unwrap_or_default().to_be_bytes());
+        buf.extend(self.pcs.unwrap_or_default().to_be_bytes());
         buf.extend(datetime_to_be_bytes(self.date_time));
         buf.extend(ACSP.to_be_bytes());
         buf.extend(self.platform.clone().unwrap_or(SIG_NONE.to_string()).as_bytes());
-        buf.extend(self.flags.0.to_be_bytes());
+        buf.extend(self.flags.to_be_bytes());
         buf.extend(self.manufacturer.clone().unwrap_or(SIG_NONE.to_string()).as_bytes());
         buf.extend(self.device.clone().unwrap_or(SIG_NONE.to_string()).as_bytes());
-        buf.extend(self.attributes.0.to_be_bytes());
+        buf.extend(self.attributes.to_be_bytes());
         buf.extend((self.rendering_intent as u32).to_be_bytes());
         buf.extend(xyz_to_be_bytes(self.pcs_illuminant));
         buf.extend(self.creator.clone().unwrap_or(SIG_NONE.to_string()).as_bytes());
@@ -147,7 +167,7 @@ impl Profile {
     }
 }
 
-#[derive(FromPrimitive, Clone, Copy, Debug)]
+#[derive(FromPrimitive, Clone, Copy, Debug, Serialize)]
 pub enum Class {
     Input = 0x73636E72,
     Display = 0x6D6E7472,
@@ -178,72 +198,145 @@ impl Class {
     }
 }
 
-#[derive(Default, Debug)]
-pub struct ProfileFlags(u32);
+#[derive(Default, Debug, Serialize)]
+pub struct ProfileFlags{
+    pub embedded_profile: bool,
+    pub use_with_embedded_data_only: bool,
+    pub mcs_needs_subset: bool,
+}
 
 impl ProfileFlags {
 
     fn new(icc_buf: &mut &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(Self(read_be_u32(icc_buf)?))
+        let pf = read_be_u32(icc_buf)?;
+        Ok(Self{
+            embedded_profile: (pf & (1<<0)) !=0,
+            use_with_embedded_data_only: (pf & (1<<1)) !=0,
+            mcs_needs_subset: (pf & (1<<2)) !=0,
+        })
     }
 
-    fn embedded(&self) -> bool {
-       (self.0 & (1<<0)) !=0
-    }
-
-    fn dependent(&self) -> bool {
-       (self.0 & (1<<1)) !=0
-    }
-
-    fn mcs(&self) -> bool {
-       (self.0 & (1<<2)) !=0
+    fn to_be_bytes(&self) -> [u8;4] {
+        let v = self.embedded_profile as u32 
+        | (self.use_with_embedded_data_only as u32) << 1
+        | (self.mcs_needs_subset as u32) << 2;
+        v.to_be_bytes()
     }
 }
 
 #[derive(Default, Debug)]
-pub struct DeviceAttributes(u64);
+pub struct DeviceAttributes{ // u64!
+    pub transparency: bool,
+    pub matte: bool,
+    pub media_negative: bool,
+    pub media_black_and_white: bool, 
+    pub non_paper_based: bool,
+    pub textured: bool,
+    pub non_isotropic: bool,
+    pub self_luminous: bool,
+    pub vendor: u32,
+    pub version: u8,
+
+}
 
 impl DeviceAttributes {
 
-    fn new(icc_buf: &mut &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(Self(read_be_u64(icc_buf)?))
+    fn new(icc_buf: &mut &[u8], version: u8) -> Result<Self, Box<dyn std::error::Error>> {
+        let v = read_be_u64(icc_buf)?;
+        Ok(Self{
+            transparency: (v & (1<<0)) !=0,
+            matte: (v & (1<<1)) !=0,
+            media_negative: (v & (1<<2)) !=0,
+            media_black_and_white: (v & (1<<3)) !=0,
+            non_paper_based: (v & (1<<4)) !=0,
+            textured: (v & (1<<5)) !=0,
+            non_isotropic: (v & (1<<6)) !=0,
+            self_luminous: (v & (1<<7)) !=0,
+            vendor: (v>>32) as u32,
+            version,
+        })
     }
 
-    pub fn transparent(&self) -> bool { self.get(0) }
-    pub fn matt(&self) -> bool {self.get(1) }
-    pub fn negative(&self) -> bool { self.get(2) }
-    pub fn black_and_white(&self) -> bool { self.get(3) }
-    pub fn not_paper(&self) -> bool {self.get(4) }
-    pub fn textured(&self) -> bool { self.get(5) }
-    pub fn non_isotropic(&self) -> bool { self.get(6) }
-    pub fn self_luminous(&self) -> bool { self.get(7) }
+    fn to_be_bytes(&self) -> [u8;8] {
+        let v = (self.vendor as u64) << 32;
+        v
+        | (self.transparency as u64) << 0
+        | (self.matte as u64) << 1
+        | (self.media_negative as u64) << 2
+        | (self.media_black_and_white as u64) << 3
+        | (self.non_paper_based as u64) << 4
+        | (self.textured as u64) << 5
+        | (self.non_isotropic as u64) << 6
+        | (self.self_luminous as u64) << 7;
+        v.to_be_bytes()
+    }
+}
 
-    pub fn set_transparent(&mut self) { self.set(0) }
-    pub fn set_reflective(&mut self) { self.clear(0) }
-    pub fn set_matt(&mut self) {self.set(1) }
-    pub fn set_gloss(&mut self) { self.clear(1) }
-    pub fn set_negative(&mut self) { self.set(2) }
-    pub fn set_positive(&mut self) { self.clear(2) }
-    pub fn set_black_and_white(&mut self) { self.set(3) }
-    pub fn set_color(&mut self) { self.clear(3) }
-    pub fn set_non_paper(&mut self) {self.set(4) }
-    pub fn set_paper(&mut self) { self.clear(4) }
-    pub fn set_textured(&mut self) { self.set(5) }
-    pub fn set_smooth(&mut self) { self.clear(5) }
-    pub fn set_non_isotropic(&mut self) { self.set(6) }
-    pub fn set_isotropic(&mut self) { self.clear(6) }
-    pub fn set_self_luminous(&mut self) { self.set(7) }
-    pub fn set_colorant(&mut self) { self.clear(7) }
+impl Serialize for DeviceAttributes {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let n: usize = match (self.version, self.vendor) {
+            (5..,0) => 8,
+            (5..,_) => 9,
+            (_, 0) => 4,
+            _ => 5,
+        };
+        let mut state = serializer.serialize_struct("attributes", n)?;
+        state.serialize_field("transparancy", &self.transparency)?;
+        state.serialize_field("matte", &self.matte)?;
+        state.serialize_field("media_negative", &self.media_negative)?;
+        state.serialize_field("media_black_and_white", &self.media_black_and_white)?;
+        if self.version >=5 {
+            state.serialize_field("non_paper_based", &self.non_paper_based)?;
+            state.serialize_field("textured", &self.textured)?;
+            state.serialize_field("non_isotropic", &self.non_isotropic)?;
+            state.serialize_field("self_luminous", &self.self_luminous)?;
+        }
+        if self.vendor!=0 {
+            state.serialize_field("vendor", &self.vendor)?;
+        }
+        state.end()
+    }
+}
 
-    pub fn get(&self, i: usize) -> bool { (self.0 & (1<<i)) !=0 }
-    pub fn set(&mut self, i: usize) { self.0 |= (1<<i) }
-    pub fn clear(&mut self, i: usize) { self.0 &= !(1<<i) }
+#[derive(PartialEq, Clone, Copy, Debug, Serialize)]
+pub struct ColorSpace {
+    space: ColorSpaceSignature,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    channels: Option<u16>,
+}
+
+impl ColorSpace {
+    fn read(icc_buf: &mut &[u8]) -> Result<Option<ColorSpace> , Box< dyn std::error::Error + 'static>> {
+        let (signature, channels) = ColorSpaceSignature::read(icc_buf)?;
+        match signature {
+            Some(sig) =>  Ok(Some(Self { space: sig, channels})),
+            None => Ok(None),
+        }
+    }
+
+    fn to_be_bytes(&self) -> [u8;4] {
+        match self.channels {
+            Some(n) => (ColorSpaceSignature::NC as u32 + n as u32).to_be_bytes(),
+            None => (self.space as u32).to_be_bytes()
+        }
+    }
+}
+
+impl Default for ColorSpace {
+    fn default() -> Self {
+        Self { space: ColorSpaceSignature::NONE, channels: Default::default() }
+    }
 }
 
 
 
-#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug)]
-pub enum ColorSpace {
+
+#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize)]
+pub enum ColorSpaceSignature {
     NONE = 0,
     XYZ = 0x58595A20,
     Lab = 0x4C616220,
@@ -273,8 +366,8 @@ pub enum ColorSpace {
     NC = 0x6e630000, // V5: n channel device data
 }
 
-impl ColorSpace {
-    fn read(icc_buf: &mut &[u8]) -> Result<(Option<ColorSpace>, Option<u16>) , Box< dyn std::error::Error + 'static>> {
+impl ColorSpaceSignature {
+    fn read(icc_buf: &mut &[u8]) -> Result<(Option<ColorSpaceSignature>, Option<u16>) , Box< dyn std::error::Error + 'static>> {
         let mut sig =read_be_u32(icc_buf)?;
         let n_channels = if (0x6e630001..=0x6e63ffff).contains(&sig) {
             let n = sig - 0x6e630000;
@@ -286,7 +379,7 @@ impl ColorSpace {
         match FromPrimitive::from_u32(sig) {
             Some(c) => 
                 match c {
-                    ColorSpace::NONE => Ok((None, None)),
+                    ColorSpaceSignature::NONE => Ok((None, None)),
                     _ => Ok((Some(c), n_channels)),
                 } 
             None => Err("illegal profile color space".into()),
@@ -302,7 +395,7 @@ impl ColorSpace {
     }
 }
 
-#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug)]
+#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize)]
 pub enum RenderingIntent {
     Perceptual = 0,
     MediaRelativeColorimetric = 1,
@@ -324,7 +417,7 @@ impl RenderingIntent {
 }
 
 // V5 BToDx/DToBx or brdfBToDx/brdfDToBx or directionalBToDx/directionalDToBx spectral colour space signatures
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub enum SpectralColorSpace {
     None,
     Reflectance(u16),
@@ -361,7 +454,7 @@ impl SpectralColorSpace {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct WavelengthRange ( RangeInclusive<f64>, usize);
 
 impl WavelengthRange {
@@ -397,7 +490,7 @@ impl Default for WavelengthRange {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct TagTableRow {
     sig: TagSignature,
     offset: usize,
@@ -539,7 +632,7 @@ pub fn read_tag_signature(icc_buf: &mut &[u8]) -> Result<TagSignature, Box<dyn s
     let s = read_be_u32(icc_buf)?;
     match FromPrimitive::from_u32(s) {
         Some(tag_sig) => Ok(tag_sig),
-        None => Err("Unknown tag".into()),
+        None => Err("Unknown tag found".into()),
     }
     
 }
