@@ -302,6 +302,7 @@ impl Serialize for DeviceAttributes {
 }
 
 #[derive(PartialEq, Clone, Copy, Debug, Serialize)]
+#[serde(default)]
 pub struct ColorSpace {
     space: ColorSpaceSignature,
 
@@ -331,8 +332,6 @@ impl Default for ColorSpace {
         Self { space: ColorSpaceSignature::NONE, channels: Default::default() }
     }
 }
-
-
 
 
 #[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize)]
@@ -540,6 +539,12 @@ pub fn read_be_f64(input: &mut &[u8]) -> Result<f64, Box<dyn std::error::Error +
     Ok(f64::from_be_bytes(int_bytes.try_into()?))
 }
 
+pub fn read_u8(input: &mut &[u8]) -> Result<u8, Box<dyn std::error::Error + 'static>> {
+    let (byte, rest) = input.split_at(std::mem::size_of::<u8>());
+    *input = rest;
+    Ok(byte[0])
+}
+
 pub fn read_be_u16(input: &mut &[u8]) -> Result<u16, Box<dyn std::error::Error + 'static>> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<u16>());
     *input = rest;
@@ -687,4 +692,34 @@ fn mcs_to_be_bytes(n_mcs: Option<u16>) -> [u8;4] {
 }
 
 
+pub fn read_vec(input: &mut &[u8], n: usize) -> Result<Vec<u8>, Box<dyn std::error::Error + 'static>> {
+    if n>input.len() {
+        return Err("request exceeds buffer length".into())
+    }
+    let (bytes, rest) = input.split_at(n);
+    *input = rest;
+    Ok(bytes.to_vec())
+}
 
+pub fn read_vec_u16(input: &mut &[u8], n: usize) -> Result<Vec<u16>, Box<dyn std::error::Error + 'static>> {
+    if n>input.len() {
+        return Err("request exceeds buffer length".into())
+    }
+    let (bytes, rest) = input.split_at(n);
+    *input = rest;
+    let mut v = Vec::with_capacity(n/2);
+    for _ in 0..n/2 {
+        v.push(read_be_u16(input)?);
+    }
+    Ok(v)
+}
+
+pub fn read_ascii_string(buf: &mut &[u8], n: usize) -> Result<String, Box<dyn std::error::Error + 'static>> {
+    let v = read_vec(buf,n)?;
+    Ok(std::str::from_utf8(&v)?.trim_end_matches(char::from(0)).to_owned())
+}
+
+pub fn read_unicode_string(buf: &mut &[u8], n: usize) -> Result<String, Box<dyn std::error::Error + 'static>> {
+    let v = read_vec_u16(buf,n/2)?;
+    Ok(String::from_utf16(&v)?.trim_end_matches(char::from(0)).to_owned())
+}

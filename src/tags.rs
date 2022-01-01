@@ -1,5 +1,6 @@
-use crate::profile::{read_be_f16, read_be_f32, read_be_f64, read_be_u32, read_be_u16, read_date_time, read_xyz};
-use num::FromPrimitive;
+
+use crate::profile::*;
+use num::{FromPrimitive, Zero};
 use num_derive::FromPrimitive;
 use serde::Serialize;
 
@@ -7,9 +8,10 @@ use serde::Serialize;
 #[derive(Debug, Serialize)]
 pub struct Tag {
     tag_signature: TagSignature,
-    data_signature: TagTypeSignature,
+    type_signature: TagTypeSignature,
     data: TagData,
 }
+
 
 #[derive(Debug, Serialize)]
 pub enum TagData {
@@ -26,7 +28,7 @@ pub enum TagData {
     GamutBoundaryDescription(Vec<u8>), // 'gbd'
     LutAToB(Vec<u8>), // 'mAB'
     LutBToA(Vec<u8>), // 'mBA'
-    Measurement(Vec<u8>), // 'meas'
+    Measurement(Measurement), // 'meas'
     MultiLocalizedUnicode(Vec<u8>), // 'mluc'
     MultiProcessElements(Vec<u8>), // 'mpet'
     S15Fixed16Array(Vec<f64>), // 'sf32'
@@ -34,6 +36,9 @@ pub enum TagData {
     SparseMatrixArray(Vec<u8>), // 'smat'
     SpectralViewingConditions(Vec<u8>), // 'svcn'
     TagStruct(Vec<u8>), // 'tstr'
+    Technology(TechnologySignature), // tag derived type
+    Text(String),
+    TextDescription(TextDescription),
     U16Fixed16Array(Vec<f32>), // 'uf32'
     UInt8Array(Vec<u8>), // 'ui16'
     UInt16Array(Vec<u16>), // 'ui16'
@@ -42,27 +47,25 @@ pub enum TagData {
     Utf8(Vec<String>), // 'utf8'
     Utf16(Vec<String>), // 'ut16'
     Utf8Zip(Vec<String>), // 'zut8'
+    ViewingConditions(ViewingConditions),
     XYZ(XYZ), // 'XYZ'
     Custom(TagTypeSignature, Vec<u8>), // unknown data type
 }
 
 impl Tag {
     pub fn try_new(tag_signature: TagSignature, buf: &mut &[u8]) -> Result<Self, Box< dyn std::error::Error + 'static>> {
-        let data_signature = match FromPrimitive::from_u32(read_be_u32(buf)?) {
+        let type_signature = match FromPrimitive::from_u32(read_be_u32(buf)?) {
             Some(c) => c,
             None => TagTypeSignature::UndefinedType,
         };
         let _reserved = read_be_u32(buf)?;
         Ok(Self {
             tag_signature,
-            data_signature,
-            data: TagData::try_new(data_signature, buf)?,
+            type_signature,
+            data: TagData::try_new(tag_signature, type_signature, buf)?,
         })
     }
-
 }
-
-
 
 
 #[derive(Debug, Serialize)]
@@ -86,18 +89,91 @@ pub struct Float32Array(Vec<f32>);
 #[derive(Debug, Serialize)]
 pub struct Float64Array(Vec<f64>);
 
+#[derive(Debug, Serialize)]
+pub struct Measurement {
+    pub standard_observer: StandardObserver,
+    pub xyz: [f64;3],
+    pub geometry: Geometry,
+    pub flare: Flare,
+    pub illuminant: StandardIlluminant,
+}
+
+
+impl Measurement {
+    pub fn try_new(buf: &mut &[u8]) -> Result<Self, Box<dyn std::error::Error + 'static>> {
+        Ok(Measurement{
+            standard_observer: FromPrimitive::from_u32(read_be_u32(buf)?).unwrap_or_default(),
+            xyz: read_xyz(buf)?.unwrap_or_default(),
+            geometry: FromPrimitive::from_u32(read_be_u32(buf)?).unwrap_or_default(),
+            flare: FromPrimitive::from_u32(read_be_u32(buf)?).unwrap_or_default(),
+            illuminant: FromPrimitive::from_u32(read_be_u32(buf)?).unwrap_or_default(),
+        })
+    }
+}
+
+pub struct Text(String);
+
+#[derive(Debug, Serialize)]
+#[serde(default)]
+pub struct TextDescription{
+    pub ascii: String,
+    #[serde(skip_serializing_if = "u32::is_zero")]
+    pub unicode_language_code: u32,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub unicode: String,
+    #[serde(skip_serializing_if = "u16::is_zero")]
+    pub scriptcode_code: u16,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub scriptcode: String,
+}
+
+impl TextDescription {
+    pub fn try_new(buf: &mut &[u8]) -> Result<Self, Box<dyn std::error::Error + 'static>> {
+        let n = read_be_u32(buf)? as usize;
+        let ascii = read_ascii_string(buf, n)?;
+        let unicode_language_code = read_be_u32(buf)?;
+        let m = read_be_u32(buf)? as usize;
+        let unicode = read_unicode_string(buf, m)?;
+        let scriptcode_code = read_be_u16(buf)?;
+        let l = read_u8(buf)? as usize;
+        let scriptcode= read_ascii_string(buf, l)?;
+        Ok(TextDescription{
+            ascii,
+            unicode_language_code,
+            unicode,
+            scriptcode_code,
+            scriptcode
+        })
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct ViewingConditions {
+    pub xyz_illuminant: [f64;3],
+    pub xyz_surround: [f64;3],
+    pub illuminant: StandardIlluminant,
+}
+
+
+impl ViewingConditions {
+    pub fn try_new(buf: &mut &[u8]) -> Result<Self, Box<dyn std::error::Error + 'static>> {
+        Ok(ViewingConditions{
+            xyz_illuminant: read_xyz(buf)?.unwrap_or([0.0, 0.0, 0.0]),
+            xyz_surround: read_xyz(buf)?.unwrap_or([0.0, 0.0, 0.0]),
+            illuminant: FromPrimitive::from_u32(read_be_u32(buf)?).unwrap_or_default(),
+        })
+    }
+}
 
 #[derive(Debug, Serialize)]
 pub struct XYZ(Vec<[f64;3]>);
 
 
 impl TagData {
-    pub fn try_new(sig: TagTypeSignature, buf: &mut &[u8]) -> Result<Self, Box< dyn std::error::Error + 'static>> {
-      //  let sig = read_signature(buf)?.ok_or("illegal data type")?;
-       // let _reserved = read_be_u32(buf)?;
-        match sig {
-            TagTypeSignature::ColorantOrderType => Ok(Self::ColorantOrder(ColorantOrder(buf.to_owned()))),
-            TagTypeSignature::CurveType => {
+    pub fn try_new(tag_signature: TagSignature, type_signature: TagTypeSignature, buf: &mut &[u8]) -> Result<Self, Box< dyn std::error::Error + 'static>> {
+        match (tag_signature, type_signature) {
+            (_, TagTypeSignature::ColorantOrderType) => Ok(Self::ColorantOrder(ColorantOrder(buf.to_owned()))),
+            (_, TagTypeSignature::CurveType) => {
                 let n = read_be_u32(buf)? as usize;
                 let mut v: Vec<u16> = Vec::with_capacity(n);
                 for _ in 0..n {
@@ -105,35 +181,47 @@ impl TagData {
                 }
                 Ok(Self::Curve(Curve(v)))
             }
-            TagTypeSignature::DataType => {
+            (_, TagTypeSignature::DataType) => {
                 let _n = read_be_u32(buf)? as usize;
                 Ok(Self::Data(Data(buf.to_owned())))
             },
-            TagTypeSignature::DateTimeType=> {
+            (_, TagTypeSignature::DateTimeType) => {
                 Ok(Self::DateTime(DateTime(read_date_time(buf)?.unwrap())))
             },
-            TagTypeSignature::Float16ArrayType=> {
+            (_, TagTypeSignature::Float16ArrayType)=> {
                 let mut v = Vec::with_capacity(buf.len()/std::mem::size_of::<half::f16>());
                 for _ in 0..v.capacity() {
                     v.push(read_be_f16(buf)?)
                 }
                 Ok(Self::Float16Array(v))
             },
-            TagTypeSignature::Float32ArrayType => {
+            (_, TagTypeSignature::Float32ArrayType) => {
                 let mut v = Vec::with_capacity(buf.len()/std::mem::size_of::<f32>());
                 for _ in 0..v.capacity() {
                     v.push(read_be_f32(buf)?)
                 }
                 Ok(Self::Float32Array(v))
             },
-            TagTypeSignature::Float64ArrayType => {
+            (_, TagTypeSignature::Float64ArrayType) => {
                 let mut v = Vec::with_capacity(buf.len()/std::mem::size_of::<f64>());
                 for _ in 0..v.capacity() {
                     v.push(read_be_f64(buf)?)
                 }
                 Ok(Self::Float64Array(v))
             },
-            TagTypeSignature::XYZArrayType => {
+            (_, TagTypeSignature::MeasurementType) => {
+                Ok(Self::Measurement(Measurement::try_new(buf)?))
+            },
+            (_, TagTypeSignature::TextType) => {
+                Ok(Self::Text(std::str::from_utf8(buf)?.trim_end_matches(char::from(0)).to_owned()))
+            },
+            (_, TagTypeSignature::TextDescriptionType) => {
+                Ok(Self::TextDescription(TextDescription::try_new(buf)?))
+            },
+            (_, TagTypeSignature::ViewingConditionsType) => {
+                Ok(Self::ViewingConditions(ViewingConditions::try_new(buf)?))
+            },
+            (_, TagTypeSignature::XYZArrayType) => {
                 let n = buf.len()/12;
                 let mut v = Vec::with_capacity(n);
                 for _ in 0..n {
@@ -145,8 +233,11 @@ impl TagData {
                 }
                 Ok(Self::XYZ(XYZ(v)))
 
-            }
-            _ => Ok(Self::Custom(sig, buf.to_owned())),
+            },
+            (TagSignature::TechnologyTag, TagTypeSignature::SignatureType) => {
+                Ok(Self::Technology(FromPrimitive::from_u32(read_be_u32(buf)?).unwrap_or_default()))
+            },
+            _  => Ok(Self::Custom(type_signature, buf.to_owned())),
         } 
     }
 }
@@ -341,4 +432,114 @@ pub enum TagTypeSignature {
     ZipUtf8TextType                = 0x7a757438,  /* 'zut8' */
     ZipXmlType                     = 0x5a584d4c,  /* 'ZXML' */      
     EmbeddedProfileType            = 0x49434370,  /* 'ICCp' */
+}
+
+#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize)]
+pub enum StandardIlluminant {
+    Unknown                 = 0x00000000,
+    D50                     = 0x00000001,
+    D65                     = 0x00000002,
+    D93                     = 0x00000003,
+    F2                      = 0x00000004,
+    D55                     = 0x00000005,
+    A                       = 0x00000006,
+    EquiPowerE              = 0x00000007,  /* Equi-Power (E) */
+    F8                      = 0x00000008,
+
+    /* The following illuminants are defined for V5 */
+    BlackBody               = 0x00000009,  /* defined by CCT */
+    Daylight                = 0x0000000A,  /* defiend by CCT */
+    B                       = 0x0000000B,
+    C                       = 0x0000000C,
+    F1                      = 0x0000000D,
+    F3                      = 0x0000000E,
+    F4                      = 0x0000000F,
+    F5                      = 0x00000010,
+    F6                      = 0x00000011,
+    F7                      = 0x00000012,
+    F9                      = 0x00000013,
+    F10                     = 0x00000014,
+    F11                     = 0x00000015,
+    F12                     = 0x00000016,
+}
+
+impl Default for StandardIlluminant {
+    fn default() -> Self {
+        Self::Unknown
+    }
+} 
+
+#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize)]
+pub enum TechnologySignature {
+    Unknown                        = 0x00000000, 
+    DigitalCamera                  = 0x6463616D,  /* 'dcam' */
+    FilmScanner                    = 0x6673636E,  /* 'fscn' */
+    ReflectiveScanner              = 0x7273636E,  /* 'rscn' */
+    InkJetPrinter                  = 0x696A6574,  /* 'ijet' */ 
+    ThermalWaxPrinter              = 0x74776178,  /* 'twax' */
+    ElectrophotographicPrinter     = 0x6570686F,  /* 'epho' */
+    ElectrostaticPrinter           = 0x65737461,  /* 'esta' */
+    DyeSublimationPrinter          = 0x64737562,  /* 'dsub' */
+    PhotographicPaperPrinter       = 0x7270686F,  /* 'rpho' */
+    FilmWriter                     = 0x6670726E,  /* 'fprn' */
+    VideoMonitor                   = 0x7669646D,  /* 'vidm' */
+    VideoCamera                    = 0x76696463,  /* 'vidc' */
+    ProjectionTelevision           = 0x706A7476,  /* 'pjtv' */
+    CRTDisplay                     = 0x43525420,  /* 'CRT ' */
+    PMDisplay                      = 0x504D4420,  /* 'PMD ' */
+    AMDisplay                      = 0x414D4420,  /* 'AMD ' */
+    PhotoCD                        = 0x4B504344,  /* 'KPCD' */
+    PhotoImageSetter               = 0x696D6773,  /* 'imgs' */
+    Gravure                        = 0x67726176,  /* 'grav' */
+    OffsetLithography              = 0x6F666673,  /* 'offs' */
+    Silkscreen                     = 0x73696C6B,  /* 'silk' */
+    Flexography                    = 0x666C6578,  /* 'flex' */
+    MotionPictureFilmScanner       = 0x6D706673,  /* 'mpfs' */
+    MotionPictureFilmRecorder      = 0x6D706672,  /* 'mpfr' */
+    DigitalMotionPictureCamera     = 0x646D7063,  /* 'dmpc' */
+    DigitalCinemaProjector         = 0x64636A70,  /* 'dcpj' */
+}
+
+impl Default for TechnologySignature {
+    fn default() -> Self {
+        Self::Unknown
+    }
+}
+
+#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize)]
+pub enum StandardObserver {
+    Unknown                   = 0x00000000,  /* Unknown observer */
+    Cie1931TwoDegrees         = 0x00000001,  /* 1931 two degrees */
+    Cie1964TenDegrees         = 0x00000002,  /* 1961 ten degrees */
+}
+
+impl Default for StandardObserver {
+    fn default() -> Self {
+        Self::Unknown
+    }
+}
+
+#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize)]
+pub enum Geometry {
+    Unknown                   = 0x00000000,  /* Unknown geometry */
+    Normal45                  = 0x00000001,  /* 0/45, 45/0 */
+    NormalDiffuse             = 0x00000002,  /* 0/d or d/0 */
+}
+
+impl Default for Geometry {
+    fn default() -> Self {
+        Self::Unknown
+    }
+}
+
+#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize)]
+pub enum Flare {
+    Flare0                            = 0x00000000,  /* 0% flare */
+    Flare100                          = 0x00000001,  /* 100% flare */
+}
+
+impl Default for Flare {
+    fn default() -> Self {
+        Self::Flare0
+    }
 }
