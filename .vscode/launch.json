@@ -1,0 +1,141 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'cmx'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=cmx"
+                ],
+                "filter": {
+                    "name": "cmx",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'write'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=write",
+                    "--package=cmx"
+                ],
+                "filter": {
+                    "name": "write",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'write'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=write",
+                    "--package=cmx"
+                ],
+                "filter": {
+                    "name": "write",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'write_json'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=write_json",
+                    "--package=cmx"
+                ],
+                "filter": {
+                    "name": "write_json",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'write_json'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=write_json",
+                    "--package=cmx",
+                    "DCI(P3) RGB.icc"
+                ],
+                "filter": {
+                    "name": "write_json",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'read_v5'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=read_v5",
+                    "--package=cmx"
+                ],
+                "filter": {
+                    "name": "read_v5",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'read_v5'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=read_v5",
+                    "--package=cmx"
+                ],
+                "filter": {
+                    "name": "read_v5",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

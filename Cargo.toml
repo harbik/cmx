@@ -16,3 +16,6 @@ num-traits = "0.2"
 half = {version = "1.8", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+
+[dev-dependencies]
+glob = "0.3"

@@ -10,7 +10,8 @@ use num_traits::FromPrimitive;
 use half::f16;
 use serde::Serialize;
 
-use crate::tags::{TagSignature, Tag};
+use crate::tags::{Tag};
+use crate::tag_signatures::{TagSignature};
 
 // ICC profile file signature, used at location 36..40 in the profile header
 const ACSP: u32 = 0x61637370; 
@@ -635,10 +636,14 @@ pub fn read_signature(icc_buf: &mut &[u8]) -> Result<Option<String>, Box<dyn std
 
 pub fn read_tag_signature(icc_buf: &mut &[u8]) -> Result<TagSignature, Box<dyn std::error::Error + 'static>>{
     let s = read_be_u32(icc_buf)?;
+    /*
     match FromPrimitive::from_u32(s) {
         Some(tag_sig) => Ok(tag_sig),
-        None => Err("Unknown tag found".into()),
+        None => Ok(TagSignature::Unknown),
+        //None => Err(format!("Unknown tag {:?} found", std::str::from_utf8(&s.to_be_bytes())).into()),
     }
+    */
+    Ok(TagSignature::new(s))
     
 }
 
@@ -723,3 +728,23 @@ pub fn read_unicode_string(buf: &mut &[u8], n: usize) -> Result<String, Box<dyn 
     let v = read_vec_u16(buf,n/2)?;
     Ok(String::from_utf16(&v)?.trim_end_matches(char::from(0)).to_owned())
 }
+
+pub fn read_s15fixed16(buf: &mut &[u8]) -> Result<f32, Box<dyn std::error::Error + 'static>> {
+    let v_i32 = read_be_i32(buf)?;
+    let v = v_i32 as f32/65536.0;
+    Ok(v)
+}
+
+pub fn read_s15fixed16_array(buf: &mut &[u8], n: Option<usize>) -> Result<Vec<f32>, Box<dyn std::error::Error + 'static>> {
+    let n = n.unwrap_or(buf.len());
+    if n>buf.len() {
+        return Err("request exceeds buffer length".into())
+    }
+    let mut v = Vec::with_capacity(n/4);
+    for _ in 0..n/4 {
+        v.push(read_s15fixed16(buf)?);
+    }
+    Ok(v)
+
+}
+

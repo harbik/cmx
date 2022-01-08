@@ -1,0 +1,147 @@
+{
+  "cmm": "ADBE",
+  "version": [
+    2,
+    1,
+    0
+  ],
+  "class": "Display",
+  "colorspace": {
+    "space": "RGB"
+  },
+  "pcs": {
+    "space": "XYZ"
+  },
+  "date_time": "2000-08-11T19:51:59Z",
+  "platform": "APPL",
+  "flags": {
+    "embedded_profile": false,
+    "use_with_embedded_data_only": false,
+    "mcs_needs_subset": false
+  },
+  "manufacturer": "none",
+  "device": null,
+  "attributes": {
+    "transparancy": false,
+    "matte": false,
+    "media_negative": false,
+    "media_black_and_white": false
+  },
+  "rendering_intent": "Perceptual",
+  "pcs_illuminant": [
+    0.964202880859375,
+    1.0,
+    0.8249053955078125
+  ],
+  "creator": "ADBE",
+  "tags": [
+    {
+      "tag_signature": "CopyrightTag",
+      "type_signature": "TextType",
+      "data": {
+        "Text": "Copyright 2000 Adobe Systems Incorporated"
+      }
+    },
+    {
+      "tag_signature": "ProfileDescriptionTag",
+      "type_signature": "TextDescriptionType",
+      "data": {
+        "TextDescription": {
+          "ascii": "Adobe RGB (1998)"
+        }
+      }
+    },
+    {
+      "tag_signature": "MediaWhitePointTag",
+      "type_signature": "XYZArrayType",
+      "data": {
+        "XYZ": [
+          [
+            0.9504547119140625,
+            1.0,
+            1.08905029296875
+          ]
+        ]
+      }
+    },
+    {
+      "tag_signature": "MediaBlackPointTag",
+      "type_signature": "XYZArrayType",
+      "data": {
+        "XYZ": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ]
+        ]
+      }
+    },
+    {
+      "tag_signature": "RedTRCTag",
+      "type_signature": "CurveType",
+      "data": {
+        "Curve": [
+          563
+        ]
+      }
+    },
+    {
+      "tag_signature": "GreenTRCTag",
+      "type_signature": "CurveType",
+      "data": {
+        "Curve": [
+          563
+        ]
+      }
+    },
+    {
+      "tag_signature": "BlueTRCTag",
+      "type_signature": "CurveType",
+      "data": {
+        "Curve": [
+          563
+        ]
+      }
+    },
+    {
+      "tag_signature": "RedMatrixColumnTag",
+      "type_signature": "XYZArrayType",
+      "data": {
+        "XYZ": [
+          [
+            0.6097412109375,
+            0.3111114501953125,
+            0.01947021484375
+          ]
+        ]
+      }
+    },
+    {
+      "tag_signature": "GreenMatrixColumnTag",
+      "type_signature": "XYZArrayType",
+      "data": {
+        "XYZ": [
+          [
+            0.2052764892578125,
+            0.62567138671875,
+            0.0608673095703125
+          ]
+        ]
+      }
+    },
+    {
+      "tag_signature": "BlueMatrixColumnTag",
+      "type_signature": "XYZArrayType",
+      "data": {
+        "XYZ": [
+          [
+            0.1491851806640625,
+            0.0632171630859375,
+            0.74456787109375
+          ]
+        ]
+      }
+    }
+  ]
+}
