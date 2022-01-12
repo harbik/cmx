@@ -710,11 +710,11 @@ pub fn read_vec_u16(input: &mut &[u8], n: usize) -> Result<Vec<u16>, Box<dyn std
     if n>input.len() {
         return Err("request exceeds buffer length".into())
     }
-    let (bytes, rest) = input.split_at(n);
+    let (mut bytes, rest) = input.split_at(n);
     *input = rest;
     let mut v = Vec::with_capacity(n/2);
     for _ in 0..n/2 {
-        v.push(read_be_u16(input)?);
+        v.push(read_be_u16(&mut bytes)?);
     }
     Ok(v)
 }

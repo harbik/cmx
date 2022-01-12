@@ -260,7 +260,7 @@ impl TagSignature {
             0x76756564 => Self::ViewingCondDescTag,
             0x76696577 => Self::ViewingConditionsTag,
             0x49434335 => Self::EmbeddedV5ProfileTag,
-            _ => Self::Vendor(std::str::from_utf8(&sig.to_be_bytes()).unwrap().to_owned())
+            _ => Self::VendorTag(std::str::from_utf8(&sig.to_be_bytes()).unwrap().to_owned())
 
         }
     }
