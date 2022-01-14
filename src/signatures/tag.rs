@@ -135,6 +135,7 @@ pub enum TagSignature {
     // PRIVATE TAGS
 
     // Apple
+    MakeAndModelTag                   , /* mmod */
     AppleMultilocalizedDescriptionStringTag, /* dscm */
     VcgtTag                           ,  /* 'vcgt' Not icc, defacto industry standard */
 }
@@ -218,6 +219,7 @@ impl TagSignature {
             0x6758595A => Self::GreenMatrixColumnTag,
             0x67545243 => Self::GreenTRCTag,
             0x6C756d69 => Self::LuminanceTag,
+            0x6d6d6f64 => Self::MakeAndModelTag,
             0x6D647620 => Self::MaterialDefaultValuesTag,
             0x6d637461 => Self::MaterialTypeArrayTag,
             0x4d324130 => Self::MToA0Tag,
@@ -282,7 +284,7 @@ impl TagSignature {
 
 #[test]
 fn test_str_to_u32(){
-    let s = "Lino";
+    let s = "mmod";
     let v = u32::from_be_bytes(s.as_bytes().try_into().unwrap());
     println!("{:?} {:?} {:x?}", s, v, v);
 

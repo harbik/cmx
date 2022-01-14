@@ -12,25 +12,31 @@ use serde::Serialize;
 
 use crate::util::*;
 use crate::tags::{Tag};
-use crate::tag_signatures::{TagSignature};
+use crate::signatures::tag::{TagSignature};
 
 // ICC profile file signature, used at location 36..40 in the profile header
 const ACSP: u32 = 0x61637370; 
 const SIG_NONE: &str = "\0\0\0\0";
 
 #[derive(Default, Debug, Serialize)]
+#[serde(default)]
 pub struct Profile {
-    pub cmm: Option<crate::cmm_signatures::CmmSignature>,
+    pub cmm: Option<crate::signatures::cmm::CmmSignature>,
     pub version: [u8;3],
     pub class: Class,
     pub colorspace: Option<ColorSpace>, // V5: if none use spectral_pcs as A side spectra
-   // pub colorspace_channels: Option<u16>, // 1 to 0xFFFF
+
     pub pcs: Option<ColorSpace>,
     pub date_time: Option<DateTime<chrono::Utc>>,
     pub platform: Option<String>,
     pub flags: ProfileFlags,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub manufacturer: Option<String>, // https://www.color.org/signatureRegistry/index.xalter
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub device: Option<String>, // https://www.color.org/signatureRegistry/deviceRegistry/index.xalter
+
     pub attributes: DeviceAttributes,
     pub rendering_intent: RenderingIntent,
 
@@ -62,12 +68,12 @@ pub struct Profile {
 }
 
 impl Profile {
-    pub fn from_buffer(mut icc_buf: &[u8]) -> Result<Profile, Box<dyn std::error::Error + 'static>> {
+    pub fn from_buffer(mut icc_buf: &[u8]) -> Result<Profile> {
         let buf_len = icc_buf.len();
         let size = read_be_u32(&mut icc_buf)? as usize;
         if size<132 || buf_len!=size {return Err("ICC profile size error".into())}; // 128 header + 4 byte number of tags
       //  let cmm = read_signature(&mut icc_buf)?;
-        let cmm = crate::cmm_signatures::CmmSignature::new(read_be_u32(&mut icc_buf)?);
+        let cmm = crate::signatures::cmm::CmmSignature::new(read_be_u32(&mut icc_buf)?);
         let version = read_version(&mut icc_buf)?;
         let class = Class::read(&mut icc_buf)?;
         let colorspace = ColorSpace::read(&mut icc_buf)?;
@@ -124,7 +130,7 @@ impl Profile {
 
     }
 
-    pub fn from_file(iccfile: &str) -> Result<Profile, Box<dyn std::error::Error + 'static>>  {
+    pub fn from_file(iccfile: &str) -> Result<Profile>  {
         let icc_data = std::fs::read(iccfile)?;
         Self::from_buffer(icc_data.as_slice())
     }
@@ -137,12 +143,12 @@ impl Profile {
         profile
     }
 
-    pub fn to_file(&self, iccfile: &str) -> Result<(), Box<dyn std::error::Error + 'static>>  {
+    pub fn to_file(&self, iccfile: &str) -> Result<()>  {
         let icc_buf = self.to_buffer()?;
         Ok(std::fs::write(iccfile, icc_buf)?)
     }
 
-    pub fn to_buffer(&self) -> Result<Vec<u8>, Box<dyn std::error::Error + 'static>> {
+    pub fn to_buffer(&self) -> Result<Vec<u8>> {
         let length = 128 + 4 + self.tags.len() * 100;
         let mut buf: Vec<u8> = Vec::with_capacity(length); // actual length might be smaller, correct at end
         buf.extend((length as u32).to_be_bytes());
@@ -193,7 +199,7 @@ impl Default for Class {
 }
 
 impl Class {
-    fn read(icc_buf: &mut &[u8]) -> Result<Class, Box< dyn std::error::Error + 'static>> {
+    fn read(icc_buf: &mut &[u8]) -> Result<Class> {
         match FromPrimitive::from_u32(read_be_u32(icc_buf)?) {
             Some(c) => Ok(c),
             None => Err("illegal profile class".into()),
@@ -210,7 +216,7 @@ pub struct ProfileFlags{
 
 impl ProfileFlags {
 
-    fn new(icc_buf: &mut &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+    fn new(icc_buf: &mut &[u8]) -> Result<Self> {
         let pf = read_be_u32(icc_buf)?;
         Ok(Self{
             embedded_profile: (pf & (1<<0)) !=0,
@@ -244,7 +250,7 @@ pub struct DeviceAttributes{ // u64!
 
 impl DeviceAttributes {
 
-    fn new(icc_buf: &mut &[u8], version: u8) -> Result<Self, Box<dyn std::error::Error>> {
+    fn new(icc_buf: &mut &[u8], version: u8) -> Result<Self> {
         let v = read_be_u64(icc_buf)?;
         Ok(Self{
             transparency: (v & (1<<0)) !=0,
@@ -276,7 +282,7 @@ impl DeviceAttributes {
 }
 
 impl Serialize for DeviceAttributes {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -314,7 +320,7 @@ pub struct ColorSpace {
 }
 
 impl ColorSpace {
-    fn read(icc_buf: &mut &[u8]) -> Result<Option<ColorSpace> , Box< dyn std::error::Error + 'static>> {
+    fn read(icc_buf: &mut &[u8]) -> Result<Option<ColorSpace>> {
         let (signature, channels) = ColorSpaceSignature::read(icc_buf)?;
         match signature {
             Some(sig) =>  Ok(Some(Self { space: sig, channels})),
@@ -369,7 +375,7 @@ pub enum ColorSpaceSignature {
 }
 
 impl ColorSpaceSignature {
-    fn read(icc_buf: &mut &[u8]) -> Result<(Option<ColorSpaceSignature>, Option<u16>) , Box< dyn std::error::Error + 'static>> {
+    fn read(icc_buf: &mut &[u8]) -> Result<(Option<ColorSpaceSignature>, Option<u16>)> {
         let mut sig =read_be_u32(icc_buf)?;
         let n_channels = if (0x6e630001..=0x6e63ffff).contains(&sig) {
             let n = sig - 0x6e630000;
@@ -412,7 +418,7 @@ impl Default for RenderingIntent {
 }
 
 impl RenderingIntent {
-    fn read(icc_buf: &mut &[u8]) -> Result<Self, Box< dyn std::error::Error + 'static>> {
+    fn read(icc_buf: &mut &[u8]) -> Result<Self> {
         let sig =read_be_u32(icc_buf)?;
         Ok(FromPrimitive::from_u32(sig).ok_or("Illegal rendering intent value")?)
     }
@@ -430,7 +436,7 @@ pub enum SpectralColorSpace {
 }
 
 impl SpectralColorSpace {
-    fn read(icc_buf: &mut &[u8]) -> Result<Option<Self>, Box< dyn std::error::Error + 'static>> {
+    fn read(icc_buf: &mut &[u8]) -> Result<Option<Self>> {
         let sig = read_be_u16(icc_buf)?;
         let ch = read_be_u16(icc_buf)?;
         match sig {
@@ -461,7 +467,7 @@ pub struct WavelengthRange ( RangeInclusive<f64>, usize);
 
 impl WavelengthRange {
 
-    fn read(icc_buf: &mut &[u8]) -> Result<Option<Self>, Box< dyn std::error::Error + 'static>> {
+    fn read(icc_buf: &mut &[u8]) -> Result<Option<Self>> {
         let start = read_be_f16(icc_buf)?.to_f64();
         let end = read_be_f16(icc_buf)?.to_f64();
         let length = read_be_u16(icc_buf)? as usize;

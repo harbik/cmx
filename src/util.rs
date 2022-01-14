@@ -1,6 +1,9 @@
 
-use crate::tag_signatures::TagSignature;
+use crate::signatures::tag::TagSignature;
 use chrono::{DateTime, Datelike, Timelike, Utc};
+
+pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + 'static>>;
+//pub type DError = Box<dyn std::error::Error + 'static>;
 
 pub fn zero_as_none<T: num::Num + num::Zero>(v: T) -> Option<T> {
     if v.is_zero() {
@@ -10,69 +13,69 @@ pub fn zero_as_none<T: num::Num + num::Zero>(v: T) -> Option<T> {
     }
 }
 
-pub fn read_be_f16(input: &mut &[u8]) -> Result<half::f16, Box<dyn std::error::Error + 'static>> {
+pub fn read_be_f16(input: &mut &[u8]) -> Result<half::f16> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<half::f16>());
     *input = rest;
     Ok(half::f16::from_be_bytes(int_bytes.try_into()?))
 }
 
-pub fn read_be_f32(input: &mut &[u8]) -> Result<f32, Box<dyn std::error::Error + 'static>> {
+pub fn read_be_f32(input: &mut &[u8]) -> Result<f32> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<f32>());
     *input = rest;
     Ok(f32::from_be_bytes(int_bytes.try_into()?))
 }
 
-pub fn read_be_f64(input: &mut &[u8]) -> Result<f64, Box<dyn std::error::Error + 'static>> {
+pub fn read_be_f64(input: &mut &[u8]) -> Result<f64> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<f64>());
     *input = rest;
     Ok(f64::from_be_bytes(int_bytes.try_into()?))
 }
 
-pub fn read_u8(input: &mut &[u8]) -> Result<u8, Box<dyn std::error::Error + 'static>> {
+pub fn read_u8(input: &mut &[u8]) -> Result<u8> {
     let (byte, rest) = input.split_at(std::mem::size_of::<u8>());
     *input = rest;
     Ok(byte[0])
 }
 
-pub fn read_be_u16(input: &mut &[u8]) -> Result<u16, Box<dyn std::error::Error + 'static>> {
+pub fn read_be_u16(input: &mut &[u8]) -> Result<u16> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<u16>());
     *input = rest;
     Ok(u16::from_be_bytes(int_bytes.try_into()?))
 }
 
-pub fn read_be_u32(input: &mut &[u8]) -> Result<u32, Box<dyn std::error::Error + 'static>> {
+pub fn read_be_u32(input: &mut &[u8]) -> Result<u32> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<u32>());
     *input = rest;
     Ok(u32::from_be_bytes(int_bytes.try_into()?))
 }
 
 
-pub fn read_be_i32(input: &mut &[u8]) -> Result<i32, Box<dyn std::error::Error + 'static>> {
+pub fn read_be_i32(input: &mut &[u8]) -> Result<i32> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<i32>());
     *input = rest;
     Ok(i32::from_be_bytes(int_bytes.try_into()?))
 }
 
-pub fn read_be_u64(input: &mut &[u8]) -> Result<u64, Box<dyn std::error::Error + 'static>> {
+pub fn read_be_u64(input: &mut &[u8]) -> Result<u64> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<u64>());
     *input = rest;
     Ok(u64::from_be_bytes(int_bytes.try_into()?))
 }
 
-pub fn read_be_u128(input: &mut &[u8]) -> Result<u128, Box<dyn std::error::Error + 'static>> {
+pub fn read_be_u128(input: &mut &[u8]) -> Result<u128> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<u128>());
     *input = rest;
     Ok(u128::from_be_bytes(int_bytes.try_into()?))
 }
 
-pub fn read_version(input: &mut &[u8]) -> Result<[u8;3], Box<dyn std::error::Error + 'static>> {
+pub fn read_version(input: &mut &[u8]) -> Result<[u8;3]> {
     let (version, rest) = input.split_at(std::mem::size_of::<[u8;4]>());
     *input = rest;
     Ok([version[0], version[1]>>4_u8, version[1]&0x0F_u8])
 }
 
 
-pub fn read_date_time(icc_buf: &mut &[u8]) -> Result <Option<chrono::DateTime<chrono::Utc>>, Box<dyn std::error::Error + 'static>> {
+pub fn read_date_time(icc_buf: &mut &[u8]) -> Result <Option<chrono::DateTime<chrono::Utc>>> {
     let year = read_be_u16(icc_buf)?;
     let month = read_be_u16(icc_buf)?;
     let day = read_be_u16(icc_buf)?;
@@ -112,7 +115,7 @@ pub fn datetime_to_be_bytes(dt: Option<DateTime<Utc>>) -> [u8;12] {
 }
 
 
-pub fn read_signature(icc_buf: &mut &[u8]) -> Result<Option<String>, Box<dyn std::error::Error + 'static>>{
+pub fn read_signature(icc_buf: &mut &[u8]) -> Result<Option<String>>{
     let (s, rest) = icc_buf.split_at(std::mem::size_of::<[u8;4]>());
     *icc_buf = rest;
     if s[0]!=0 && s[1]!=0 && s[2]!=0 && s[3]!=0 {
@@ -122,7 +125,7 @@ pub fn read_signature(icc_buf: &mut &[u8]) -> Result<Option<String>, Box<dyn std
     }
 }
 
-pub fn read_tag_signature(icc_buf: &mut &[u8]) -> Result<TagSignature, Box<dyn std::error::Error + 'static>>{
+pub fn read_tag_signature(icc_buf: &mut &[u8]) -> Result<TagSignature>{
     let s = read_be_u32(icc_buf)?;
     /*
     match FromPrimitive::from_u32(s) {
@@ -135,7 +138,7 @@ pub fn read_tag_signature(icc_buf: &mut &[u8]) -> Result<TagSignature, Box<dyn s
     
 }
 
-pub fn read_xyz(icc_buf: &mut &[u8]) -> Result< Option<[f64;3]>, Box<dyn std::error::Error + 'static>> {
+pub fn read_xyz(icc_buf: &mut &[u8]) -> Result< Option<[f64;3]>> {
     let x_i32 = read_be_i32(icc_buf)?;
     let y_i32 = read_be_i32(icc_buf)?;
     let z_i32 = read_be_i32(icc_buf)?;
@@ -165,7 +168,7 @@ pub fn xyz_to_be_bytes(xyz: Option<[f64;3]>) -> [u8;12] {
     }
 }
 
-pub fn read_mcs(icc_buf: &mut &[u8]) -> Result<Option<u16>, Box<dyn std::error::Error + 'static>> {
+pub fn read_mcs(icc_buf: &mut &[u8]) -> Result<Option<u16>> {
     let sig = read_be_u16(icc_buf)?;
     let n = read_be_u16(icc_buf)?;
     if sig==0 || n==0 {
@@ -185,7 +188,7 @@ pub fn mcs_to_be_bytes(n_mcs: Option<u16>) -> [u8;4] {
 }
 
 
-pub fn read_vec(input: &mut &[u8], n: usize) -> Result<Vec<u8>, Box<dyn std::error::Error + 'static>> {
+pub fn read_vec(input: &mut &[u8], n: usize) -> Result<Vec<u8>> {
     if n>input.len() {
         return Err("request exceeds buffer length".into())
     }
@@ -194,7 +197,7 @@ pub fn read_vec(input: &mut &[u8], n: usize) -> Result<Vec<u8>, Box<dyn std::err
     Ok(bytes.to_vec())
 }
 
-pub fn read_vec_u16(input: &mut &[u8], n: usize) -> Result<Vec<u16>, Box<dyn std::error::Error + 'static>> {
+pub fn read_vec_u16(input: &mut &[u8], n: usize) -> Result<Vec<u16>> {
     if n>input.len() {
         return Err("request exceeds buffer length".into())
     }
@@ -207,23 +210,29 @@ pub fn read_vec_u16(input: &mut &[u8], n: usize) -> Result<Vec<u16>, Box<dyn std
     Ok(v)
 }
 
-pub fn read_ascii_string(buf: &mut &[u8], n: usize) -> Result<String, Box<dyn std::error::Error + 'static>> {
+pub fn read_ascii_string(buf: &mut &[u8], n: usize) -> Result<String> {
     let v = read_vec(buf,n)?;
     Ok(std::str::from_utf8(&v)?.trim_end_matches(char::from(0)).to_owned())
 }
 
-pub fn read_unicode_string(buf: &mut &[u8], n: usize) -> Result<String, Box<dyn std::error::Error + 'static>> {
+pub fn read_unicode_string(buf: &mut &[u8], n: usize) -> Result<String> {
     let v = read_vec_u16(buf,n/2)?;
     Ok(String::from_utf16(&v)?.trim_end_matches(char::from(0)).to_owned())
 }
 
-pub fn read_s15fixed16(buf: &mut &[u8]) -> Result<f32, Box<dyn std::error::Error + 'static>> {
+pub fn read_s15fixed16(buf: &mut &[u8]) -> Result<f32> {
     let v_i32 = read_be_i32(buf)?;
     let v = v_i32 as f32/65536.0;
     Ok(v)
 }
 
-pub fn read_s15fixed16_array(buf: &mut &[u8], n: Option<usize>) -> Result<Vec<f32>, Box<dyn std::error::Error + 'static>> {
+pub fn read_u16fixed16(buf: &mut &[u8]) -> Result<f32> {
+    let v_u32 = read_be_u32(buf)?;
+    let v = v_u32 as f32/65536.0;
+    Ok(v)
+}
+
+pub fn read_s15fixed16_array(buf: &mut &[u8], n: Option<usize>) -> Result<Vec<f32>> {
     let n = n.unwrap_or(buf.len());
     if n>buf.len() {
         return Err("request exceeds buffer length".into())

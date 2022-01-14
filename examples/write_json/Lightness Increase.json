@@ -19,8 +19,6 @@
     "use_with_embedded_data_only": false,
     "mcs_needs_subset": false
   },
-  "manufacturer": null,
-  "device": null,
   "attributes": {
     "transparancy": false,
     "matte": false,

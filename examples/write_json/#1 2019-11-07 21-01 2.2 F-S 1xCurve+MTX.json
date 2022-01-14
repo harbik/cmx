@@ -19,8 +19,6 @@
     "use_with_embedded_data_only": false,
     "mcs_needs_subset": false
   },
-  "manufacturer": null,
-  "device": null,
   "attributes": {
     "transparancy": false,
     "matte": false,
@@ -105,37 +103,21 @@
       "tag_signature": "ChromaticityTag",
       "type_signature": "ChromaticityType",
       "data": {
-        "Custom": [
-          "ChromaticityType",
+        "Chromaticity": [
+          "Absolute",
           [
-            0,
-            3,
-            0,
-            0,
-            0,
-            0,
-            166,
-            67,
-            0,
-            0,
-            86,
-            204,
-            0,
-            0,
-            82,
-            53,
-            0,
-            0,
-            154,
-            156,
-            0,
-            0,
-            37,
-            254,
-            0,
-            0,
-            21,
-            177
+            [
+              0.64945984,
+              0.3390503
+            ],
+            [
+              0.32112122,
+              0.6039429
+            ],
+            [
+              0.14840698,
+              0.084732056
+            ]
           ]
         ]
       }
@@ -1807,48 +1789,15 @@
       }
     },
     {
-      "tag_signature": {
-        "VendorTag": "mmod"
-      },
-      "type_signature": "UndefinedType",
+      "tag_signature": "MakeAndModelTag",
+      "type_signature": "MakeAndModelType",
       "data": {
-        "Custom": [
-          "UndefinedType",
-          [
-            0,
-            0,
-            76,
-            45,
-            0,
-            0,
-            5,
-            135,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          ]
-        ]
+        "MakeAndModel": {
+          "manufacturer": 19501,
+          "model": 1415,
+          "serial": 0,
+          "date": 0
+        }
       }
     },
     {

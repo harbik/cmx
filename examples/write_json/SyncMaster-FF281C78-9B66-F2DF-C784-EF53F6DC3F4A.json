@@ -20,7 +20,6 @@
     "mcs_needs_subset": false
   },
   "manufacturer": "APPL",
-  "device": null,
   "attributes": {
     "transparancy": false,
     "matte": false,
@@ -1454,48 +1453,15 @@
       }
     },
     {
-      "tag_signature": {
-        "VendorTag": "mmod"
-      },
-      "type_signature": "UndefinedType",
+      "tag_signature": "MakeAndModelTag",
+      "type_signature": "MakeAndModelType",
       "data": {
-        "Custom": [
-          "UndefinedType",
-          [
-            0,
-            0,
-            76,
-            45,
-            0,
-            0,
-            5,
-            135,
-            77,
-            89,
-            50,
-            52,
-            199,
-            108,
-            38,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          ]
-        ]
+        "MakeAndModel": {
+          "manufacturer": 19501,
+          "model": 1415,
+          "serial": 1297691188,
+          "date": 3345753600
+        }
       }
     },
     {
