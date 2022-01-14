@@ -35,6 +35,7 @@ pub enum TagData {
     Measurement(Measurement), // 'meas'
     MultiLocalizedUnicode(MultiLocalizedUnicode), // 'mluc'
     MultiProcessElements(Vec<u8>), // 'mpet'
+    NamedColor2(NamedColor2), // 'ncl2'
     ParametricCurve(ParametricCurve), // 'para'
     S15Fixed16Array(Vec<f32>), // 'sf32'
     Signature([u8;4]), // 'sig'
@@ -52,6 +53,7 @@ pub enum TagData {
     Utf8(Vec<String>), // 'utf8'
     Utf16(Vec<String>), // 'ut16'
     Utf8Zip(Vec<String>), // 'zut8'
+    Vcgt(Vcgt), // 'vcgt'
     ViewingConditions(ViewingConditions),
     XYZ(XYZ), // 'XYZ'
     Custom(TagTypeSignature, Vec<u8>), // unknown data type
@@ -59,9 +61,13 @@ pub enum TagData {
 
 impl Tag {
     pub fn try_new(tag_signature: TagSignature, buf: &mut &[u8]) -> Result<Self, Box< dyn std::error::Error + 'static>> {
-        let type_signature = match FromPrimitive::from_u32(read_be_u32(buf)?) {
+        let t = read_be_u32(buf)?;
+        let type_signature = match FromPrimitive::from_u32(t) {
             Some(c) => c,
-            None => TagTypeSignature::UndefinedType,
+            None => {
+           //     println!("undefined tag type {:x?} {:?}", t, std::str::from_utf8(&t.to_be_bytes())?);
+                TagTypeSignature::UndefinedType
+            }
         };
         let _reserved = read_be_u32(buf)?;
         Ok(Self {
@@ -153,7 +159,7 @@ impl Measurement {
 }
 
 #[derive(Debug, Serialize)]
-pub struct MultiLocalizedUnicode(Vec<(CountryCode, Language, String)>);
+pub struct MultiLocalizedUnicode(Vec<(Option<CountryCode>, Language, String)>);
 
 impl MultiLocalizedUnicode {
     pub fn try_new(buf: &mut &[u8]) -> Result<Self, Box<dyn std::error::Error + 'static>> {
@@ -174,7 +180,7 @@ impl MultiLocalizedUnicode {
         let mut mlu = Vec::new();
         for (lang, country, start, length) in pos {
             mlu.push((
-                CountryCode::for_alpha2_caseless(country.as_str())?,
+                CountryCode::for_alpha2_caseless(country.as_str()).ok(),
                 Language::from_639_1(lang.as_str()).unwrap(),
                 String::from_utf16(&data[start/2..start/2+length/2])?  
             ));
@@ -182,8 +188,39 @@ impl MultiLocalizedUnicode {
 
         Ok(Self(mlu))
     }
-
 }
+
+#[derive(Debug, Serialize)]
+pub struct NamedColor2 {
+    pub flags: u32,
+    pub prefix: String,
+    pub suffix: String,
+    pub colors: Vec<(String, Vec<u16>, Vec<u16>)>
+}
+
+impl NamedColor2{
+    pub fn try_new(buf: &mut &[u8], dim_pcs: usize) -> Result<Self, Box<dyn std::error::Error + 'static>> {
+        let flags = read_be_u32(buf)?;
+        let count = read_be_u32(buf)? as usize;
+        let device_coordinates= read_be_u32(buf)? as usize;
+        let prefix = read_ascii_string(buf, 32)?;
+        let suffix = read_ascii_string(buf, 32)?;
+        let mut colors = Vec::with_capacity(count);
+        for _ in 0..count {
+            let root = read_ascii_string(buf, 32)?;
+            let pcs = read_vec_u16(buf, 2*dim_pcs)?;
+            let device = read_vec_u16(buf, 2*device_coordinates)?;
+            colors.push((root, pcs, device));
+        }
+        Ok( Self{
+            flags,
+            prefix,
+            suffix,
+            colors,
+        })
+    }
+}
+
 
 #[derive(Debug, Serialize)]
 pub enum ParametricCurve {
@@ -273,6 +310,90 @@ impl ParametricCurve{
 }
 
 pub struct Text(String);
+
+#[derive(Debug, Serialize)]
+pub enum Vcgt {
+    Table(VcgtTable),
+    Formula(VcgtFormula),
+}
+
+#[derive(Debug, Serialize)]
+pub struct VcgtTable {
+    pub channels: u16,
+    pub entry_count: u16,
+  //  pub entry_size: u16,
+    pub data: VcgtLutData,
+}
+
+impl VcgtTable {
+    pub fn try_new(buf: &mut &[u8]) -> Result<Self, Box<dyn std::error::Error + 'static>> {
+        let n_ch = read_be_u16(buf)?;
+        let entry_count  = read_be_u16(buf)?;
+        let entry_size  = read_be_u16(buf)?;
+        let data = match entry_size {
+            1 => {
+                VcgtLutData::Bit8(read_vec(buf, buf.len())?)
+            }
+            2 => {
+                VcgtLutData::Bit16(read_vec_u16(buf, buf.len())?)
+            }
+            _ => return Err("entry_size error in VcgtTable".into())
+        };
+        Ok(VcgtTable{
+            channels: n_ch,
+            entry_count,
+   //         entry_size,
+            data
+        })
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub enum VcgtLutData {
+    Bit8(Vec<u8>),
+    Bit16(Vec<u16>),
+}
+
+#[derive(Debug, Serialize)]
+pub struct VcgtFormula {
+    pub red_gamma: f32,
+    pub red_min: f32,
+    pub red_max: f32,
+    pub green_gamma: f32,
+    pub green_min: f32,
+    pub green_max: f32,
+    pub blue_gamma: f32,
+    pub blue_min: f32,
+    pub blue_max: f32,
+}
+
+impl VcgtFormula {
+    pub fn try_new(buf: &mut &[u8]) -> Result<Self, Box<dyn std::error::Error + 'static>> {
+        Ok(Self {
+            red_gamma: read_s15fixed16(buf)?,
+            red_min: read_s15fixed16(buf)?,
+            red_max: read_s15fixed16(buf)?,
+            green_gamma: read_s15fixed16(buf)?,
+            green_min: read_s15fixed16(buf)?,
+            green_max: read_s15fixed16(buf)?,
+            blue_gamma: read_s15fixed16(buf)?,
+            blue_min: read_s15fixed16(buf)?,
+            blue_max: read_s15fixed16(buf)?,
+        })
+    }
+
+}
+
+impl Vcgt {
+    pub fn try_new(buf: &mut &[u8]) -> Result<Self, Box<dyn std::error::Error + 'static>> {
+        let vcgt_type = read_be_u32(buf)?;
+        match vcgt_type {
+            0 => Ok(Self::Table(VcgtTable::try_new(buf)?)),
+            1 => Ok(Self::Formula(VcgtFormula::try_new(buf)?)),
+            _ => todo!(),
+        }
+    }
+}
 
 #[derive(Debug, Serialize)]
 #[serde(default)]
@@ -379,6 +500,9 @@ impl TagData {
             (_, TagTypeSignature::MultiLocalizedUnicodeType) => {
                 Ok(Self::MultiLocalizedUnicode(MultiLocalizedUnicode::try_new(buf)?))
             },
+            (_, TagTypeSignature::NamedColor2Type) => {
+                Ok(Self::NamedColor2(NamedColor2::try_new(buf, 3)?)) // TODO! pcs size???
+            },
             (_, TagTypeSignature::ParametricCurveType) => {
                 Ok(Self::ParametricCurve(ParametricCurve::try_new(buf)?))
             },
@@ -406,6 +530,9 @@ impl TagData {
                 }
                 Ok(Self::XYZ(XYZ(v)))
 
+            },
+            (TagSignature::VcgtTag, TagTypeSignature::VcgtType) => { 
+                Ok(Self::Vcgt(Vcgt::try_new(buf)?))
             },
             (TagSignature::TechnologyTag, TagTypeSignature::SignatureType) => {
                 Ok(Self::Technology(FromPrimitive::from_u32(read_be_u32(buf)?).unwrap_or_default()))
@@ -465,6 +592,7 @@ pub enum TagTypeSignature {
     UInt64ArrayType                = 0x75693634,  /* 'ui64' */
     UInt8ArrayType                 = 0x75693038,  /* 'ui08' */
     ViewingConditionsType          = 0x76696577,  /* 'view' */
+    VcgtType                       = 0x76636774,  /* 'vcgt' not icc, defacto standard, used for tag and type */
     Utf8TextType                   = 0x75746638,  /* 'utf8' */
     Utf16TextType                  = 0x75743136,  /* 'ut16' */
     /* XYZType                      = 0x58595A20, // 'XYZ ' Name changed to XYZArrayType */ 

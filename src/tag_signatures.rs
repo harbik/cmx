@@ -128,6 +128,7 @@ pub enum TagSignature {
     SurfaceMapTag                     ,  /* 'smap' */
     TechnologyTag                     ,  /* 'tech' */
     UcrBgTag                          ,  /* 'bfd ' Removed in V4 */
+    VcgtTag                           ,  /* 'vcgt' Not icc, defacto industry standard */
     ViewingCondDescTag                ,  /* 'vued' */
     ViewingConditionsTag              ,  /* 'view' */
     EmbeddedV5ProfileTag              ,  /* 'ICC5' */
@@ -257,6 +258,7 @@ impl TagSignature {
             0x736D6170 => Self::SurfaceMapTag,
             0x74656368 => Self::TechnologyTag,
             0x62666420 => Self::UcrBgTag,
+            0x76636774 => Self::VcgtTag,
             0x76756564 => Self::ViewingCondDescTag,
             0x76696577 => Self::ViewingConditionsTag,
             0x49434335 => Self::EmbeddedV5ProfileTag,
