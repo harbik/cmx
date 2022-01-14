@@ -128,11 +128,17 @@ pub enum TagSignature {
     SurfaceMapTag                     ,  /* 'smap' */
     TechnologyTag                     ,  /* 'tech' */
     UcrBgTag                          ,  /* 'bfd ' Removed in V4 */
-    VcgtTag                           ,  /* 'vcgt' Not icc, defacto industry standard */
     ViewingCondDescTag                ,  /* 'vued' */
     ViewingConditionsTag              ,  /* 'view' */
     EmbeddedV5ProfileTag              ,  /* 'ICC5' */
+
+    // PRIVATE TAGS
+
+    // Apple
+    AppleMultilocalizedDescriptionStringTag, /* dscm */
+    VcgtTag                           ,  /* 'vcgt' Not icc, defacto industry standard */
 }
+
 
 impl TagSignature {
     pub fn new(sig: u32) -> Self {
@@ -258,12 +264,27 @@ impl TagSignature {
             0x736D6170 => Self::SurfaceMapTag,
             0x74656368 => Self::TechnologyTag,
             0x62666420 => Self::UcrBgTag,
-            0x76636774 => Self::VcgtTag,
             0x76756564 => Self::ViewingCondDescTag,
             0x76696577 => Self::ViewingConditionsTag,
             0x49434335 => Self::EmbeddedV5ProfileTag,
+
+            // PRIVATE TAGS
+
+            // Apple
+            0x6473636d => Self::AppleMultilocalizedDescriptionStringTag, 
+            0x76636774 => Self::VcgtTag, /* Video Card Graphics Table  */
+
             _ => Self::VendorTag(std::str::from_utf8(&sig.to_be_bytes()).unwrap().to_owned())
 
         }
     }
+}
+
+#[test]
+fn test_str_to_u32(){
+    let s = "Lino";
+    let v = u32::from_be_bytes(s.as_bytes().try_into().unwrap());
+    println!("{:?} {:?} {:x?}", s, v, v);
+
+
 }

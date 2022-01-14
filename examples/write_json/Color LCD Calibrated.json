@@ -1,5 +1,5 @@
 {
-  "cmm": "appl",
+  "cmm": "Apple",
   "version": [
     2,
     1,
@@ -45,9 +45,7 @@
       }
     },
     {
-      "tag_signature": {
-        "VendorTag": "dscm"
-      },
+      "tag_signature": "AppleMultilocalizedDescriptionStringTag",
       "type_signature": "MultiLocalizedUnicodeType",
       "data": {
         "MultiLocalizedUnicode": [
