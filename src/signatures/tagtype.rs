@@ -28,6 +28,7 @@ pub enum TagTypeSignature {
     MultiLocalizedUnicodeType      = 0x6D6C7563,  /* 'mluc' */
     MultiProcessElementType        = 0x6D706574,  /* 'mpet' */
     NamedColor2Type                = 0x6E636C32,  /* 'ncl2' use v2-v4*/
+    NativeDisplayInfoType          = 0x6e64696e,  /* 'ndin' Apple Private Tag*/
     ParametricCurveType            = 0x70617261,  /* 'para' */
     ProfileSequenceDescType        = 0x70736571,  /* 'pseq' */
     ProfileSequceIdType            = 0x70736964,  /* 'psid' */
@@ -50,6 +51,7 @@ pub enum TagTypeSignature {
     UInt64ArrayType                = 0x75693634,  /* 'ui64' */
     UInt8ArrayType                 = 0x75693038,  /* 'ui08' */
     ViewingConditionsType          = 0x76696577,  /* 'view' */
+    VcgpType                       = 0x76636770,  /* 'vcgp' not icc, defacto standard, used for tag and type */
     VcgtType                       = 0x76636774,  /* 'vcgt' not icc, defacto standard, used for tag and type */
     Utf8TextType                   = 0x75746638,  /* 'utf8' */
     Utf16TextType                  = 0x75743136,  /* 'ut16' */

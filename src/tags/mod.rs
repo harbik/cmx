@@ -5,12 +5,14 @@ pub mod make_model;
 pub mod measurement;
 pub mod multi_localized_unicode;
 pub mod named_color2;
+pub mod native_display_info;
 pub mod parametric_curve;
 pub mod text_description;
 pub mod vcgt;
+pub mod vcgp;
 pub mod viewing_conditions;
 
-use crate::{util::*, signatures::tag::TagSignature, signatures::tagtype::TagTypeSignature, signatures::technology::TechnologySignature};
+use crate::{common::*, signatures::tag::TagSignature, signatures::tagtype::TagTypeSignature, signatures::technology::TechnologySignature};
 use num::FromPrimitive;
 use serde::Serialize;
 
@@ -62,6 +64,7 @@ pub enum TagData {
     MakeAndModel(MakeAndModel), // 'mmod'
     MultiLocalizedUnicode(MultiLocalizedUnicode), // 'mluc'
     MultiProcessElements(Vec<u8>), // 'mpet'
+    NativeDisplayInfo(NativeDisplayInfo),
     NamedColor2(NamedColor2), // 'ncl2'
     ParametricCurve(ParametricCurve), // 'para'
     S15Fixed16Array(Vec<f32>), // 'sf32'
@@ -81,6 +84,7 @@ pub enum TagData {
     Utf16(Vec<String>), // 'ut16'
     Utf8Zip(Vec<String>), // 'zut8'
     Vcgt(Vcgt), // 'vcgt'
+    Vcgp(Vcgp), // 'vcgt'
     ViewingConditions(ViewingConditions),
     XYZ(XYZ), // 'XYZ'
     Custom(TagTypeSignature, Vec<u8>), // unknown data type
@@ -143,6 +147,9 @@ impl TagData {
             (_, TagTypeSignature::MultiLocalizedUnicodeType) => {
                 Ok(Self::MultiLocalizedUnicode(MultiLocalizedUnicode::try_new(buf)?))
             },
+            (_, TagTypeSignature::NativeDisplayInfoType) => {
+                Ok(Self::NativeDisplayInfo(NativeDisplayInfo::try_new(buf)?))
+            },
             (_, TagTypeSignature::NamedColor2Type) => {
                 Ok(Self::NamedColor2(NamedColor2::try_new(buf, 3)?)) // TODO! pcs size???
             },
@@ -176,6 +183,9 @@ impl TagData {
             },
             (TagSignature::VcgtTag, TagTypeSignature::VcgtType) => { 
                 Ok(Self::Vcgt(Vcgt::try_new(buf)?))
+            },
+            (TagSignature::VcgpTag, TagTypeSignature::VcgpType) => { 
+                Ok(Self::Vcgp(Vcgp::try_new(buf)?))
             },
             (TagSignature::TechnologyTag, TagTypeSignature::SignatureType) => {
                 Ok(Self::Technology(FromPrimitive::from_u32(read_be_u32(buf)?).unwrap_or_default()))
@@ -224,6 +234,8 @@ use multi_localized_unicode::MultiLocalizedUnicode;
 
 use named_color2::NamedColor2;
 
+use native_display_info::NativeDisplayInfo;
+
 use parametric_curve::ParametricCurve;
 #[derive(Debug, Serialize)]
 pub struct Text(String);
@@ -231,6 +243,8 @@ pub struct Text(String);
 use text_description::TextDescription;
 
 use vcgt::Vcgt;
+
+use vcgp::Vcgp;
 
 use viewing_conditions::ViewingConditions;
 

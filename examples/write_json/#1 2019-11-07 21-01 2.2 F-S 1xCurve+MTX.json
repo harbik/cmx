@@ -81,9 +81,7 @@
       }
     },
     {
-      "tag_signature": {
-        "VendorTag": "arts"
-      },
+      "tag_signature": "AbsToRelTransSpaceTag",
       "type_signature": "S15Fixed16ArrayType",
       "data": {
         "S15Fixed16Array": [

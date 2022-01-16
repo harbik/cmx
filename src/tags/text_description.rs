@@ -1,6 +1,8 @@
-use crate::util::*;
+use crate::common::*;
 use serde::Serialize;
 use num::Zero;
+
+// DEPRECATED_IN_MAC_OS_X_VERSION_10_6_AND_LATER
 
 #[derive(Debug, Serialize)]
 #[serde(default)]

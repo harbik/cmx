@@ -1,4 +1,4 @@
-use crate::util::*;
+use crate::common::*;
 use serde::Serialize;
 
 
@@ -13,7 +13,7 @@ pub struct VcgtTable {
     pub channels: u16,
     pub entry_count: u16,
   //  pub entry_size: u16,
-    pub data: VcgtLutData,
+    pub data: Lut,
 }
 
 impl VcgtTable {
@@ -23,10 +23,10 @@ impl VcgtTable {
         let entry_size  = read_be_u16(buf)?;
         let data = match entry_size {
             1 => {
-                VcgtLutData::Bit8(read_vec(buf, buf.len())?)
+                Lut::Bit8(read_vec(buf, buf.len())?)
             }
             2 => {
-                VcgtLutData::Bit16(read_vec_u16(buf, buf.len())?)
+                Lut::Bit16(read_vec_u16(buf, buf.len())?)
             }
             _ => return Err("entry_size error in VcgtTable".into())
         };
@@ -39,11 +39,6 @@ impl VcgtTable {
     }
 }
 
-#[derive(Debug, Serialize)]
-pub enum VcgtLutData {
-    Bit8(Vec<u8>),
-    Bit16(Vec<u16>),
-}
 
 #[derive(Debug, Serialize)]
 pub struct VcgtFormula {

@@ -136,8 +136,13 @@ pub enum TagSignature {
 
     // Apple
     MakeAndModelTag                   , /* mmod */
-    AppleMultilocalizedDescriptionStringTag, /* dscm */
+    MultilocalizedDescriptionStringTag, /* dscm */
+    NativeDisplayInfoTag              ,  /* 'ndin' */
     VcgtTag                           ,  /* 'vcgt' Not icc, defacto industry standard */
+    VcgpTag                           ,  /* 'vcgp' Not icc, defacto industry standard */
+
+    // ArgyllCMS
+    AbsToRelTransSpaceTag             , /* arts */
 }
 
 
@@ -219,7 +224,6 @@ impl TagSignature {
             0x6758595A => Self::GreenMatrixColumnTag,
             0x67545243 => Self::GreenTRCTag,
             0x6C756d69 => Self::LuminanceTag,
-            0x6d6d6f64 => Self::MakeAndModelTag,
             0x6D647620 => Self::MaterialDefaultValuesTag,
             0x6d637461 => Self::MaterialTypeArrayTag,
             0x4d324130 => Self::MToA0Tag,
@@ -273,8 +277,15 @@ impl TagSignature {
             // PRIVATE TAGS
 
             // Apple
-            0x6473636d => Self::AppleMultilocalizedDescriptionStringTag, 
+            0x6d6d6f64 => Self::MakeAndModelTag,
+            0x6473636d => Self::MultilocalizedDescriptionStringTag, 
+            0x6e64696e => Self::NativeDisplayInfoTag,
+            0x76636770 => Self::VcgpTag, /* Video Card Graphics Table  */
             0x76636774 => Self::VcgtTag, /* Video Card Graphics Table  */
+
+
+            // ArgyllCMS
+            0x61727473 => Self::AbsToRelTransSpaceTag, // https://www.argyllcms.com/doc/ArgyllCMS_arts_tag.html
 
             _ => Self::VendorTag(std::str::from_utf8(&sig.to_be_bytes()).unwrap().to_owned())
 
@@ -284,7 +295,7 @@ impl TagSignature {
 
 #[test]
 fn test_str_to_u32(){
-    let s = "mmod";
+    let s = "vcgp";
     let v = u32::from_be_bytes(s.as_bytes().try_into().unwrap());
     println!("{:?} {:?} {:x?}", s, v, v);
 

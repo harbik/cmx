@@ -16,10 +16,7 @@
   limitations under the License.
 */
 
-pub mod util;
+pub mod common;
 pub mod profile;
 pub mod tags;
 pub mod signatures;
-//pub mod tag_signatures;
-//pub mod tagtype_signatures;
-//pub mod cmm_signatures;

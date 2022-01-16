@@ -5,6 +5,12 @@ use chrono::{DateTime, Datelike, Timelike, Utc};
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + 'static>>;
 //pub type DError = Box<dyn std::error::Error + 'static>;
 
+#[derive(Debug, serde::Serialize)]
+pub enum Lut {
+    Bit8(Vec<u8>),
+    Bit16(Vec<u16>),
+}
+
 pub fn zero_as_none<T: num::Num + num::Zero>(v: T) -> Option<T> {
     if v.is_zero() {
         None

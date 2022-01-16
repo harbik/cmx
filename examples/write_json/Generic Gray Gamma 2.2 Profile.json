@@ -44,7 +44,7 @@
       }
     },
     {
-      "tag_signature": "AppleMultilocalizedDescriptionStringTag",
+      "tag_signature": "MultilocalizedDescriptionStringTag",
       "type_signature": "MultiLocalizedUnicodeType",
       "data": {
         "MultiLocalizedUnicode": [

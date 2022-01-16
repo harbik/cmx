@@ -1,8 +1,10 @@
 
-use crate::util::*;
+use crate::common::*;
 use serde::Serialize;
 use super::measurement::StandardIlluminant;
 use num::FromPrimitive;
+
+// DEPRECATED_IN_MAC_OS_X_VERSION_10_6_AND_LATER
 
 #[derive(Debug, Serialize)]
 pub struct ViewingConditions {

@@ -44,7 +44,7 @@
       }
     },
     {
-      "tag_signature": "AppleMultilocalizedDescriptionStringTag",
+      "tag_signature": "MultilocalizedDescriptionStringTag",
       "type_signature": "MultiLocalizedUnicodeType",
       "data": {
         "MultiLocalizedUnicode": [
@@ -1184,70 +1184,30 @@
       }
     },
     {
-      "tag_signature": {
-        "VendorTag": "ndin"
-      },
-      "type_signature": "UndefinedType",
+      "tag_signature": "NativeDisplayInfoTag",
+      "type_signature": "NativeDisplayInfoType",
       "data": {
-        "Custom": [
-          "UndefinedType",
-          [
-            0,
-            0,
-            0,
-            54,
-            0,
-            0,
-            174,
-            0,
-            0,
-            0,
-            82,
-            0,
-            0,
-            0,
-            67,
-            192,
-            0,
-            0,
-            176,
-            192,
-            0,
-            0,
-            38,
-            64,
-            0,
-            0,
-            14,
-            64,
-            0,
-            0,
-            79,
-            64,
-            0,
-            0,
-            84,
-            64,
-            0,
-            2,
-            51,
-            51,
-            0,
-            2,
-            51,
-            51,
-            0,
-            2,
-            51,
-            51,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          ]
-        ]
+        "NativeDisplayInfo": {
+          "red_phosphor": [
+            0.6796875,
+            0.3203125
+          ],
+          "green_phosphor": [
+            0.26464844,
+            0.6904297
+          ],
+          "blue_phosphor": [
+            0.14941406,
+            0.055664062
+          ],
+          "white_point": [
+            0.3095703,
+            0.32910156
+          ],
+          "red_gamma_value": 2.199997,
+          "green_gamma_value": 2.199997,
+          "blue_gamma_value": 2.199997
+        }
       }
     },
     {

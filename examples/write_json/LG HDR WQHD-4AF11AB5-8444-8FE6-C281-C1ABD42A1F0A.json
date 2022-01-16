@@ -44,7 +44,7 @@
       }
     },
     {
-      "tag_signature": "AppleMultilocalizedDescriptionStringTag",
+      "tag_signature": "MultilocalizedDescriptionStringTag",
       "type_signature": "MultiLocalizedUnicodeType",
       "data": {
         "MultiLocalizedUnicode": [
@@ -1369,70 +1369,30 @@
       }
     },
     {
-      "tag_signature": {
-        "VendorTag": "ndin"
-      },
-      "type_signature": "UndefinedType",
+      "tag_signature": "NativeDisplayInfoTag",
+      "type_signature": "NativeDisplayInfoType",
       "data": {
-        "Custom": [
-          "UndefinedType",
-          [
-            0,
-            0,
-            0,
-            54,
-            0,
-            0,
-            163,
-            215,
-            0,
-            0,
-            84,
-            123,
-            0,
-            0,
-            76,
-            205,
-            0,
-            0,
-            153,
-            154,
-            0,
-            0,
-            38,
-            102,
-            0,
-            0,
-            15,
-            92,
-            0,
-            0,
-            80,
-            15,
-            0,
-            0,
-            84,
-            59,
-            0,
-            2,
-            51,
-            51,
-            0,
-            2,
-            51,
-            51,
-            0,
-            2,
-            51,
-            51,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          ]
-        ]
+        "NativeDisplayInfo": {
+          "red_phosphor": [
+            0.6399994,
+            0.33000183
+          ],
+          "green_phosphor": [
+            0.30000305,
+            0.6000061
+          ],
+          "blue_phosphor": [
+            0.1499939,
+            0.05999756
+          ],
+          "white_point": [
+            0.31272888,
+            0.32902527
+          ],
+          "red_gamma_value": 2.199997,
+          "green_gamma_value": 2.199997,
+          "blue_gamma_value": 2.199997
+        }
       }
     },
     {
@@ -1465,14 +1425,11 @@
       }
     },
     {
-      "tag_signature": {
-        "VendorTag": "vcgp"
-      },
-      "type_signature": "UndefinedType",
+      "tag_signature": "VcgpTag",
+      "type_signature": "VcgpType",
       "data": {
-        "Custom": [
-          "UndefinedType",
-          [
+        "Vcgp": {
+          "tbd": [
             0,
             3,
             0,
@@ -1522,7 +1479,7 @@
             52,
             0
           ]
-        ]
+        }
       }
     },
     {
