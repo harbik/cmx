@@ -16,7 +16,10 @@
   limitations under the License.
 */
 
-pub mod common;
 pub mod profile;
+pub mod header;
 pub mod tags;
-pub mod signatures;
+pub mod types;
+pub mod error;
+
+pub use error::Error;

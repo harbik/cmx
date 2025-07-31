@@ -1,40 +1,38 @@
-
 #[derive(Debug, serde::Serialize)]
-pub enum  CmmSignature {
-    Adobe            ,  /* 'ADBE' */
-    Agfa             ,  /* 'ACMS' */
-    Apple            ,  /* 'appl' */
-    ColorGear        ,  /* 'CCMS' */
-    ColorGearLite    ,  /* 'UCCM' */
-    ColorGearC       ,  /* 'UCMS' */
-    EFI              ,  /* 'EFI ' */
-    ExactScan        ,  /* 'EXAC' */
-    FujiFilm         ,  /* 'FF  ' */
-    HarlequinRIP     ,  /* 'HCMM' */
-    ArgyllCMS        ,  /* 'argl' */
-    Lino             ,  /* 'Lino' */
-    LogoSync         ,  /* 'LgoS' */
-    Heidelberg       ,  /* 'HDM ' */
-    LittleCMS        ,  /* 'lcms' */
-    Kodak            ,  /* 'KCMS' */
-    KonicaMinolta    ,  /* 'MCML' */
-    WindowsCMS       ,  /* 'WCS ' */
-    Mutoh            ,  /* 'SIGN' */
-    OnyxGraphics     ,  /* 'ONYX' */
-    RefIccMAX        ,  /* 'RIMX' */
-    DemoIccMAX       ,  /* 'DIMX' */
-    RolfGierling     ,  /* 'RGMS' */
-    SampleICC        ,  /* 'SICC' */
-    Toshiba          ,  /* 'TCMM' */
-    TheImagingFactory,  /* '32BT' */
-    Vivo             ,  /* 'VIVO' */
-    WareToGo         ,  /* 'WTG ' */
-    Zoran            ,  /* 'zc00' */
-    Unknown(String)
+pub enum CmmSignature {
+    Adobe,             /* 'ADBE' */
+    Agfa,              /* 'ACMS' */
+    Apple,             /* 'appl' */
+    ColorGear,         /* 'CCMS' */
+    ColorGearLite,     /* 'UCCM' */
+    ColorGearC,        /* 'UCMS' */
+    EFI,               /* 'EFI ' */
+    ExactScan,         /* 'EXAC' */
+    FujiFilm,          /* 'FF  ' */
+    HarlequinRIP,      /* 'HCMM' */
+    ArgyllCMS,         /* 'argl' */
+    Lino,              /* 'Lino' */
+    LogoSync,          /* 'LgoS' */
+    Heidelberg,        /* 'HDM ' */
+    LittleCMS,         /* 'lcms' */
+    Kodak,             /* 'KCMS' */
+    KonicaMinolta,     /* 'MCML' */
+    WindowsCMS,        /* 'WCS ' */
+    Mutoh,             /* 'SIGN' */
+    OnyxGraphics,      /* 'ONYX' */
+    RefIccMAX,         /* 'RIMX' */
+    DemoIccMAX,        /* 'DIMX' */
+    RolfGierling,      /* 'RGMS' */
+    SampleICC,         /* 'SICC' */
+    Toshiba,           /* 'TCMM' */
+    TheImagingFactory, /* '32BT' */
+    Vivo,              /* 'VIVO' */
+    WareToGo,          /* 'WTG ' */
+    Zoran,             /* 'zc00' */
+    Unknown(String),
 }
 
 impl CmmSignature {
-
     pub fn new(sig: u32) -> Option<Self> {
         match sig {
             0x00000000 => None,
@@ -67,7 +65,9 @@ impl CmmSignature {
             0x7669766F => Some(Self::Vivo),
             0x57544720 => Some(Self::WareToGo),
             0x7a633030 => Some(Self::Zoran),
-            n @ _  => Some(Self::Unknown(std::str::from_utf8(&n.to_be_bytes()).unwrap().to_string())),
+            n @ _ => Some(Self::Unknown(
+                std::str::from_utf8(&n.to_be_bytes()).unwrap().to_string(),
+            )),
         }
     }
 }

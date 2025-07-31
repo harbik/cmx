@@ -1,12 +1,12 @@
-use crate::common::*;
-use serde::Serialize;
+use crate::types::common::*;
 use num::Zero;
+use serde::Serialize;
 
 // DEPRECATED_IN_MAC_OS_X_VERSION_10_6_AND_LATER
 
 #[derive(Debug, Serialize)]
 #[serde(default)]
-pub struct TextDescription{
+pub struct TextDescription {
     pub ascii: String,
     #[serde(skip_serializing_if = "u32::is_zero")]
     pub unicode_language_code: u32,
@@ -27,13 +27,13 @@ impl TextDescription {
         let unicode = read_unicode_string(buf, m)?;
         let scriptcode_code = read_be_u16(buf)?;
         let l = read_u8(buf)? as usize;
-        let scriptcode= read_ascii_string(buf, l)?;
-        Ok(TextDescription{
+        let scriptcode = read_ascii_string(buf, l)?;
+        Ok(TextDescription {
             ascii,
             unicode_language_code,
             unicode,
             scriptcode_code,
-            scriptcode
+            scriptcode,
         })
     }
 }

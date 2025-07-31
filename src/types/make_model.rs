@@ -1,6 +1,5 @@
-use crate::common::*;
+use crate::types::common::*;
 use serde::Serialize;
-
 
 // DEPRECATED_IN_MAC_OS_X_VERSION_10_6_AND_LATER
 
@@ -14,7 +13,7 @@ pub struct MakeAndModel {
 
 impl MakeAndModel {
     pub fn try_new(buf: &mut &[u8]) -> Result<Self> {
-        let manufacturer =read_be_u32(buf)?;
+        let manufacturer = read_be_u32(buf)?;
         let model = read_be_u32(buf)?;
         let serial = read_be_u32(buf)?;
         let date = read_be_u32(buf)?;
@@ -22,12 +21,11 @@ impl MakeAndModel {
         let _reserved2 = read_be_u32(buf)?;
         let _reserved3 = read_be_u32(buf)?;
         let _reserved4 = read_be_u32(buf)?;
-    Ok(Self{
-        manufacturer,
-        model,
-        serial,
-        date,
+        Ok(Self {
+            manufacturer,
+            model,
+            serial,
+            date,
         })
     }
 }
-

@@ -9,15 +9,19 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-chrono = { version = "0.4", features = ["serde"] }
-num = "0.4"
-num-derive = "0.3"
-num-traits = "0.2"
-half = {version = "1.8", features = ["serde"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-isolang = { version = "2.1", features = ["serde"] }
-isocountry = "0.3"
+chrono = { version = "0.4.19", features = ["serde"] }
+num = "0.4.0"
+num-derive = "0.4"
+num-traits = "0.2.14"
+half = { version = "2.6", features = ["serde"] }
+serde = { version = "1.0.125", features = ["derive"] }
+serde_json = "1.0.64"
+isolang = { version = "2.0", features = ["serde"] }
+isocountry = "0.3.2"
+indexmap = { version = "2.10.0", features = ["serde"] }
+thiserror = "2.0.12"
+zerocopy = { version = "0.8.26", features = ["derive"] }
 
 [dev-dependencies]
-glob = "0.3"
+glob = "0.3.0"
+

@@ -1,6 +1,5 @@
-use crate::common::*;
+use crate::types::common::*;
 use serde::Serialize;
-
 
 #[derive(Debug, Serialize)]
 pub enum Vcgt {
@@ -12,33 +11,28 @@ pub enum Vcgt {
 pub struct VcgtTable {
     pub channels: u16,
     pub entry_count: u16,
-  //  pub entry_size: u16,
+    //  pub entry_size: u16,
     pub data: Lut,
 }
 
 impl VcgtTable {
     pub fn try_new(buf: &mut &[u8]) -> Result<Self> {
         let n_ch = read_be_u16(buf)?;
-        let entry_count  = read_be_u16(buf)?;
-        let entry_size  = read_be_u16(buf)?;
+        let entry_count = read_be_u16(buf)?;
+        let entry_size = read_be_u16(buf)?;
         let data = match entry_size {
-            1 => {
-                Lut::Bit8(read_vec(buf, buf.len())?)
-            }
-            2 => {
-                Lut::Bit16(read_vec_u16(buf, buf.len())?)
-            }
-            _ => return Err("entry_size error in VcgtTable".into())
+            1 => Lut::Bit8(read_vec(buf, buf.len())?),
+            2 => Lut::Bit16(read_vec_u16(buf, buf.len())?),
+            _ => return Err("entry_size error in VcgtTable".into()),
         };
-        Ok(VcgtTable{
+        Ok(VcgtTable {
             channels: n_ch,
             entry_count,
-   //         entry_size,
-            data
+            //         entry_size,
+            data,
         })
     }
 }
-
 
 #[derive(Debug, Serialize)]
 pub struct VcgtFormula {
@@ -67,7 +61,6 @@ impl VcgtFormula {
             blue_max: read_s15fixed16(buf)?,
         })
     }
-
 }
 
 impl Vcgt {

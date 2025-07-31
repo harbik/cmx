@@ -1,4 +1,4 @@
-use crate::common::*;
+use crate::types::common::*;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -18,11 +18,11 @@ impl Lut8 {
         let m = read_u8(buf)? as usize;
         let k = read_u8(buf)? as usize;
         let _ = read_u8(buf)?; // padding
-        let e_mat = read_s15fixed16_array(buf,36.into())?;
-        let input_lut = read_vec(buf, (n*256).into())?;
+        let e_mat = read_s15fixed16_array(buf, 36.into())?;
+        let input_lut = read_vec(buf, (n * 256).into())?;
         let n_i32 = (n as i32).try_into()?;
-        let multi_lut = read_vec(buf, (k.pow(n_i32)*m).into())?;
-        let output_lut = read_vec(buf, (m*256).into())?;
+        let multi_lut = read_vec(buf, (k.pow(n_i32) * m).into())?;
+        let output_lut = read_vec(buf, (m * 256).into())?;
         Ok(Lut8 {
             n,
             m,
