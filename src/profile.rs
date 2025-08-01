@@ -5,26 +5,47 @@ use std::fs::File;
 use std::io::{Cursor, Read, Result, Write};
 use std::path::Path;
 
+use crate::tags::typesignatures::TypeSignature;
 use crate::tags::ProfileTag;
 
 /// Represents a single ICC tag (raw).
 #[derive(Debug, Clone, Serialize)]
-pub struct Tag {
+pub struct DataBlock {
     pub offset: u32,
     pub size: u32,
     pub data: Vec<u8>,
 }
 
-// A low-level container of an ICC profile, typically created by reading an ICC profile file.
-// It contains the profile header, and a map of tags (with their signatures as keys).
-// It does not perform any validation or interpretation of the tags.
+pub struct Data {
+    pub type_signature: TypeSignature,
+    pub data: Vec<u8>,
+}
+
+/// An ICC profile, deconstructed in:
+/// 
+/// - a raw header array, with a length of 128 bytes,
+/// - a indexmap of datablocks, with a ProfileTag as key and DataBlock as value.
+/// 
+/// An indexmap is used to preserve the insertion order of tags, which is technically not required
+/// by the ICC specification, but is used to maintain the order of tags as they appear in profiles
+/// read from a a file file, and to maximize compatibility with existing ICC profiles.
+/// 
+/// It does not include a separate tag table; the profile tags are the used as the indexmap's key,
+/// while offsets and sizes are included in the `DataBlock` struct. Those offsets and sizes
+/// are used to recreate the tag table on writing.
+/// Whenever the size of a tag's data changes, the offsets and sizes of all tags are updated.
+/// 
+/// 
+/// 
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Profile {
-    pub header: Vec<u8>, // 128 bytes
-    pub tags: IndexMap<ProfileTag, Tag>, // preserves insertion order
+    #[serde(with = "serde_arrays")]
+    pub header: [ u8; 128 ], // 128 bytes
+    pub tags: IndexMap<ProfileTag, DataBlock>, // preserves insertion order
     pub padding: usize, // number of padding bytes found in a profile read
 }
+
 
 impl Profile {
     /// Reads an ICC profile from a file.
@@ -40,7 +61,8 @@ impl Profile {
         let mut cursor = Cursor::new(bytes);
 
         // Read the header (first 128 bytes)
-        let mut header = vec![0u8; 128];
+      //  let mut header = vec![0u8; 128];
+        let mut header = [0u8; 128];
         cursor.read_exact(&mut header)?;
 
         // Read the tag count (next 4 bytes)
@@ -85,7 +107,7 @@ impl Profile {
             let mut data = vec![0u8; *size as usize];
             cursor.read_exact(&mut data)?;
 
-            tags.insert(*signature, Tag {
+            tags.insert(*signature, DataBlock {
                 offset: *offset,
                 size: *size,
                 data,
@@ -126,7 +148,7 @@ impl Profile {
     /// Serializes the ICC profile to a Vec<u8>.
     pub fn into_bytes(self) -> Result<Vec<u8>> {
         // Update offsets and sizes of tags based on their data
-        let updated_self = self.with_update_offsets_and_sizes();
+        let updated_self = self.with_updated_offsets_and_sizes();
         //let updated_self = self;
         let mut buf = Vec::new();
         buf.extend_from_slice(&updated_self.header);
@@ -174,7 +196,7 @@ impl Profile {
     /// - The third u32 is the size of the tag data.
     ///
     /// It only uses the data field
-    pub fn with_update_offsets_and_sizes(mut self) -> Self {
+    pub fn with_updated_offsets_and_sizes(mut self) -> Self {
         // Build a BTreeMap to sort tags by their original offset
         let mut btree_map = BTreeMap::new();
         for (tag_signature, tag) in &self.tags {

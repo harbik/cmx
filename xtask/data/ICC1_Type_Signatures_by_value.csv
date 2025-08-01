@@ -1,0 +1,330 @@
+Vendor,Hex value,ASCII,Date,Tag/Type
+"and CMM Registry (as of 23 December 202 4 ) 1 CMM Signatures Vendor Hex value ASCII Date Description Adobe Sys tems , Inc . 41444245 ‚ADBE™ 2004 - 01 - 13 Adobe CMM Agfa Graphics N.V. 41434D53 ‚ACMS™ 2009 - 03 - 16 Agfa CMM Apple Computer 6170706C ‚appl™ 2004 - 01 - 23 Apple CMM Canon 43434D53 ‚CCMS™ 2004 - 01 - 13 ColorGear CMM Canon 5543434D ‚UCCM™ 2004 - 01 - 13 ColorGear CMM Lite Canon 55434D53 ‚UCMS™ 2011 - 03 - 09 ColorGear CMM C EFI 45464920 ‚EFI ‚ 2009 - 01 - 07 EFI CMM Fuji film Corporation 46462020 ‚FF ‚ 2004 - 02 - 25 Fuji f ilm CMM Exac tCODE GmbH 45584143h ‚EXAC™ 2013 - 03 - 23 ExactScan CMM Global Graphic s Software Inc 48434d4d ‚HCMM™ 2004 - 02 - 11 Harlequin RIP CMM Graeme Gill 6172676C 'argl' 2004 - 11 - 20 Argy ll CMS CMM GretagMac beth 44676f53 ‚LgoS™ 2004 - 01 - 20 LogoSy nc CMM Heidelberger Druckmaschinen AG 48444d20 ‚HDM ‚ 2004 - 01 - 13 Heidelberg CMM Hewlett Pac kard 6C636d73 ‚lc ms ™ 2004 - 01 - 08 Little CMS CMM ICC 52494d58 ‚RIMX™ 2018 - 03 - 07 RefIcc MAX CMM ICC 44494d58 ‚DIMX™ 2021 - 02 - 25 DemoIccMAX CMM Kodak 4b434d53 ‚KCMS™ 2004 - 01 - 09 Kodak CMM Konica Minolta 4d434d44 ‚MCML™ 2003 - 11 - 25 Konica Minolta CMM Mic rosoft 57435320 ‚WCS ‚ 2013 - 09 - 05 Windows Color Sys tem CMM Mutoh 5349474E ‚SIGN™ 2005 - 08 - 31 Mutoh CMM Onyx Graphics 4f4e5958 ‚ONYX™ 2018 - 03 - 07 Onyx Graphics CMM Reprointelligenc e 72657072 ‚repr™ 2024 - 01 - 27 Reprointelligenc e CMM Rolf Gierling Multitools 52474d53 ‚RGMS™ 2007 - 09 - 30 Dev iceLink CMM SampleICC 53494343 ‚SICC™ 2005 - 03 - 16 SampleICC CMM Tos hiba TEC Corporation 54434d4d ‚TCMM™ 2013 - 08 - 02 T os hiba CMM the imaging fac tory 33324254 '32BT' 2004 - 10 - 14 the imaging fac tory CMM Viv o Mobile Communic ation 7669766f ‚v ivo™ 2017 - 10 - 27 Viv o CMM Ware T o Go 57544720 ‚WTG ‚ 2009 - 11 - 03 Ware to Go CMM Zoran Corporation 7a633030 ‚z c00™ 2008 - 2 - 23 Zoran CMM ICC.1 Ta g Signatures by va lue: Vendor Hex value To hex ASCII To",ASCII,Date,,Tag/
+Sun Mic rosys tems 00000000 0000005a 1995 - 05 - 01 T ag the imaging fac tory 33324254 ' 32BT ' 2004 - 10 - 14,ICC,41324230,,'A2B0'
+Apple Computer 41413030 41413939 ‚AA00™ ‚AA99™ 2001 -,04,-,,05
+2 Amiable Tec hnologies Inc . 414d3030,414d3939,‚AM00™,,‚AM99™
+"Adobe Sy s tems , Inc .",41533030,‚AS00™,,‚AS99™
+ICC 42324430 ‚ B2D0 ™ 2006 -,11,-,,02
+ICC 42324431 ‚ B2D1 ™ 2006 -,11,-,,02
+ICC 42324432 ‚ B2D2 ™ 2006 -,11,-,,02
+ICC 42324 433 ‚ B2D3 ™ 2006 -,11,-,,02
+BARCO,42445320,'BDS,,'
+BARCO 42503250 ‚BP2P™ 2014 -,10,-,,12
+GretagMac beth 43494544 ‚CIED™ 2002 -,10,-,,11
+Canon 43505061 4350507a ‚CPPa™ ‚CPPz™ 2019 -,10,-,,10
+X - Rite 43784620 ‚Cx F ‚ 2013 -,10,-,,04
+Datac olor 44433030 44433939 ‚DC00™ ‚DC99™ 2011 -,03,-,,09
+Dry Creek Photo 44435064 ‚DCPd™ 2008 -,04,-,,22
+Dry Creek Photo 44435069 ‚DCPi™ 2018 -,01,-,,09
+Dry Creek Photo 44435068 ‚DCPh™ 2011 -,07,-,,23
+Monac o Systems Inc. 44455644 ‚DEVD™ 2003 -,09,-,,17
+Monac o Systems Inc. 44455653 ‚DEVS™ 2003 -,09,-,,17
+Dupont 44555000 445550ff ‚DUP0™ ‚DUP T ag ICC 44324230 ‚ D2B0 ™ 2006 -,11,-,,02
+ICC 44324231 ‚ D2B1 ™ 2006 -,11,-,,02
+ICC 44324232 ‚ D2B2 ™ 2006 -,11,-,,02
+ICC 44324233 ‚ D2B3 ™ 2006 -,11,-,,02
+GretagMac beth 44657644 ‚Dev D™ 2002 -,10,-,,11
+Esk o Graphics 45474244 ‚EGBD™ 2003 - 09 - 01 T ag SEIKO EPSON 45503030 45503039 'EP00' ‚EP09™ T ag Color Solutions Software 45554C41 ‚EULA™ 2007 -,01,-,,10
+FFEI Limited 46454930 46454939 ‚FEI0™ ‚FEI9™ T ag FFEI Limited 46454941,4645495a,‚FEIA™,,‚FEIZ™
+FFEI Limited 46454961,4645497a,‚FEIa™,,‚FEIz™
+Fujifilm Corporation 46462020 ‚FF ‚ 2002 -,06,-,,30
+FUJI FI LM Busin ess I nnov at ion Cor p. 46583030 46583939 'FX00' 'FX99' 2008 -,01,-,,17
+Heidelberger Druckmasch in en AG 48443030 48443939 ‚HD00™ ‚HD99™ 2003 -,02,-,,01
+3 Hewlett Pac kard 48503030 48503939 'HP00' ‚HP99™ 1994 - 09 - 09 T ag ICC 49434335 ‚ICC5™ 2018 -,04,-,,30
+Kodak 4b303030 4b303939 'K000' ‚K099™ 1994 - 09 - 09 T ag Kodak 4b313030,4b313939,‚K100™,,‚K199™
+Kodak 4b434658 'KCFX' 1994 -,09,-,,09
+Kodak 4b434758 'KCGX' 1994 -,09,-,,09
+Kodak 4b435258 'KCRX' 1994 -,09,-,,09
+Kodak 4b435358 'KCSX' 1994 -,09,-,,09
+Kodak 4b6c7670 ‚Klv p™ 2001 -,04,-,,15
+"Studion Soft Indus tries ,",Ltd.,4b6d6f64,,‚Kmod™
+Left Dakota 4c 445354 ‚LDST™ 2002 -,07,-,,01
+Left Dakota 4c 4e4350 ‚LNCP™ 2004 -,05,-,,10
+Left Dakota 4c 534554 ‚LSET™ 2002 -,07,-,,01
+Left Dakota 4c 535243 ‚LSRC™ 2002 -,07,-,,01
+SEIKO EPSON 4c 555449 ‚LUTI™ 2024 -,12,-,,23
+Color Solutions Software 4d4f4754 ‚MOST™ 2005 -,12,-,,06
+Color Solutions Software 4 d 4 f 5354 ‚MOGT™ 2005 -,12,-,,06
+Mic rosoft 4d533030 4d533939 ‚MS00™ ‚MS99™ 2005 -,06,-,,14
+Oc e Tec hnologies B.V. 4F43456 1 4F43457A ‚OCEa™ ‚OCEz ™ 2015 -,09,-,,17
+Onyx Graphics Corp. 4f4e5830 4f4e5839 ‚ONX0™ ‚ONX0™ 2002 -,08,-,,29
+Onyx Graphics Corp. 4f4e5841 4f4e585a ‚ONXA™ ‚ONXZ™ 2002 -,08,-,,29
+Onyx Graphics Corp. 4f4e5861 4f4e587a ‚ONXa™ ‚ONXz ™ 2002 -,08,-,,29
+Phas e One A/S 50314D58 'P1MX' 2004 -,04,-,,05
+Phas e One A/S 50315054 ‚P1PT™ 2002 -,07,-,,01
+bas ICColor 50445354 ‚PDST™ 2009 -,04,-,,22
+bas ICColor 50535243 ‚PSRC™ 2009 -,04,-,,22
+Polaroid 504f4c 31 504f4c 39 ‚POL1™ ‚POL9™ T ag Polaroid 504f4c 41 504f4c,5a,‚POLA™,,‚POLZ™
+PathQA Ltd 50514130 5051413 9 ‚PQA0™ ‚PQA9™ 2024 -,07,-,,24
+PathQA Ltd 505141 41 505141 5a ‚PQAA™ ‚PQAZ™ 2024 -,07,-,,24
+PathQA Ltd 505141 61 505141 7a ‚PQAa™ ‚PQAz ™ 2024 -,07,-,,24
+GretagMac beth 506d7472 ‚Pmtr™ 2002 -,10,-,,11
+"Studion Soft Indus tries ,",Ltd.,53414d64,,‚SAMd™
+"Studion Soft Indus tries ,",Ltd.,53414d69,,‚SAMi™
+"Studion Soft Indus tries ,",Ltd.,53414d6f,,‚SAMo™
+CreoSc itex 53433031,53433939,'SC01',,‚SC99™
+CreoSc itex 53434954 'SCIT' T ag Sharp Labs 53483030 53483939 ‚SH00™ ‚SH99™ 2005 -,03,-,,16
+4 Dainippon Sc reen 53503030 53593939 ‚SP00™ ‚SP99™ T ag Datac,olor,54435074,,‚TCPt™
+the imaging fac tory 54463030,54463939,'TF00',,'TF99'
+Tek tronix 544b0000 544b00ff T ag Tek,tronix,546b0000,,546b00ff
+Ware To Go 57544720 ‚WTG ‚ 2009 -,11,-,,03
+Ware To Go 57544730 57544739 ‚WTG0™ ‚WTG9™ 2009 -,11,-,,03
+Ware To Go 57544741 5754475A ‚WTGA™ ‚WTGZ™ 2009 -,11,-,,03
+Ware To Go 57544761 5754477A ‚WTGa™ ‚WTGz ™ 2009 -,11,-,,03
+Zoran Corporation 5 a 433030 5a433939 ‚ZC00™ ‚ZC99™ 2008 -,2,-,,23
+Apple Computer 61617267 ‚aarg™ 2008 -,08,-,,28
+Apple Computer 61616767 ‚aagg™ 2008 -,08,-,,28
+Apple Computer 61616267 ‚aabg™ 2008 -,08,-,,28
+Graham Gill 61727473 ‚arts ™ 2014 -,09,-,,17
+SEIKO EPSON 61646874 ‚adht™ 202 4 -,12,-,,23
+ICC,6258595a,',,bXYZ'
+Heidelberger Druckmasch in en AG 626C6765 ‚blge™ 2004 -,01,-,,16
+ICC,62666420,'bfd,,'
+ICC,626b7074,'bk,,pt'
+ICC,63616c74,'c,,alt'
+YxyMaster GMBH 63627238 ‚c br8™ 2002 -,09,-,,03
+Creo 63637064 ‚c cpd™ 2003 -,02,-,,05
+Creo 63637073 ‚ccps™ 2003 -,02,-,,05
+Creo 63637078 ‚ccpx™ 2003 -,02,-,,05
+ICC 63686164 ‚c had™ 2000 -,11,-,,10
+ICC,6368726d,'c,,hrm'
+ICC 63696973 ‚c iis ' 2007 -,04,-,,11
+Calibrite LLC 636C6272 ‚c lbr™ 2024 -,05,-,,20
+ICC 636C6F74 'c lot' 2004 -,08,-,,13
+Heidelberger Druckmasch in en AG 636c7264 ‚c lrd™ 2004 -,01,-,,16
+ICC 636c726f ‚c lro™ 2000 -,11,-,,10
+ICC 636c7274 ‚c lrt™ 2000 -,11,-,,10
+ICC,63707274,'c,,prt'
+ICC,63726469,‚c,,rdi™
+Apple Computer 63757374 'cust' 1994 -,09,-,,09
+Kodak 63766420 'cv d ' 1995 -,05,-,,01
+ICC,64657673,‚devs,,™
+5 Kodak 64696d64 ‚dimd™ 2001 -,04,-,,16
+SEIKO EPSON 6472766e ‚drvn™ 2024 -,12,-,,23
+Apple Computer 6473636d ‚dsc m™ 2004 -,05,-,,28
+SEIKO,EPSON,65626270,,‚ebbp™
+Elec tronics for Imaging 65666961 6566697a,‚efia™,‚efiz,,™
+SEIKO EPSON 656d6573 ‚emes ™ 2024 -,12,-,,23
+SEIKO EPSON 656d 756c ‚emul™ 2024 -,12,-,,23
+Kodak 6670726e ‚fprn™ 2001 -,04,-,,16
+SEIKO EPSON 667a6474 ‚fz dt™ 2024 -,12,-,,23
+ICC,67616d74,'gamt,,'
+GretagMac beth 676d7073 ‚gmps ™ 2003 -,08,-,,29
+X - Rite 67626430 ‚gbd0™ 2013 -,10,-,,04
+X - Rite 6762643 1 ‚gbd1™ 2013 -,10,-,,04
+X - Rite 6762643 2 ‚gbd2™ 2013 -,10,-,,04
+X - Rite 6762643 3 ‚gbd3™ 2013 -,10,-,,04
+Heidelberger Druckmasch in en AG 68616c64 ‚hald™ 2004 -,01,-,,16
+Heidelberger Druckmasch in en AG 68616c66 ‚half™ 2004 -,01,-,,16
+Kothari Infotec h Priv ate Limited 6863746c ‚hc tl™ 2015 -,08,-,,08
+Heidelberger Druckmasch in en AG 68643030 68643939 ‚hd00™ ‚hd99™ 2003 -,02,-,,01
+Konica Minolta 69545243 ‚iTRC™ 2003 -,11,-,,25
+Sun Mic rosys tems 69636864 'ic hd' 1995 -,05,-,,01
+Sun Mic rosys tems 69636865 'ic he' 1995 -,05,-,,01
+Kodak 69637370 ‚ic sp™ 2001 -,04,-,,16
+Kodak 696c6c 64 ‚illd™ 2001 -,04,-,,16
+"IMATION 696d6e30 696d6e39 'imn0', ‚imn9™ T ag IMATION 696d6e41",696d6e5a,‚imnA™,,‚imnZ™
+IMATION 696d6e61 696d6e7a,‚imna™,‚imnz,,™
+SEIKO EPSON 696e6b73 ‚inks ™ 2024 -,12,-,,23
+SEIKO EPSON 69736d70 ‚is mp™ 2024 -,12,-,,23
+ICC,6b545243,'k,,TRC'
+Konica Minolta 6b633031 6b633130 ‚k c01™ ‚k c10™ T ag Konica Minolta 6b6d3031 6b6d3130 ‚k m01™ ‚k m10™ 2001 - 11 - 25 T ag Sun Mic rosys tems 6c 696173 'lias ' 1995 -,05,-,,01
+6 Sun Mic rosys tems 6c 746167 'ltag' 1995 -,05,-,,01
+ICC,6c,756d69,,'lumi'
+Kodak 6c 766d64 ‚lv md™ 2001 -,04,-,,16
+SEIKO EPSON 6d646561 ‚mdea™ 2024 -,12,-,,23
+ICC,6d656173,'meas,,'
+Heidelberger Druckmasch in en AG 6d65636e ‚mec n™ 2004 -,01,-,,16
+Heidelberger Druckmasch in en AG 6d656464 ‚medd™ 2004 -,01,-,,16
+Heidelberger Druckmasch in en AG 6d656474 ‚medt™ 2004 -,01,-,,16
+Heidelberger Druckmasch in en AG 6d656f70 ‚meop™ 2004 -,01,-,,16
+Apple Computer 6d6d6f64 ‚mmod™ 2004 -,05,-,,28
+Apple Computer 6e616d65 'name' 1994 -,09,-,,09
+ICC,6e636c32,‚nc,,l2™
+ICC,6e636f6c,'nc,,ol'
+Apple Computer 6e637069 ‚nc pi™ 2004 -,05,-,,28
+Apple Computer 6e64696e ‚ndin™ 2004 -,05,-,,28
+Sun Mic rosys tems 6e746167 'ntag' 1995 -,05,-,,01
+FFEI Limited 6f707266 ‚oprf™ 2001 -,06,-,,22
+SEIKO EPSON 70613262 ‚pa2b™ 2024 -,12,-,,23
+SEIKO EPSON 70623261 ‚pb2a™ 2024 -,12,-,,23
+SEIKO EPSON 70646972 ‚pdir™ 2024 -,12,-,,23
+Sun Mic rosys tems 706c6179 'play' 1995 -,05,-,,01
+Polk adots Software Inc . 706b6430 706b6439 ‚pk d0™ ‚pk d9™ 2018 -,03,-,,02
+Polk adots Software Inc . 706b6461 706b647a ‚pk da™ ‚pkdz™ 2018 -,03,-,,02
+Heidelberger Druckmasch in en AG 706c6d64 ‚plmd™ 2004 -,01,-,,16
+Heidelberger Druckmasch in en AG 706c6d74 ‚plmt™ 2004 -,01,-,,16
+Heidelberger Druckmasch in en AG 70727364 ‚prsd™ 2004 -,01,-,,16
+7 Heidelberger Druckmasch in en AG 70727374 ‚prs t™ 2004 -,01,-,,16
+ICC,70733269,'ps,,2i'
+ICC,70733273,'ps,,2s'
+ICC,70736430,'ps,,d0'
+ICC,70736431,'ps,,d1'
+ICC,70736432,'ps,,d2'
+ICC,70736433,'ps,,d3'
+ICC,70736571,'ps,,eq'
+ICC 70736964 ‚p s id ' 2007 -,04,-,,11
+Apple Computer 7073766d 'psv m' 1995 -,03,-,,03
+SEIKO EPSON 7265736f ‚reso™ 2024 -,12,-,,23
+ICC 72696730 ‚ rig0 ™ 2005 -,02,-,,22
+ICC 72696732 ‚ rig2 ™ 2005 -,02,-,,22
+ICC 73637264,'s,c,,rd'
+ICC 7363726e,'s,c,,rn'
+Sun Mic rosys tems 73663634 's f64' 1995 -,05,-,,01
+Sun Mic rosys tems 73693038 's i08' 1995 -,05,-,,01
+Sun Mic rosys tems 73693136 's i16' 1995 -,05,-,,01
+Sun Mic rosys tems 73693332 's i32' 1995 -,05,-,,01
+SEIKO EPSON 73747970 ‚ styp ™ 2024 -,12,-,,23
+Tek,tronix,744b0000,,744b00ff
+Heidelberger Druc k masc hine n AG 74616374 ‚tac t™ 2004 -,01,-,,16
+ICC,74656368,'tec,,h'
+Tek,tronix,746b0000,,746b00ff
+Ty pemak er Ltd. 746d6b72 ‚tmk r™ 2002 -,09,-,,13
+Kodak 746e616d ‚tnam™ 2001 -,04,-,,16
+Kodak 74707274 ‚tprt™ 2001 -,04,-,,16
+Apple Computer 74726320 'trc ' 1994 -,09,-,,09
+Canon 75634730 75634733 'ucG0' 'ucG3 ' 2007 -,04,-,,08
+Canon 75636d46 'uc mF' 2007 -,04,-,,08
+Canon,75636d49,‚uc,,mI™
+Canon 75636d4d 'uc mM' 2007 -,04,-,,08
+Canon,75636d50,‚uc,,mP™
+Canon,75636d54,‚uc,,mT™
+Canon 75636d56 'uc mV' 2007 -,04,-,,08
+8 Apple Computer,76636774,'vc,,gt'
+ICC,76696577,'v,,iew'
+Apple Computer 76707461 'v pta' 1994 -,12,-,,12
+Apple Computer 76707462 'v ptb' 1994 -,12,-,,12
+Apple Computer 76707467 'v ptg' 1994 -,12,-,,12
+Apple Computer 76707470 'v ptp' 1994 -,12,-,,12
+Apple Computer 76707477 'v ptw' 1994 -,12,-,,12
+ICC,76756564,'v,,ued'
+ICC.1 Ty pe Signatures by va lue: Vendor Hex value To hex ASCII To,ASCII,Date,,Tag/
+Fujifilm Corporation 46462020 ‚FF ‚ 2002 - 06 - 30 Ty pe ICC 49434370 ‚ICCp™ 2018 - 04 - 30 Ty pe Polaroid 504f4c 61 504f4c 7a ‚POLa™ ‚POLz ™ Ty pe XRite 584 d 4 c 20 ‚XML ‚ 2013 - 10 - 04 Ty pe ICC 58595a20 'XYZ ' Ty pe XRite 5A584 d 4 c ‚ZXML‚ 2013 - 10 - 04 Ty pe ICC 62666420 ‚bfd ‚ Ty pe ICC 6368726d ‚c hrm™ Ty pe ICC 63726469 ‚c rdi™ Ty pe ICC 63757276 'c urv ' Ty pe ICC 64617461 'data' Ty pe ICC 64657363 'desc' Ty pe ICC 64657673 ‚devs ™ Ty pe ICC 6474696d 'dtim' Ty pe Elec tronics for Imaging 65666930 65666939 ‚efi0™ ‚efi9™ Ty pe FUJI FI LM Busin ess I nnov at ion Cor p. 66783030 66783939 'fx00' 'fx99' 2008 - 01 - 17 Ty pe Kothari Infotec h Priv ate Limited 6863746c ‚hc tl™ 2015 - 08 - 08 Ty pe ICC 6d414220 ‚mAB ‚ 2000 - 11 - 10 Ty pe X - Rite 67626420 ‚gbd ‚ 2013 - 10 - 04 Ty pe ICC 6d424120 ‚mBA ‚ 2000 - 11 - 10 Ty pe 9 ICC 6d656173 ‚meas ™ Ty pe ICC 6d667431 'mft1' Ty pe ICC 6d667432 'mft2' Ty pe ICC 6d6c7563 ‚mluc ™ 2000 - 11 - 10 Ty pe ICC 6e636c32 ‚nc l2™ Ty pe ICC 6e636f6c 'nc ol' Ty pe Apple Computer 6e637069 ‚nc pi™ 2004 - 05 - 28 Ty pe Apple Computer 6e64696e ‚ndin™ 2004 - 05 - 28 Ty pe Apple Computer 6d6d6f64 ‚mmod™ 2004 - 05 - 28 Ty pe ICC 70617261 ‚para™ 2000 - 11 - 10 Ty pe ICC 70736571 ‚ps eq™ Ty pe ICC 72637332 ‚rcs 2™ Ty pe ICC 7363726e 's c rn' Ty pe ICC 73663332 's f32' Ty pe ICC 73696720 's ig ‚ Ty pe ICC 74657874 'tex t' Ty pe ICC 75663332 'uf32' Ty pe ICC 75693038 'ui08' Ty pe ICC 75693136 'ui16' Ty pe ICC 75693332 'ui32' Ty pe ICC 75693634 'ui64' Ty pe ICC 76696577 'v iew' Ty pe iccMAX Ta g Signatures by V alue : Vendor Hex value To hex ASCII To,ASCII,Date,,Tag/
+ICC,41324d30,'A2M0',,28/05/2016
+ICC,43784620,'CxF',,28/05/2016
+ICC,4d324130,'M2A0',,28/05/2016
+ICC,4d324230,'M2B0',,28/05/2016
+ICC,4d324231,'M2B1',,28/05/2016
+ICC,4d324232,'M2B2',,28/05/2016
+ICC,4d324233,'M2B3',,28/05/2016
+ICC,4d325330,'M2S0',,28/05/2016
+ICC,4d325331,'M2S1',,28/05/2016
+ICC,4d325332,'M2S2',,28/05/2016
+ICC,4d325333,'M2S3',,28/05/2016
+ICC,61696c6d,'ailm',,28/05/2016
+ICC,61747472,'attr',,28/05/2016
+10 ICC,61776c6d,'awlm',,28/05/2016
+ICC 61777063,'awpc,',,28/05/2016
+ICC,62414230,'bAB0',,28/05/2016
+ICC,62414231,'bAB1',,28/05/2016
+ICC,62414232,'bAB2',,28/05/2016
+ICC,62414233,'bAB3',,28/05/2016
+ICC,62424130,'bBA0',,28/05/2016
+ICC,62424131,'bBA1',,28/05/2016
+ICC,62424132,'bBA2',,28/05/2016
+ICC,62424133,'bBA3',,28/05/2016
+ICC,62424430,'bBD0',,28/05/2016
+ICC,62424431,'bBD1',,28/05/2016
+ICC,62424432,'bBD2',,28/05/2016
+ICC,62424433,'bBD3',,28/05/2016
+ICC,62444230,'bDB0',,28/05/2016
+ICC,62444231,'bDB1',,28/05/2016
+ICC,62444232,'bDB2',,28/05/2016
+ICC,62444233,'bDB3',,28/05/2016
+ICC,624d4230,'bMB0',,28/05/2016
+ICC,624d4231,'bMB1',,28/05/2016
+ICC,624d4232,'bMB2',,28/05/2016
+ICC,624d4233,'bMB3',,28/05/2016
+ICC,624d5330,'bMS0',,28/05/2016
+ICC,624d5331,'bMS1',,28/05/2016
+ICC,624d5332,'bMS2',,28/05/2016
+ICC,624d5333,'bMS3',,28/05/2016
+ICC 62636f6c,'bc,ol',,28/05/2016
+ICC 62637030,'bc,p0',,28/05/2016
+ICC 62637031,'bc,p1',,28/05/2016
+ICC 62637032,'bc,p2',,28/05/2016
+ICC 62637033,'bc,p3',,28/05/2016
+ICC 62637072,'bc,pr',,28/05/2016
+ICC 62697473,'bits,',,28/05/2016
+ICC 62737030,'bs,p0',,28/05/2016
+ICC 62737031,'bs,p1',,28/05/2016
+ICC 62737032,'bs,p2',,28/05/2016
+ICC 62737033,'bs,p3',,28/05/2016
+ICC 62737063,'bs,pc',,28/05/2016
+ICC 62737072,'bs,pr',,28/05/2016
+ICC 63327370 'c,2s,p',,28/05/2016
+ICC 63657074,'c,ept',,28/05/2016
+ICC 63696E66,'c,inf',,28/05/2016
+ICC 63736e6d,'cs,nm',,28/05/2016
+ICC,64414230,'dAB0',,28/05/2016
+11 ICC,64414231,'dAB1',,28/05/2016
+ICC,64414232,'dAB2',,28/05/2016
+ICC,64414233,'dAB3',,28/05/2016
+ICC,64424130,'dBA0',,28/05/2016
+ICC,64424131,'dBA1',,28/05/2016
+ICC,64424132,'dBA2',,28/05/2016
+ICC,64424133,'dBA3',,28/05/2016
+ICC,64424430,'dBD0',,28/05/2016
+ICC 6442443 1 'dBD,1,',,28/05/2016
+ICC 6442443 2 'dBD,2,',,28/05/2016
+ICC 6442443 3 'dBD,3,',,28/05/2016
+ICC,64444230,'dDB0',,28/05/2016
+ICC,64444231,'dDB1',,28/05/2016
+ICC,64444232,'dDB2',,28/05/2016
+ICC,64444233,'dDB3',,28/05/2016
+ICC 64657620,'dev,',,28/05/2016
+ICC,646d6464,'dmdd',,28/05/2016
+ICC,646d6e64,'dmnd',,28/05/2016
+ICC 646d6e73,'dmns,',,28/05/2016
+ICC,65526e67,'eRng',,28/05/2016
+ICC,666c6172,'flar',,28/05/2016
+ICC 66756e63,'func,',,28/05/2016
+ICC 66756E63,'func,',,28/05/2016
+ICC,67626430,'gbd0',,28/05/2016
+ICC,67626431,'gbd1',,28/05/2016
+ICC,67626432,'gbd2',,28/05/2016
+ICC,67626433,'gbd3',,28/05/2016
+ICC 69626b67,'ibk,g',,28/05/2016
+ICC 696d7374,'ims,t',,28/05/2016
+ICC 6c 636e6d,'lc,nm',,28/05/2016
+ICC 6c,6d6174,'lmat',,28/05/2016
+ICC 6c,726e67,'lrng',,28/05/2016
+ICC 6d62616b,'mbak,',,28/05/2016
+ICC 6d627063,'mbpc,',,28/05/2016
+ICC,6d62706c,'mbpl',,28/05/2016
+ICC 6d637461,'mc,ta',,28/05/2016
+ICC 6d647620,'mdv,',,28/05/2016
+ICC,6d666c72,'mflr',,28/05/2016
+ICC,6d67656f,'mgeo',,28/05/2016
+ICC,6d69696e,'miin',,28/05/2016
+ICC,6d696c6c,'mill',,28/05/2016
+ICC,6d696e66,'minf',,28/05/2016
+ICC,6d697772,'miwr',,28/05/2016
+ICC,6d6d6f64,'mmod',,28/05/2016
+12 ICC 6d6f6420,'mod,',,28/05/2016
+ICC 6d777063,'mwpc,',,28/05/2016
+ICC,6d77706c,'mwpl',,28/05/2016
+ICC,6e616d65,'name',,28/05/2016
+ICC,6e6d6170,'nmap',,28/05/2016
+ICC,6e756d70,'nump',,28/05/2016
+ICC 70637320,'pcs,',,28/05/2016
+ICC,70647363,'pdsc',,28/05/2016
+ICC 70696420,'pid,',,28/05/2016
+ICC,72666e6d,'rfnm',,28/05/2016
+ICC,7274726e,'rtrn',,28/05/2016
+ICC 73326370 's,2c,p',,28/05/2016
+ICC 736d6170,'s,map',,28/05/2016
+ICC 73706362 's,pc,b',,28/05/2016
+ICC 73706367 's,pc,g',,28/05/2016
+ICC 73706563,'s,pec',,28/05/2016
+ICC 73726e64,'s,rnd',,28/05/2016
+ICC 7376636e,'sv,cn',,28/05/2016
+ICC 73777074,'s,wpt',,28/05/2016
+ICC 74656368,'tec,h',,28/05/2016
+ICC,74696e74,'tint',,28/05/2016
+ICC,74797065,'type',,28/05/2016
+ICC,7758595a,'wXYZ',,28/05/2016
+ICC,776c756d,'wlum',,28/05/2016
+ICC 7866726d,'x,frm',,28/05/2016
+Signatures by Value: Vendor Hex value To hex ASCII To,ASCII,Date,,Tag/
+ICC 4a746f58 'J toX' 28/05/2016 Ty pe ICC 58746f4a 'XtoJ ' 28/05/2016 Ty pe ICC 62726466 'brdf' 28/05/2016 Ty pe ICC 63616C63 'c alc ' 28/05/2016 Ty pe ICC 63657074 'c ept' 28/05/2016 Ty pe ICC 636c726f 'c lro' 28/05/2016 Ty pe ICC 636C7574 'c lut' 28/05/2016 Ty pe ICC 63757266 'c urf' 28/05/2016 Ty pe ICC 63767374 'cvst' 28/05/2016 Ty pe ICC 64617461 'data' 28/05/2016 Ty pe ICC 646f7263 'dorc ' 28/05/2016 Ty pe ICC 6474696d 'dtim' 28/05/2016 Ty pe ICC 65636c74 'ec lt' 28/05/2016 Ty pe ICC 6568696d 'ehim' 28/05/2016 Ty pe ICC 656d7478 'emtx' 28/05/2016 Ty pe 13 ICC 656e696d 'enim' 28/05/2016 Ty pe ICC 656f6273 'eobs' 28/05/2016 Ty pe ICC 666c3136 'fl16' 28/05/2016 Ty pe ICC 666c3332 'fl32' 28/05/2016 Ty pe ICC 666c3634 'fl64' 28/05/2016 Ty pe ICC 66756E63 ' func ' 28/05/2016 Ty pe ICC 67646220 'gbd ' 28/05/2016 Ty pe ICC 69656d78 'iemx ' 28/05/2016 Ty pe ICC 6D617466 'matf' 28/05/2016 Ty pe ICC 6d656173 'meas ' 28/05/2016 Ty pe ICC 6e6d636c 'nmc l' 28/05/2016 Ty pe ICC 70617266 'parf' 28/05/2016 Ty pe ICC 70696e66 'pinf' 28/05/2016 Ty pe ICC 72636c74 'rclt' 28/05/2016 Ty pe ICC 726f6273 'robs ' 28/05/2016 Ty pe ICC 73616D66 's amf' 28/05/2016 Ty pe ICC 73663332 's f32' 28/05/2016 Ty pe ICC 736d6174 's mat' 28/05/2016 Ty pe ICC 736d6574 's met' 28/05/2016 Ty pe ICC 736e6766 's ngf' 28/05/2016 Ty pe ICC 7376636e 'sv cn' 28/05/2016 Ty pe ICC 74617279 'tary' 28/05/2016 Ty pe ICC 74696e74 'tint' 28/05/2016 Ty pe ICC 74737472 'ts tr' 28/05/2016 Ty pe ICC 75663332 'uf32' 28/05/2016 Ty pe ICC 75693038 'ui08' 28/05/2016 Ty pe ICC 75693136 'ui16' 28/05/2016 Ty pe ICC 75693332 'ui32' 28/05/2016 Ty pe ICC 75693634 'ui64' 28/05/2016 Ty pe ICC 75746638 'utf8' 28/05/2016 Ty pe ICC 78636c74 'xc lt' 28/05/2016 Ty pe ICC 7a757438 'z ut8' 28/05/2016 Ty pe ICC 7a776d6c 'zx ml',28/05/2016,Ty,,pe

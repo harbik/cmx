@@ -1,0 +1,31 @@
+use crate::{tags::Tag, Error};
+
+/// Represents the Profile Connection Space (PCS) of an ICC profile.
+// The PCS defines the color space used for the profile connection, which is essential for color management.
+// The PCS can be XYZ (CIE1931 XYZ), Lab (CIELAB), or Spectral.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Pcs {
+    /// Profile Connection Space (PCS) for XYZ color space.
+    XYZ = 0x58595A20, // 'XYZ '
+    /// Profile Connection Space (PCS) for Lab color space.
+    Lab = 0x4C616220, // 'Lab ',
+    Spectral = 0x73706563, // 'spec' - Spectral PCS
+
+} 
+
+impl Pcs {
+    pub fn new(tag: Tag) -> Result<Self, Error> {
+        match tag.0 {
+            0x58595A20 => Ok(Self::XYZ),
+            0x4C616220 => Ok(Self::Lab),
+            0x73706563 => Ok(Self::Spectral),
+            _ => Err(Error::InvalidPcsTag(tag)),
+        }
+    }
+}
+
+impl From<Pcs> for Tag {
+    fn from(pcs: Pcs) -> Self {
+        Tag(pcs as u32)
+    }
+}

@@ -2,7 +2,7 @@ use num_derive::FromPrimitive;
 use serde::Serialize;
 
 #[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize)]
-pub enum TechnologySignature {
+pub enum Technology {
     Unknown = 0x00000000,
     DigitalCamera = 0x6463616D,              /* 'dcam' */
     FilmScanner = 0x6673636E,                /* 'fscn' */
@@ -32,7 +32,7 @@ pub enum TechnologySignature {
     DigitalCinemaProjector = 0x64636A70,     /* 'dcpj' */
 }
 
-impl Default for TechnologySignature {
+impl Default for Technology {
     fn default() -> Self {
         Self::Unknown
     }

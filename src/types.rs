@@ -19,7 +19,7 @@ use vcgt::Vcgt;
 use vcgp::Vcgp;
 use viewing_conditions::ViewingConditions;
 use crate::{
-    tags::{technology::TechnologySignature, typesignatures::TypeSignature},
+    tags::{technology::Technology, typesignatures::TypeSignature},
     types::common::{
         read_be_f16, read_be_f32, read_be_f64, read_be_u16, read_be_u32, read_date_time,
         read_s15fixed16_array, read_xyz,
@@ -63,7 +63,7 @@ pub enum TagData {
     SparseMatrixArray(Vec<u8>),                    // 'smat'
     SpectralViewingConditions(Vec<u8>),            // 'svcn'
     TagStruct(Vec<u8>),                            // 'tstr'
-    Technology(TechnologySignature),               // tag derived type
+    Technology(Technology),               // tag derived type
     Text(String),
     TextDescription(TextDescription),
     U16Fixed16Array(Vec<f32>),                     // 'uf32'
