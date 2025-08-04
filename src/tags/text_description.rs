@@ -1,10 +1,10 @@
-use crate::types::common::*;
+use crate::tags::common::*;
 use num::Zero;
 use serde::Serialize;
 
 // DEPRECATED_IN_MAC_OS_X_VERSION_10_6_AND_LATER
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 #[serde(default)]
 pub struct TextDescription {
     pub ascii: String,

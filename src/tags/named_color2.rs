@@ -1,7 +1,7 @@
-use crate::types::common::*;
+use crate::tags::common::*;
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct NamedColor2 {
     pub flags: u32,
     pub prefix: String,

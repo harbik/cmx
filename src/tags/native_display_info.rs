@@ -1,7 +1,7 @@
-use crate::types::common::*;
+use crate::tags::common::*;
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct NativeDisplayInfo {
     pub red_phosphor: [f32; 2],
     pub green_phosphor: [f32; 2],

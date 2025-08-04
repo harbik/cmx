@@ -1,13 +1,13 @@
-use crate::types::common::*;
+use crate::tags::common::*;
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub enum Vcgt {
     Table(VcgtTable),
     Formula(VcgtFormula),
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct VcgtTable {
     pub channels: u16,
     pub entry_count: u16,
@@ -34,7 +34,7 @@ impl VcgtTable {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct VcgtFormula {
     pub red_gamma: f32,
     pub red_min: f32,

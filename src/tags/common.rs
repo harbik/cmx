@@ -2,7 +2,7 @@ use chrono::{DateTime, Datelike, Timelike, Utc, TimeZone};
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + 'static>>;
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, Clone, PartialEq)]
 pub enum Lut {
     Bit8(Vec<u8>),
     Bit16(Vec<u16>),

@@ -1,4 +1,4 @@
-use crate::tags::Tag;
+use crate::signatures::Signature;
 
 /// Color Management Modules, also known as CMMs, are software components that handle color
 /// conversions between different color spaces. They are essential in color management systems to ensure
@@ -7,7 +7,7 @@ use crate::tags::Tag;
 /// specific CMM used to create the ICC profile, and to identify the CMM that should be used
 /// when interpreting the profile in case custom tags are used.
 /// 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, PartialEq)]
 pub enum Cmm {
     Adobe,             /* 'ADBE' */
     Agfa,              /* 'ACMS' */
@@ -41,8 +41,8 @@ pub enum Cmm {
     Unknown(String),
 }
 
-/// Converts a Cmm enum to a Tag value.
-impl From<Cmm> for Tag {
+/// Converts a Cmm enum to a Signature value.
+impl From<Cmm> for Signature {
     fn from(sig: Cmm) -> Self {
         let val = match sig {
             Cmm::Adobe => 0x41444245,
@@ -84,13 +84,13 @@ impl From<Cmm> for Tag {
                 u32::from_be_bytes(bytes)
             }
         };
-        Tag(val)
+        Signature(val)
     }
 }
     
 
 impl Cmm {
-    pub fn new(sig: Tag) -> Self {
+    pub fn new(sig: Signature) -> Self {
         match sig.0 {
             0x41444245 => Self::Adobe,
             0x41434D53 => Self::Agfa,

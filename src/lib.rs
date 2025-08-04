@@ -18,8 +18,9 @@
 
 pub mod profile;
 pub mod header;
+pub mod signatures;
 pub mod tags;
-pub mod types;
 pub mod error;
 
 pub use error::Error;
+

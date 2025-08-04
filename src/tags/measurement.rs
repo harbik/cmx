@@ -1,9 +1,9 @@
-use crate::types::common::*;
+use crate::tags::common::*;
 use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct Measurement {
     pub standard_observer: StandardObserver,
     pub xyz: [f64; 3],

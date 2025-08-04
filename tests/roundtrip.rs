@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::Path;
-use cmx::profile::Profile; // Adjust the path to your crate/module
+use cmx::profile::RawProfile; // Adjust the path to your crate/module
 
 fn print_first_diff(a: &[u8], b: &[u8]) {
     let min_len = a.len().min(b.len());
@@ -23,7 +23,7 @@ fn test_icc_roundtrip() {
     let original = fs::read(input_path).expect("Failed to read test profile");
 
     // Read profile
-    let profile = Profile::from_bytes(&original).expect("Failed to parse profile");
+    let profile = RawProfile::from_bytes(&original).expect("Failed to parse profile");
 
     // Write back to bytes
     let roundtrip = profile.into_bytes().expect("Failed to serialize profile");
@@ -49,7 +49,7 @@ fn test_icc_roundtrip_all_profiles() {
         println!("Testing profile: {:?} ... ", path);
         if path.extension().and_then(|s| s.to_str()) == Some("icc") {
             let original = fs::read(&path).expect("Failed to read test profile");
-            let profile = Profile::from_bytes(&original).expect("Failed to parse profile");
+            let profile = RawProfile::from_bytes(&original).expect("Failed to parse profile");
             let roundtrip = profile.into_bytes().expect("Failed to serialize profile");
             if original != roundtrip {
                 print_first_diff(&original, &roundtrip);

@@ -2,9 +2,9 @@ use num::FromPrimitive;
 use num_derive::FromPrimitive;
 use serde::Serialize;
 
-use crate::types::common::{read_be_u16, read_be_u64, read_f32_from_u16_fixed16};
+use crate::tags::common::{read_be_u16, read_be_u64, read_f32_from_u16_fixed16};
 
-#[derive(Debug, Serialize, FromPrimitive)]
+#[derive(Debug, Serialize, FromPrimitive, Clone, Copy, PartialEq)]
 pub enum Primaries {
     Absolute = 0x0000,
     ITU = 0x0001,
@@ -19,7 +19,7 @@ impl Default for Primaries {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct Chromaticity((Primaries, Vec<[f32; 2]>));
 
 impl Chromaticity {

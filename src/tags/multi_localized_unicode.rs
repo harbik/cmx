@@ -1,12 +1,14 @@
-use crate::types::common::*;
+use crate::tags::common::*;
 use isocountry::CountryCode;
 use isolang::Language;
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
-pub struct MultiLocalizedUnicode(Vec<(Option<CountryCode>, Language, String)>);
+#[derive(Debug, Serialize, Clone, PartialEq)]
+pub struct MultiLocalizedUnicode(pub Vec<u8>);
+     
+pub struct MultiLocalizedUnicodeValues(Vec<(Option<CountryCode>, Language, String)>);
 
-impl MultiLocalizedUnicode {
+impl MultiLocalizedUnicodeValues {
     pub fn try_new(buf: &mut &[u8]) -> Result<Self> {
         let n = read_be_u32(buf)? as usize;
         let mut pos = Vec::with_capacity(n);

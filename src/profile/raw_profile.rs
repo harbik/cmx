@@ -1,68 +1,19 @@
+use indexmap::IndexMap;
+use serde::Serialize;
+use std::collections::BTreeMap;
+use std::fs::File;
+use std::io::{Cursor, Read, Result, Write};
+use std::path::Path;
 
-mod raw_profile;
-pub use raw_profile::RawProfile;
+use crate::profile::Profile;
+use crate::signatures::{DeviceClass, TagSignature};
+use crate::tags::{Tag, TagEntry, TagTraits};
 
-mod input_profile;
-pub use input_profile::InputProfile;
-
-mod display_profile;
-pub use display_profile::DisplayProfile;
-
-mod output_profile;
-pub use output_profile::OutputProfile;
-
-mod device_link_profile;
-pub use device_link_profile::DeviceLinkProfile;
-
-mod abstract_profile;
-pub use abstract_profile::AbstractProfile;
-
-mod color_space_profile;
-pub use color_space_profile::ColorSpaceProfile;
-
-mod named_color_profile;
-pub use named_color_profile::NamedColorProfile;
-
-mod spectral_profile;
-pub use spectral_profile::SpectralProfile;
-
-mod delegate;
-
-mod checksum;
-pub use {checksum::set_profile_id,  checksum::md5checksum};
-
-#[derive(Debug)]
-pub enum Profile {
-    Input(InputProfile),
-    Display(DisplayProfile),
-    Output(OutputProfile),
-    DeviceLink(DeviceLinkProfile),
-    Abstract(AbstractProfile),
-    ColorSpace(ColorSpaceProfile),
-    NamedColor(NamedColorProfile),
-    Spectral(SpectralProfile),
-    Raw(RawProfile),
-}
-
-
-/*
-/// Represents a single ICC tag (raw).
-#[derive(Debug, Clone, Serialize)]
-pub struct DataBlock {
-    pub offset: u32,
-    pub size: u32,
-    pub data: Vec<u8>,
-}
-
-pub struct Data {
-    pub type_signature: TypeSignature,
-    pub data: Vec<u8>,
-}
 
 /// An ICC profile, deconstructed in:
 /// 
 /// - a raw header array, with a length of 128 bytes,
-/// - a indexmap of datablocks, with a ProfileTag as key and DataBlock as value.
+/// - a indexmap of datablocks, with a `TagSignature`` as key and `TagBytes`` as value.
 /// 
 /// An indexmap is used to preserve the insertion order of tags, which is technically not required
 /// by the ICC specification, but is used to maintain the order of tags as they appear in profiles
@@ -76,16 +27,29 @@ pub struct Data {
 /// 
 /// 
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct RawProfile {
     #[serde(with = "serde_arrays")]
     pub header: [ u8; 128 ], // 128 bytes
-    pub tags: IndexMap<ProfileTag, DataBlock>, // preserves insertion order
+    pub tags: IndexMap<TagSignature, TagEntry>, // preserves insertion order
     pub padding: usize, // number of padding bytes found in a profile read
 }
 
+impl Default for RawProfile {
+    fn default() -> Self {
+        Self {
+            header: [0; 128],
+            tags: IndexMap::new(),
+            padding: 0,
+        }
+        .with_valid_file_signature()
+        .with_version(4,3).unwrap()
+        .with_creation_date(None) // Current date and time
+    }
+}
 
 impl RawProfile {
+
     /// Reads an ICC profile from a file.
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let mut file = File::open(path)?;
@@ -122,7 +86,7 @@ impl RawProfile {
 
             // Parse the tag entry
             let signature_value = u32::from_be_bytes([entry[0], entry[1], entry[2], entry[3]]);
-            let signature = ProfileTag::new(signature_value);
+            let signature = TagSignature::new(signature_value);
 
             // Convert the offset and size from big-endian to u32
             let offset = u32::from_be_bytes([entry[4], entry[5], entry[6], entry[7]]);
@@ -145,10 +109,10 @@ impl RawProfile {
             let mut data = vec![0u8; *size as usize];
             cursor.read_exact(&mut data)?;
 
-            tags.insert(*signature, DataBlock {
+            tags.insert(*signature, TagEntry {
                 offset: *offset,
                 size: *size,
-                data,
+                tag: Tag::new(*signature, data),
             });
         }
 
@@ -210,7 +174,7 @@ impl RawProfile {
         for tag in updated_self.tags.values() {
             let start = tag.offset as usize;
             let end = start + tag.size as usize;
-            data_buf[start..end].copy_from_slice(&tag.data);
+            data_buf[start..end].copy_from_slice(&tag.tag.as_slice());
         }
         buf.extend_from_slice(&data_buf[data_start..]);
 
@@ -241,12 +205,12 @@ impl RawProfile {
             btree_map.insert(tag.offset, *tag_signature);
         }
         // Collect tag signatures in order of original offset
-        let tag_signatures_by_data_order: Vec<ProfileTag> = btree_map.values().cloned().collect();
+        let tag_signatures_by_data_order: Vec<TagSignature> = btree_map.values().cloned().collect();
 
         let mut changed = false;
         for tag_signature in tag_signatures_by_data_order.clone() {
             if let Some(tag) = self.tags.get_mut(&tag_signature) {
-                if tag.size != tag.data.len() as u32 {
+                if tag.size != tag.tag.len() as u32 {
                     changed = true;
                     break; 
                 }
@@ -263,23 +227,29 @@ impl RawProfile {
 
         // For each tag (in data order), update its offset and size, and pad data to 4 bytes
         for tag_signature in tag_signatures_by_data_order {
-            if let Some(tag) = self.tags.get_mut(&tag_signature) {
-                let pad = (4 - (tag.data.len() % 4)) % 4;
-                if tag.size != tag.data.len() as u32 {
-                    if pad > 0 {
-                        tag.data.extend(std::iter::repeat(0u8).take(pad));
-                    }
-                    tag.size = tag.data.len() as u32;
-                }
-                tag.offset = offset as u32;
-                offset += tag.size as usize;
+            if let Some(tag_entry) = self.tags.get_mut(&tag_signature) {
+                let padded_len = (tag_entry.tag.len() + 3) & !3;
+                tag_entry.tag.pad(padded_len);
+                tag_entry.size = tag_entry.tag.len() as u32;
+                tag_entry.offset = offset as u32;
+                offset += tag_entry.size as usize;
             }
         }
         self
     }
 
-
+    pub fn into_class_profile(self) -> Profile {
+        match self.device_class() {
+            DeviceClass::Input => Profile::Input(super::InputProfile(self)),
+            DeviceClass::Display => Profile::Display(super::DisplayProfile(self)),
+            DeviceClass::Output => Profile::Output(super::OutputProfile(self)),
+            DeviceClass::DeviceLink => Profile::DeviceLink(super::DeviceLinkProfile(self)),
+            DeviceClass::Abstract => Profile::Abstract(super::AbstractProfile(self)),
+            DeviceClass::ColorSpace => Profile::ColorSpace(super::ColorSpaceProfile(self)),
+            DeviceClass::NamedColor => Profile::NamedColor(super::NamedColorProfile(self)),
+            DeviceClass::Spectral => Profile::Spectral(super::SpectralProfile(self)),
+            DeviceClass::Unknown => Profile::Raw(self),
+        }
+    }
 }
 
-
- */

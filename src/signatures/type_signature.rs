@@ -44,7 +44,7 @@ pub enum TypeSignature {
     MultiLocalizedUnicodeType = 0x6D6C7563,     /* 'mluc' */
     MultiProcessElementType = 0x6D706574,       /* 'mpet' */
     NamedColor2Type = 0x6E636C32,               /* 'ncl2' use v2-v4*/
-    NativeDisplayInfoType = 0x6e64696e,         /* 'ndin' Apple Private Tag*/
+    NativeDisplayInfoType = 0x6e64696e,         /* 'ndin' Apple Private Signature*/
     ParametricCurveType = 0x70617261,           /* 'para' */
     ProfileSequenceDescType = 0x70736571,       /* 'pseq' */
     ProfileSequceIdType = 0x70736964,           /* 'psid' */
@@ -225,5 +225,12 @@ impl std::str::FromStr for TypeSignature {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let value = u32::from_str_radix(s, 16).map_err(|e| crate::error::Error::ParseError(e.to_string()))?;
         Ok(Self::from_u32(value))
+    }
+}
+
+impl From<[u8; 4]> for TypeSignature {
+    fn from(bytes: [u8; 4]) -> Self {
+        let value = u32::from_be_bytes(bytes);
+        Self::from_u32(value)
     }
 }

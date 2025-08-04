@@ -1,97 +1,273 @@
-use std::{fmt::{Display, Debug}, str::FromStr};
+mod chromaticity;
+mod common;
+mod lut8;
+mod make_model;
+mod measurement;
+mod multi_localized_unicode;
+mod named_color2;
+mod native_display_info;
+mod parametric_curve;
+mod text_description;
+mod vcgp;
+mod vcgt;
+mod viewing_conditions;
 
-use crate::Error;
+mod header_tags;
 
-mod cmm;
-pub use cmm::Cmm;
+pub use header_tags::{GamutCheck, Interpolate, Quality, RenderingIntent, S15Fixed16};
+use zerocopy::{BigEndian, IntoBytes, U16};
 
-mod device_class;
-pub use device_class::DeviceClass;
+use crate::{
+    signatures::{
+        type_signature::TypeSignature,
+        TagSignature,
+    },
+};
 
-mod profile_tag;
-pub use profile_tag::ProfileTag;
+use serde::Serialize;
 
-mod colorspace;
-pub use colorspace::ColorSpace;
-
-pub mod technology;
-pub mod typesignatures;
-
-mod pcs;
-pub use pcs::Pcs;
-
-mod platform;
-pub use platform::Platform;
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Tag(pub u32);
-
-/// Represents an ICC profile signature, which is a 4-byte value that can be interpreted as an ASCII string.
-impl Display for Tag {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        format_u32_as_string(f, self.0)
+pub trait TagTraits {
+    /// Converts the tag data into a byte vector.
+    fn into_bytes(self) -> Vec<u8>;
+    fn as_slice(&self) -> &[u8]; 
+    fn len(&self) -> usize {
+        self.as_slice().len()
+    }
+    fn pad(&mut self, size: usize);
+    fn type_signature(&self) -> TypeSignature {
+        // Default implementation to return a slice of the bytes.
+        let array: [u8; 4] = self.as_slice()[0..4].try_into().unwrap();
+        array.into()
     }
 }
 
-/// Represents an ICC profile signature, which is a 4-byte value that can be interpreted as an ASCII string.
-impl Debug for Tag {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        format_u32_as_string(f, self.0)
-    }
+macro_rules! define_tags {
+    // Match one or more identifiers, separated by commas.
+    // The `$(,)?` at the end allows an optional trailing comma for better formatting.
+    ($($name:ident),+ $(,)?) => {
+        // The `$(...)+` block will repeat its contents for each `$name` matched.
+        $(
+            #[derive(Debug, Serialize, Clone, PartialEq)]
+            pub struct $name(pub Vec<u8>);
+
+            impl TagTraits for $name {
+                fn into_bytes(self) -> Vec<u8> {
+                    // This is the most efficient implementation: it just moves
+                    // the Vec<u8> out of the struct without any copying.
+                    self.0
+                }
+                fn as_slice(&self) -> &[u8] {
+                    // This returns a slice of the internal Vec<u8>.
+                    &self.0
+                }
+                fn pad(&mut self, size: usize) {
+                    // This pads the internal Vec<u8> to the specified size.
+                    // If the current length is less than size, it appends zeros.
+                    if self.0.len() < size {
+                        self.0.resize(size, 0);
+                    }
+                }
+            }
+        )+
+    };
 }
 
-fn format_u32_as_string(f: &mut std::fmt::Formatter<'_>, value: u32) -> std::fmt::Result {
-    let bytes = value.to_be_bytes();
-    let s = String::from_utf8_lossy(&bytes);
-    if s.is_ascii() && s.len() == 4 {
-        write!(f, "{}", s)
-    } else {
-        write!(f, "{:08X}", value)
-    }
+define_tags!(
+    Raw,
+    Chromaticity,
+    ColorantOrder,
+    Curve,
+    Data,
+    DateTime,
+    Dict,
+    EmbeddedHeigthImage,
+    EmbeddedNormalImage,
+    Float16Array,
+    Float32Array,
+    Float64Array,
+    GamutBoundaryDescription,
+    Lut8,
+    LutAToB,
+    LutBToA,
+    Measurement,
+    MakeAndModel,
+    MultiLocalizedUnicode,
+    MultiProcessElements,
+    NativeDisplayInfo,
+    NamedColor2,
+    ParametricCurve,
+    S15Fixed16Array,
+    Signature,
+    SparseMatrixArray,
+    SpectralViewingConditions,
+    TagStruct,
+    Technology,
+    Text,
+    TextDescription,
+    U16Fixed16Array,
+    UInt8Array,
+    UInt16Array,
+    UInt32Array,
+    UInt64Array,
+    Utf8,
+    Utf16,
+    Utf8Zip,
+    Vcgt,
+    Vcgp,
+    ViewingConditions,
+    XYZ
+);
+
+/// Represents a single raw ICC tag, with its offset, size, and data as bytes.
+#[derive(Debug, Serialize, Clone, PartialEq)]
+pub struct TagEntry {
+    pub offset: u32,
+    pub size: u32,
+    pub tag: Tag,
 }
+/// TODO, all of these to implement the IntoBytes trait, so that they can be serialized to bytes easily.
 
-/// Parses a 4-character string into a `Tag`.
-/// If the string is not exactly 4 characters long, it returns an error.
-/// If the string is valid, it converts it to a `u32` by interpreting the bytes in big-endian order.
-/// Example:
-/// ```rust
-/// use cmx::tags::Tag;
-/// // using parse
-/// let tag: Tag = "abcd".parse().unwrap();
-/// assert_eq!(tag.0, 0x61626364); // 'abcd' in big-endian  
-///
-/// // Smaller strings are padded with spaces:
-/// let tag: Tag = "XYZ".parse().unwrap();
-/// assert_eq!(tag.0, 0x58595A20); // 'XYZ ' in big-endian  
-///
-/// // using from_str directly:
-/// use std::str::FromStr;
-/// let tag = Tag::from_str("mntr").unwrap();
-/// assert_eq!(tag.0, 0x6D6E7472); // 'mntr' in big-endian
-/// ```    
-impl FromStr for Tag {
-    type Err = crate::error::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() > 4 || s.len() < 1 {
-            return Err(Error::ParseError(format!("Signature must be between 1 and 4 characters - got: {}", s)));
+macro_rules! enum_tag {
+    (
+        $(#[$doc:meta])*
+        $($variant:ident),+ $(,)?) => {
+        /// An enum representing all possible ICC profile tag types.
+        #[derive(Debug, Serialize, Clone, PartialEq)]
+        pub enum Tag {
+            // Generate a variant for each identifier passed to the macro.
+            // e.g., Chromaticity(Chromaticity), Curve(Curve), etc.
+            $($variant($variant)),+
         }
-        // Pad the string to 4 characters with spaces if necessary
-        let padded = format!("{: <4}", s); // Pad with spaces to ensure it's 4 characters
-        let bytes = padded.as_bytes();
-        let value = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
-        Ok(Tag(value))
+
+        /// Implement the `TagTraits` for the `Tag` enum itself.
+        /// This implementation dispatches the method call to the specific
+        /// variant contained within the enum.
+        impl TagTraits for Tag {
+            fn as_slice(&self) -> &[u8] {
+                match self {
+                    // For each variant, generate a match arm that calls `.as_slice()`
+                    // on the inner struct.
+                    $(
+                        Self::$variant(tag) => tag.as_slice(),
+                    )+
+                }
+            }
+
+            fn into_bytes(self) -> Vec<u8> {
+                match self {
+                    $(
+                        Self::$variant(tag) => tag.into_bytes(),
+                    )+
+                }
+            }
+
+            fn pad(&mut self, size: usize) {
+                match self {
+                    $(
+                        Self::$variant(tag) => tag.pad(size),
+                    )+
+                }
+            }
+        }
+    };
+}
+
+// enums and type
+enum_tag!(
+    /// This enum is used to encapsulate the various tag types defined in the ICC specification.
+    /// Each variant corresponds to a specific tag type, allowing for type-safe handling of ICC profile tags.   
+    Raw,
+    Chromaticity,
+    ColorantOrder,
+    Curve,
+    Data,
+    DateTime,
+    Dict,
+    EmbeddedHeigthImage,
+    EmbeddedNormalImage,
+    Float16Array,
+    Float32Array,
+    Float64Array,
+    GamutBoundaryDescription,
+    Lut8,
+    LutAToB,
+    LutBToA,
+    Measurement,
+    MakeAndModel,
+    MultiLocalizedUnicode,
+    MultiProcessElements,
+    NativeDisplayInfo,
+    NamedColor2,
+    ParametricCurve,
+    S15Fixed16Array,
+    Signature,
+    SparseMatrixArray,
+    SpectralViewingConditions,
+    TagStruct,
+    Technology, // tag derived type
+    Text,
+    TextDescription,
+    U16Fixed16Array, // 'uf32'
+    UInt8Array,      // 'ui16'
+    UInt16Array,     // 'ui16'
+    UInt32Array,     // 'ui32'
+    UInt64Array,     // 'ui64'
+    Utf8,            // 'utf8'
+    Utf16,           // 'ut16'
+    Utf8Zip,         // 'zut8'
+    Vcgt,            // 'vcgt'
+    Vcgp,            // 'vcgp'
+    ViewingConditions,
+    XYZ
+);
+
+
+impl Tag {
+    /// Creates a new `Tag` instance from a `TagSignature` and raw data.
+    /// As a couple of tag signatures map to multiple types,
+    pub fn new(tag_signature: TagSignature, data: Vec<u8>) -> Self {
+        let type_signature = TypeSignature::from(<[u8; 4]>::try_from(&data[0..4]).unwrap());
+        match (tag_signature, type_signature) {
+            (TagSignature::GreenTRCTag, TypeSignature::CurveType) => Self::Curve(Curve(data)),
+            (TagSignature::GreenTRCTag, TypeSignature::ParametricCurveType) => {
+                Self::ParametricCurve(ParametricCurve(data))
+            }
+            (TagSignature::ProfileDescriptionTag, _) => {
+                Self::MultiLocalizedUnicode(MultiLocalizedUnicode(data))
+            }
+            _ => Self::Raw(Raw(data)),
+        }
     }
 }
 
-impl From<Tag> for u32 {
-    fn from(sig: Tag) -> Self {
-        sig.0
+// Tag Type definitions
+// Simple tag types defined here, complex tag types in separate files
+
+
+impl ColorantOrder {
+    pub fn new(colorant_order: Vec<u8>) -> Self {
+        Self(colorant_order)
+    }
+
+    pub fn as_slice(&self) -> &[u8] {
+        &self.0
     }
 }
 
-impl From<u32> for Tag {
-    fn from(value: u32) -> Self {
-        Tag(value)
+
+impl Curve {
+    pub fn new(data: &[u16]) -> Self {
+        let be_values: Vec<U16<BigEndian>> = data.iter().map(|&val| U16::new(val)).collect();
+
+        Self(be_values.as_bytes().to_vec())
     }
 }
+
+impl Data {
+    pub fn new(data: &[u16]) -> Self {
+        let be_values: Vec<U16<BigEndian>> = data.iter().map(|&val| U16::new(val)).collect();
+
+        Self(be_values.as_bytes().to_vec())
+    }
+}
+

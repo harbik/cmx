@@ -1,9 +1,9 @@
-use crate::types::common::*;
+use crate::tags::common::*;
 use serde::Serialize;
 
 // DEPRECATED_IN_MAC_OS_X_VERSION_10_6_AND_LATER
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct MakeAndModel {
     manufacturer: u32,
     model: u32,

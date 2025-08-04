@@ -1,11 +1,11 @@
 use super::measurement::StandardIlluminant;
-use crate::types::common::*;
+use crate::tags::common::*;
 use num::FromPrimitive;
 use serde::Serialize;
 
 // DEPRECATED_IN_MAC_OS_X_VERSION_10_6_AND_LATER
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct ViewingConditions {
     pub xyz_illuminant: [f64; 3],
     pub xyz_surround: [f64; 3],

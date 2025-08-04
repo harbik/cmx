@@ -1,7 +1,7 @@
-use crate::types::common::*;
+use crate::tags::common::*;
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct Lut8 {
     pub n: usize, // input channels
     pub m: usize, // output channels

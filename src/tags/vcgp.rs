@@ -1,7 +1,7 @@
-use crate::types::common::*;
+use crate::tags::common::*;
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct Vcgp {
     tbd: Vec<u8>, // can not find any information about this tag
 }

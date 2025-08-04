@@ -1,7 +1,7 @@
 use num_derive::FromPrimitive;
 use serde::{Deserialize, Serialize};
 
-use crate::tags::Tag;
+use crate::signatures::Signature;
 
 #[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum ColorSpace {
@@ -35,7 +35,7 @@ pub enum ColorSpace {
 }
 
 impl ColorSpace {
-    pub fn new(tag: Tag) -> Self {
+    pub fn new(tag: Signature) -> Self {
         match tag.0 {
             0x58595A20 => ColorSpace::XYZ,
             0x4C616220 => ColorSpace::Lab,
@@ -70,8 +70,8 @@ impl ColorSpace {
     }
 }
 
-impl From<ColorSpace> for Tag {
+impl From<ColorSpace> for Signature {
     fn from(color_space: ColorSpace) -> Self {
-        Tag(color_space as u32)
+        Signature(color_space as u32)
     }
 }

@@ -1,4 +1,4 @@
-use crate::{tags::Tag, Error};
+use crate::{signatures::Signature, Error};
 
 /// Represents the Profile Connection Space (PCS) of an ICC profile.
 // The PCS defines the color space used for the profile connection, which is essential for color management.
@@ -14,7 +14,7 @@ pub enum Pcs {
 } 
 
 impl Pcs {
-    pub fn new(tag: Tag) -> Result<Self, Error> {
+    pub fn new(tag: Signature) -> Result<Self, Error> {
         match tag.0 {
             0x58595A20 => Ok(Self::XYZ),
             0x4C616220 => Ok(Self::Lab),
@@ -24,8 +24,8 @@ impl Pcs {
     }
 }
 
-impl From<Pcs> for Tag {
+impl From<Pcs> for Signature {
     fn from(pcs: Pcs) -> Self {
-        Tag(pcs as u32)
+        Signature(pcs as u32)
     }
 }
