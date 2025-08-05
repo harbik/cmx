@@ -107,7 +107,7 @@ impl Default for Primaries {
 
 #[derive(TryFromBytes, IntoBytes, KnownLayout, Immutable)]
 #[repr(C, packed)]
-pub struct ChromaticityMap {
+struct ChromaticityMap {
     type_signature: [u8; 4],
     reserved: [u8; 4],
     channels: U16<BigEndian>,
@@ -117,12 +117,12 @@ pub struct ChromaticityMap {
 
 impl ChromaticityType {
     /// Returns the primaries of the chromaticity map.
-    pub fn chromaticity_map(&self) -> &ChromaticityMap {
+    fn chromaticity_map(&self) -> &ChromaticityMap {
         ChromaticityMap::try_ref_from_bytes(self.0.as_slice())
             .expect("Failed to convert ChromaticityMap from bytes")
     }
 
-    pub fn chromaticity_map_mut(&mut self) -> &mut ChromaticityMap {
+    fn chromaticity_map_mut(&mut self) -> &mut ChromaticityMap {
         ChromaticityMap::try_mut_from_bytes(&mut self.0)
             .expect("Failed to convert ChromaticityMap from bytes")
     }

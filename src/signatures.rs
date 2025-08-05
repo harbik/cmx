@@ -8,7 +8,7 @@ pub use cmm::Cmm;
 mod device_class;
 pub use device_class::DeviceClass;
 
-mod tag_signature;
+pub(crate) mod tag_signature;
 pub use tag_signature::TagSignature;
 
 mod colorspace;

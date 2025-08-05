@@ -1,5 +1,6 @@
 mod chromaticity;
 mod common;
+mod curve_type;
 mod lut8;
 mod make_model;
 mod measurement;
@@ -11,26 +12,22 @@ mod text_description;
 mod vcgp;
 mod vcgt;
 mod viewing_conditions;
+//mod tag_builders;
 
 mod header_tags;
 
 pub use header_tags::{GamutCheck, Interpolate, Quality, RenderingIntent, S15Fixed16};
 use zerocopy::{BigEndian, IntoBytes, U16};
 
-use crate::{
-    signatures::{
-        type_signature::TypeSignature,
-        TagSignature,
-    },
-};
+use crate::signatures::{type_signature::TypeSignature, TagSignature};
 
-use serde::Serialize;
 use paste::paste;
+use serde::Serialize;
 
 pub trait TagTraits {
     /// Converts the tag data into a byte vector.
     fn into_bytes(self) -> Vec<u8>;
-    fn as_slice(&self) -> &[u8]; 
+    fn as_slice(&self) -> &[u8];
     fn len(&self) -> usize {
         self.as_slice().len()
     }
@@ -55,7 +52,7 @@ pub trait TagTraits {
 //     providing methods for access and manipulation of the underlying byte buffer.
 //
 // Usage example:
-// 
+//
 // define_tag_types!(
 //     ChromaticityType,
 //     CurveType,
@@ -82,11 +79,49 @@ pub trait TagTraits {
 macro_rules! define_tag_types {
     ($($name:ident),+ $(,)?) => {
         // The `$(...)+` block will repeat its contents for each `$name` matched.
-        $(
-            #[derive(Debug, Serialize, Clone, PartialEq)]
-            pub struct $name(pub Vec<u8>);
+        paste! {
+            $(
+                #[derive(Debug, Serialize, Clone, PartialEq)]
+                pub struct [< $name Type >](pub Vec<u8>);
 
-            impl TagTraits for $name {
+                impl TagTraits for [< $name Type >] {
+                    fn into_bytes(self) -> Vec<u8> {
+                        // This is the most efficient implementation: it just moves
+                        // the Vec<u8> out of the struct without any copying.
+                        self.0
+                    }
+                    fn as_slice(&self) -> &[u8] {
+                        // This returns a slice of the internal Vec<u8>.
+                        &self.0
+                    }
+                    fn pad(&mut self, size: usize) {
+                        // This pads the internal Vec<u8> to the specified size.
+                        // If the current length is less than size, it appends zeros.
+                        if self.0.len() < size {
+                            self.0.resize(size, 0);
+                        }
+                    }
+                }
+
+                impl Default for [< $name Type >] {
+                    fn default() -> Self {
+                        // Default implementation creates an empty Vec<u8>
+                        Self(Vec::new())
+                    }
+                }
+            )+
+        }
+    };
+}
+
+
+macro_rules! define_tag_type {
+    ($name:ident) => {
+        paste! {
+            #[derive(Debug, Serialize, Clone, PartialEq)]
+            pub struct [< $name Type >](pub Vec<u8>);
+
+            impl TagTraits for [< $name Type >] {
                 fn into_bytes(self) -> Vec<u8> {
                     // This is the most efficient implementation: it just moves
                     // the Vec<u8> out of the struct without any copying.
@@ -104,25 +139,68 @@ macro_rules! define_tag_types {
                     }
                 }
             }
-        )+
+
+            impl Default for [< $name Type >] {
+                fn default() -> Self {
+                    // Default implementation creates an empty Vec<u8>
+                    Self(Vec::new())
+                }
+            }
+        }
     };
 }
-
 // This defines all the tag types, as wrappers around `Vec<u8>`, the raw data for each tag.
 // It alo implements the `TagTraits` for each tag type, allowing them to be converted to bytes,
 // sliced, and padded as needed. The length and type signature methods are also provided through
 // the trait.
 // Change to TagTypes
 define_tag_types!(
-    RawType, ChromaticityType, ColorantOrderType, CurveType, DataType,
-    DateTimeType, DictType, EmbeddedHeigthImageType, EmbeddedNormalImageType, Float16ArrayType,
-    Float32ArrayType, Float64ArrayType, GamutBoundaryDescriptionType, Lut8Type, LutAToBType,
-    LutBToAType, MeasurementType, MakeAndModelType, MultiLocalizedUnicodeType, MultiProcessElementsType,
-    NativeDisplayInfoType, NamedColor2Type, ParametricCurveType, S15Fixed16ArrayType, SignatureType,
-    SparseMatrixArrayType, SpectralViewingConditionsType, TagStructType, TechnologyType, TextType,
-    TextDescriptionType, U16Fixed16ArrayType, UInt8ArrayType, UInt16ArrayType, UInt32ArrayType,
-    UInt64ArrayType, Utf8Type, Utf16Type, Utf8ZipType, VcgtType,
-    VcgpType, ViewingConditionsType, XYZType
+    Raw,
+    Cicp,
+    Chromaticity,
+    ColorantOrder,
+    ColorantTable,
+    Curve,
+    Data,
+    DateTime,
+    Dict,
+    EmbeddedHeigthImage,
+    EmbeddedNormalImage,
+    Float16Array,
+    Float32Array,
+    Float64Array,
+    GamutBoundaryDescription,
+    Lut8,
+    LutAToB,
+    LutBToA,
+    Measurement,
+    MakeAndModel,
+    MultiLocalizedUnicode,
+    MultiProcessElements,
+    NativeDisplayInfo,
+    NamedColor2,
+    ParametricCurve,
+    ProfileSequenceDesc,
+    S15Fixed16Array,
+    Signature,
+    SparseMatrixArray,
+    SpectralViewingConditions,
+    TagStruct,
+    Technology,
+    Text,
+    TextDescription,
+    U16Fixed16Array,
+    UInt8Array,
+    UInt16Array,
+    UInt32Array,
+    UInt64Array,
+    Utf8,
+    Utf16,
+    Utf8Zip,
+    Vcgt,
+    Vcgp,
+    ViewingConditions,
+    XYZ
 );
 
 /// Represents a single raw ICC tag, with its offset, size, and data as bytes.
@@ -131,6 +209,23 @@ pub struct TagEntry {
     pub offset: u32,
     pub size: u32,
     pub tag: Tag,
+}
+
+impl TagEntry {
+    /// Creates a new `TagEntry` with the given offset, size, and tag.
+    pub fn new(offset: u32, size: u32, tag: Tag) -> Self {
+        Self { offset, size, tag }
+    }
+
+    /// Returns the raw bytes of the tag.
+    pub fn as_slice(&self) -> &[u8] {
+        self.tag.as_slice()
+    }
+
+    /// Converts the tag into a byte vector.
+    pub fn into_bytes(self) -> Vec<u8> {
+        self.tag.into_bytes()
+    }
 }
 
 // The `Tag` enum serves as a unified wrapper for all supported ICC tag types.
@@ -161,7 +256,7 @@ pub struct TagEntry {
 //
 // This design pattern enables flexible runtime dispatch over tag types, while retaining compile-time type safety
 // and encapsulating the raw binary representation within each tag-specific type.
-macro_rules! enum_tag {
+macro_rules! enum_tags {
     ( $(#[$doc:meta])* $($variant:ident),+ $(,)?) => {
         paste! {
             /// An enum representing all possible ICC profile tag types.
@@ -200,14 +295,14 @@ macro_rules! enum_tag {
                     }
                 }
             }
-        
+
 
             impl Tag {
                 // For each variant name passed to the macro...
                 $(
-                    /// Returns a reference to the inner `[< $variant Type >]`
-                    /// if the variant is `[< $variant >]`, otherwise returns `None`.
-                    pub fn [< as_ $variant:lower >](&self) -> Option<&[< $variant Type >]> {
+                    /// Returns a reference to the inner struct if the variant matches, otherwise
+                    /// returns `None`.
+                    pub fn [< as_ $variant:snake >](&self) -> Option<&[< $variant Type >]> {
                         if let Self::$variant(v) = self {
                             Some(v)
                         } else {
@@ -215,9 +310,9 @@ macro_rules! enum_tag {
                         }
                     }
 
-                    /// Returns a mutable reference to the inner `[< $variant Type >]`
-                    /// if the variant is `[< $variant >]`, otherwise returns `None`.
-                    pub fn [< as_ $variant:lower _mut >](&mut self) -> Option<&mut [< $variant Type >]> {
+                    /// Returns a mutable reference to the inner struct if the variant matches,
+                    /// otherwise returns `None`.
+                    pub fn [< as_ $variant:snake _mut >](&mut self) -> Option<&mut [< $variant Type >]> {
                         if let Self::$variant(v) = self {
                             Some(v)
                         } else {
@@ -233,13 +328,15 @@ macro_rules! enum_tag {
     };
 }
 
+
 // enums and type
-enum_tag!(
+enum_tags!(
     /// This enum is used to encapsulate the various tag types defined in the ICC specification.
-    /// Each variant corresponds to a specific tag type, allowing for type-safe handling of ICC profile tags.   
+    /// Each variant corresponds to a specific tag type, allowing for type-safe handling of ICC profile tags.
     Raw,
     Chromaticity,
     ColorantOrder,
+    ColorantTable,
     Curve,
     Data,
     DateTime,
@@ -260,6 +357,7 @@ enum_tag!(
     NativeDisplayInfo,
     NamedColor2,
     ParametricCurve,
+    ProfileSequenceDesc,
     S15Fixed16Array,
     Signature,
     SparseMatrixArray,
@@ -284,7 +382,7 @@ enum_tag!(
 
 
 impl Tag {
-      /// Creates a new `Tag` from a `TagSignature` and its raw byte data.
+    /// Creates a new `Tag` from a `TagSignature` and its raw byte data.
     ///
     /// This function acts as a factory, lazily dispatching to the correct parsing logic based on the
     /// provided `signature`. It encapsulates the complexity of the ICC tag structure, including
@@ -338,32 +436,46 @@ impl Tag {
             TagSignature::TechnologyTag => Self::Technology(TechnologyType(data)),
             TagSignature::VcgtTag => Self::Vcgt(VcgtType(data)),
             TagSignature::VcgpTag => Self::Vcgp(VcgpType(data)),
-            TagSignature::ViewingConditionsTag => Self::ViewingConditions(ViewingConditionsType(data)),
-            TagSignature::ProfileDescriptionTag => Self::MultiLocalizedUnicode(MultiLocalizedUnicodeType(data)),
+            TagSignature::ViewingConditionsTag => {
+                Self::ViewingConditions(ViewingConditionsType(data))
+            }
+            TagSignature::ProfileDescriptionTag => {
+                Self::MultiLocalizedUnicode(MultiLocalizedUnicodeType(data))
+            }
 
             // ambiguous tags
             TagSignature::GreenTRCTag => match type_signature {
                 TypeSignature::CurveType => Self::Curve(CurveType(data)),
-                TypeSignature::ParametricCurveType => Self::ParametricCurve(ParametricCurveType(data)),
+                TypeSignature::ParametricCurveType => {
+                    Self::ParametricCurve(ParametricCurveType(data))
+                }
                 _ => Self::Raw(RawType(data)),
             },
             TagSignature::BlueTRCTag => match type_signature {
                 TypeSignature::CurveType => Self::Curve(CurveType(data)),
-                TypeSignature::ParametricCurveType => Self::ParametricCurve(ParametricCurveType(data)),
+                TypeSignature::ParametricCurveType => {
+                    Self::ParametricCurve(ParametricCurveType(data))
+                }
                 _ => Self::Raw(RawType(data)),
             },
             TagSignature::RedTRCTag => match type_signature {
                 TypeSignature::CurveType => Self::Curve(CurveType(data)),
-                TypeSignature::ParametricCurveType => Self::ParametricCurve(ParametricCurveType(data)),
+                TypeSignature::ParametricCurveType => {
+                    Self::ParametricCurve(ParametricCurveType(data))
+                }
                 _ => Self::Raw(RawType(data)),
             },
             TagSignature::NamedColorTag => match type_signature {
                 TypeSignature::NamedColor2Type => Self::NamedColor2(NamedColor2Type(data)),
                 _ => Self::Raw(RawType(data)),
-            }, 
+            },
             TagSignature::ProfileSequenceDescTag => match type_signature {
-                TypeSignature::MultiLocalizedUnicodeType => Self::MultiLocalizedUnicode(MultiLocalizedUnicodeType(data)),
-                TypeSignature::TextDescriptionType => Self::TextDescription(TextDescriptionType(data)),
+                TypeSignature::MultiLocalizedUnicodeType => {
+                    Self::MultiLocalizedUnicode(MultiLocalizedUnicodeType(data))
+                }
+                TypeSignature::TextDescriptionType => {
+                    Self::TextDescription(TextDescriptionType(data))
+                }
                 TypeSignature::TextType => Self::Text(TextType(data)),
                 _ => Self::Raw(RawType(data)),
             },
@@ -373,9 +485,88 @@ impl Tag {
     }
 }
 
-// Tag Type definitions
-// Simple tag types defined here, complex tag types in separate files
+/// Marker traits for tag signatures that can be used in a type-safe manner.
+pub trait IsCurveTag {}
+pub trait IsTextDescriptionTag {}
+pub trait IsMultiLocalizedUnicodeTag {}
 
+/// A trait for tag signatures that have only one valid data type.
+pub trait UnambiguousTag {
+    /// The single data type associated with this tag signature.
+    type DataType: Default;
+
+    /// A function to create the correct `Tag` enum variant from the data.
+    fn new_tag(data: Self::DataType) -> Tag;
+}
+
+/// A helper macro to reduce boilerplate when implementing `UnambiguousTag`.
+macro_rules! impl_unambiguous_tag {
+    // Change the first argument to an `ident` to capture just the name (e.g., `RedTRCTag`).
+    ($tag_type_name:ident, $data_type:ty, $tag_variant:ident) => {
+        // No paste needed. Just write the full path to the type inside the macro.
+        // The compiler will correctly substitute the identifier at the end.
+        // This also uses the correct ZST pattern (implementing on the type, not a reference).
+        impl UnambiguousTag for crate::signatures::tag_signature::$tag_type_name {
+            type DataType = $data_type;
+            fn new_tag(data: Self::DataType) -> Tag {
+                Tag::$tag_variant(data)
+            }
+        }
+    };
+}
+
+// Tags of type XYZType
+impl_unambiguous_tag!(MediaWhitePointTag, XYZType, XYZ);
+impl_unambiguous_tag!(MediaBlackPointTag, XYZType, XYZ);
+impl_unambiguous_tag!(LuminanceTag, XYZType, XYZ);
+
+// Tags of type CurveType
+impl_unambiguous_tag!(RedTRCTag, CurveType, Curve);
+impl_unambiguous_tag!(GreenTRCTag, CurveType, Curve);
+impl_unambiguous_tag!(BlueTRCTag, CurveType, Curve);
+impl_unambiguous_tag!(GrayTRCTag, CurveType, Curve); // Assuming you have a GrayTRCTag ZST
+
+// Tags of type TextDescriptionType
+impl_unambiguous_tag!(CopyrightTag, TextDescriptionType, TextDescription);
+impl_unambiguous_tag!(DeviceMfgDescTag, TextDescriptionType, TextDescription);
+impl_unambiguous_tag!(DeviceModelDescTag, TextDescriptionType, TextDescription);
+impl_unambiguous_tag!(ScreeningDescTag, TextDescriptionType, TextDescription);
+impl_unambiguous_tag!(ViewingCondDescTag, TextDescriptionType, TextDescription);
+
+// Tags of type TextType
+impl_unambiguous_tag!(CharTargetTag, TextType, Text);
+
+// Tags of type SignatureType
+impl_unambiguous_tag!(TechnologyTag, SignatureType, Signature);
+impl_unambiguous_tag!(ColorimetricIntentImageStateTag, SignatureType, Signature); // Assuming ZST exists
+
+// Chromaticity and Colorant Tags
+impl_unambiguous_tag!(ChromaticityTag, ChromaticityType, Chromaticity);
+impl_unambiguous_tag!(ColorantOrderTag, ColorantOrderType, ColorantOrder);
+impl_unambiguous_tag!(ColorantTableTag, ColorantTableType, ColorantTable);
+impl_unambiguous_tag!(ColorantTableOutTag, ColorantTableType, ColorantTable); // Often same type as clrt
+impl_unambiguous_tag!(NamedColor2Tag, NamedColor2Type, NamedColor2);
+
+// Metadata and Informational Tags
+impl_unambiguous_tag!(CalibrationDateTimeTag, DateTimeType, DateTime);
+impl_unambiguous_tag!(
+    ProfileSequenceDescTag,
+    ProfileSequenceDescType,
+    ProfileSequenceDesc
+);
+impl_unambiguous_tag!(CrdInfoTag, CrdInfoType, CrdInfo); // Assuming CrdInfoType exists
+
+// Measurement and Viewing Conditions Tags
+impl_unambiguous_tag!(MeasurementTag, MeasurementType, Measurement);
+impl_unambiguous_tag!(
+    ViewingConditionsTag,
+    ViewingConditionsType,
+    ViewingConditions
+);
+
+// Video Color Gamut Tags (from VCGT spec)
+impl_unambiguous_tag!(VcgtTag, VcgtType, Vcgt);
+impl_unambiguous_tag!(VcgpTag, VcgpType, Vcgp); // Assuming VcgpType exists
 
 impl ColorantOrderType {
     pub fn new(colorant_order: Vec<u8>) -> Self {
@@ -386,29 +577,3 @@ impl ColorantOrderType {
         &self.0
     }
 }
-
-
-impl CurveType {
-    /// Parses the raw big-endian bytes into a `Vec<u16>`.
-    pub fn data(&self) -> Vec<u16> {
-        //let count = u32::from_be_bytes(self.0[8..=11].try_into().unwrap());
-        self.0[12..]
-            .chunks_exact(2)
-            .map(|chunk| u16::from_be_bytes(chunk.try_into().unwrap()))
-            .collect()
-    }
-
-    /// Converts a `Vec<u16>` into raw big-endian bytes and sets it as the tag's data.
-    pub fn set_data(&mut self, data: &[u16]) {
-        self.0[8..=12].copy_from_slice(&data.len().to_be_bytes());
-        let values : Vec<u8> = data
-            .iter()
-            .flat_map(|&value| value.to_be_bytes())
-            .collect();
-        // Resize the vector to fit the new data
-        self.0.resize(12 + values.len(), 0);
-        self.0[12..12 + values.len()].copy_from_slice(&values);
-    }
-}
-
-

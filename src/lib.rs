@@ -1,3 +1,4 @@
+#![allow(dead_code, unused_imports)]
 #![doc = include_str!("../README.md")]
 
 /*

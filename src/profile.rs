@@ -26,7 +26,13 @@ pub use named_color_profile::NamedColorProfile;
 mod spectral_profile;
 pub use spectral_profile::SpectralProfile;
 
+/// delegates methods from the RawProfile to all Profiles.
 mod delegate;
+
+mod with_tag;
+
+mod tag_setter;
+pub use tag_setter::TagSetter;
 
 mod checksum;
 pub use {checksum::set_profile_id,  checksum::md5checksum};
