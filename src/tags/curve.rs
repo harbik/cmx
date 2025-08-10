@@ -1,3 +1,15 @@
+use serde::Serialize;
+
+
+#[derive(Serialize)]
+pub struct CurveTypeToml(Vec<u16>);
+
+impl From<&super::CurveType> for CurveTypeToml {
+    fn from(curve: &super::CurveType) -> Self {
+        CurveTypeToml(curve.data())
+    }
+}
+
 
 impl super::CurveType {
     /// Parses the raw big-endian bytes into a `Vec<u16>`.

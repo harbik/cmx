@@ -2,7 +2,6 @@ use crate::tags::MultiLocalizedUnicodeType;
 
 use isocountry::CountryCode;
 use isolang::Language;
-use serde::Serialize;
 use zerocopy::{BigEndian, Immutable, IntoBytes, KnownLayout, TryFromBytes, Unaligned, U16, U32};
 
 #[derive(TryFromBytes, IntoBytes, KnownLayout, Immutable, Unaligned)]

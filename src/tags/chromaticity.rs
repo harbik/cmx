@@ -20,7 +20,7 @@ use num_derive::{FromPrimitive, ToPrimitive};
 use serde::Serialize;
 use zerocopy::{BigEndian, Immutable, IntoBytes, KnownLayout, TryFromBytes, U32, U16};
 
-use crate::tags::ChromaticityType;
+use crate::{signatures::type_signature::TypeSignature, tags::ChromaticityType};
 use colorimetry::xyz as cmt;
 
 const ITU: [cmt::Chromaticity;3] = [
@@ -61,6 +61,7 @@ const ITU2020: [cmt::Chromaticity;3] = [
 
 #[derive(
     Debug,
+    Default,
     Serialize,
     FromPrimitive,
     ToPrimitive,
@@ -72,11 +73,12 @@ const ITU2020: [cmt::Chromaticity;3] = [
     KnownLayout,
     Immutable,
 )]
-
-
 #[repr(C)]
-pub enum Primaries {
+/// Colorant and Phosphor Encoding, or Primaries, as defined in Table 31 of the 
+/// [ICC specification](https://www.color.org/specification/ICC.1-2022-05.pdf).
+pub enum StandardPrimaries {
     Unknown = 0x0000,
+    #[default]
     ITU = 0x0001,   // ITU-R BT.709-2
     SMPTE = 0x0002, // SMPTE RP145
     EBU = 0x0003,   // EBU Tech. 3213-E
@@ -85,56 +87,112 @@ pub enum Primaries {
     ITU2020 = 0x0006, // ITU-R BT.2020, Rec 2020, BT2020
 }
 
-impl Primaries {
+impl StandardPrimaries {
     pub fn rgb(&self) -> Option<[cmt::Chromaticity; 3]> {
         match self {
-            Primaries::ITU => Some(ITU),
-            Primaries::SMPTE => Some(SMPTE),
-            Primaries::EBU => Some(EBU),
-            Primaries::P22 => Some(P22),
-            Primaries::P3 => Some(P3),
-            Primaries::ITU2020 => Some(ITU2020),
-            Primaries::Unknown => None,
+            StandardPrimaries::ITU => Some(ITU),
+            StandardPrimaries::SMPTE => Some(SMPTE),
+            StandardPrimaries::EBU => Some(EBU),
+            StandardPrimaries::P22 => Some(P22),
+            StandardPrimaries::P3 => Some(P3),
+            StandardPrimaries::ITU2020 => Some(ITU2020),
+            StandardPrimaries::Unknown => None,
         }
     }
 }
 
-impl Default for Primaries {
-    fn default() -> Self {
-        Self::Unknown
-    }
-}
 
 #[derive(TryFromBytes, IntoBytes, KnownLayout, Immutable)]
 #[repr(C, packed)]
-struct ChromaticityMap {
+struct ChromaticityLayout {
     type_signature: [u8; 4],
     reserved: [u8; 4],
     channels: U16<BigEndian>,
     primaries: U16<BigEndian>,
-    data: [[U32<BigEndian>; 2]],
+    data: [[U32<BigEndian>; 2]; 16],
 }
 
+impl ChromaticityLayout {
+    /// Returns the size of the ChromaticityMap in bytes.
+    pub fn new_primary(sp: StandardPrimaries) -> Self {
+        let mut map = ChromaticityLayout::default();
+        map.primaries.set(num::ToPrimitive::to_u16(&sp).unwrap_or_default());
+        map
+    }
+
+    pub fn new_custom(chromaticities: [cmt::Chromaticity; 3]) -> Self {
+        let mut map = ChromaticityLayout::default();
+        map.channels.set(3); // Set to 3 channels for RGB
+        map.primaries.set(0); // Set to 0 for custom primaries
+
+        for (i, chromaticity) in chromaticities.iter().enumerate() {
+            if i < map.data.len() {
+                map.data[i][0].set((chromaticity.x() * u16::MAX as f64) as u32);
+                map.data[i][1].set((chromaticity.y() * u16::MAX as f64) as u32);
+            }
+        }
+        map
+    }
+}
+
+impl Default for ChromaticityLayout {
+    fn default() -> Self {
+        ChromaticityLayout {
+            type_signature: TypeSignature::ChromaticityType.into(),
+            reserved: [0; 4],
+            channels: U16::new(1),
+            primaries: U16::new(1), // e.g., ITU-R BT.709 colorant
+            data: [[U32::new(0); 2]; 16],
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct ChromaticityTypeToml {
+    primaries: StandardPrimaries,
+    chromaticities: Vec<[f64; 2]>,
+}
+
+impl From<&ChromaticityType> for ChromaticityTypeToml {
+    fn from(chromaticity: &ChromaticityType) -> Self {
+        let chromaticities = chromaticity.chromaticities().unwrap();
+        let primaries = chromaticity.chromaticity_map().primaries.get();
+        let primaries = FromPrimitive::from_u16(primaries).unwrap_or(StandardPrimaries::Unknown);
+        
+        let chromaticities = chromaticities.iter()
+            .map(|c| [c.x(), c.y()])
+            .collect();
+
+        ChromaticityTypeToml {
+            primaries,
+            chromaticities,
+        }
+    }
+}
+
+// The ChromaticityType is a thin wrapper around a Vec<u6>, containing the raw bytes of the RawProfile.
 impl ChromaticityType {
     /// Returns the primaries of the chromaticity map.
-    fn chromaticity_map(&self) -> &ChromaticityMap {
-        ChromaticityMap::try_ref_from_bytes(self.0.as_slice())
+    fn chromaticity_map(&self) -> &ChromaticityLayout {
+        ChromaticityLayout::try_ref_from_bytes(self.0.as_slice())
             .expect("Failed to convert ChromaticityMap from bytes")
     }
 
-    fn chromaticity_map_mut(&mut self) -> &mut ChromaticityMap {
-        ChromaticityMap::try_mut_from_bytes(&mut self.0)
+    /*
+    fn chromaticity_map_mut(&mut self) -> &mut ChromaticityLayout {
+        ChromaticityLayout::try_mut_from_bytes(&mut self.0)
             .expect("Failed to convert ChromaticityMap from bytes")
     }
+     */
 
 
     pub fn chromaticities(&self) -> Option<[cmt::Chromaticity; 3]> {
-        let t = ChromaticityMap::try_ref_from_bytes(self.0.as_slice())
+        let t = ChromaticityLayout::try_ref_from_bytes(self.0.as_slice())
             .expect("Failed to convert ChromaticityMap from bytes");
 
         let primaries = FromPrimitive::from_u16(t.primaries.get()).unwrap_or_default();
         match primaries {
-            Primaries::Unknown => {
+            StandardPrimaries::Unknown => {
                 // Get the measured chromaticities
                 self.get_custom_chromaticities()
             }
@@ -170,20 +228,13 @@ impl ChromaticityType {
         }
     }
 
-    pub fn set_custom_chromaticities(&mut self, chromaticities: [cmt::Chromaticity; 3])  {
-        let mut data = [[U32::new(0); 2]; 16];
-        for (i, &chromaticity) in chromaticities.iter().enumerate() {
-            if i < data.len() {
-                data[i][0].set((chromaticity.x() * u16::MAX as f64) as u32);
-                data[i][0].set((chromaticity.y() * u16::MAX as f64) as u32);
-            }
-        }
+    pub fn set_standard(&mut self, primaries: StandardPrimaries) {
+        let map = ChromaticityLayout::new_primary(primaries);
+        self.0 = map.as_bytes().to_vec();
+    }
 
-        self.0.resize(4 + 4 + 2 + 2 + 3 * 4, 0);
-      //  let mut_ref = ChromaticityMap::try_mut_from_bytes(&mut self.0)
-      //      .expect("Failed to convert ChromaticityMap from bytes");
-        let mut_ref = self.chromaticity_map_mut();
-        mut_ref.primaries.set(0);
-        mut_ref.data.copy_from_slice(&data[..mut_ref.data.len()]);
+    pub fn set_custom(&mut self, chromaticities: [cmt::Chromaticity; 3])  {
+        let map = ChromaticityLayout::new_custom(chromaticities);
+        self.0 = map.as_bytes().to_vec();
     }
 }

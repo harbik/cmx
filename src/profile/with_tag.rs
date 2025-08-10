@@ -1,23 +1,16 @@
 //! This module provides a type-safe builder API for constructing ICC profiles.
 //!
-//! The core of the API is the `Profile::add_tag` method, which returns a `TagSetter`.
+//! The core of the API is the `Profile::` method, which returns a `TagSetter`.
 //! This `TagSetter` uses a system of "capability traits" to ensure that only valid
 //! data types can be associated with a given `TagSignature` at compile time.
 
 use crate::{
     profile::{RawProfile, TagSetter},
     signatures::TagSignature,
-    tags::{
-        CurveType,
-        MultiLocalizedUnicodeType,
-        Tag,
-        TextDescriptionType,
-        // ... import other tag data types as you need them ...
-    },
 };
 
 impl RawProfile {
-    pub fn add_tag<S: Into<TagSignature> + Copy>(
+    pub fn with_tag<S: Into<TagSignature> + Copy>(
         &mut self,
         signature: S,
     ) -> TagSetter<'_, S> {
@@ -28,7 +21,7 @@ impl RawProfile {
 /*
 //! This module provides a type-safe builder API for constructing ICC profiles.
 //!
-//! The core of the API is the `Profile::add_tag` method, which returns a `TagSetter`.
+//! The core of the API is the `Profile::with_tag` method, which returns a `TagSetter`.
 //! This `TagSetter` uses a system of "capability traits" to ensure that only valid
 //! data types can be associated with a given `TagSignature` at compile time.
 
@@ -118,7 +111,7 @@ impl Profile {
     ///
     /// This returns a `TagSetter` helper struct, which provides type-safe methods
     /// (e.g., `.as_curve()`, `.with_data()`) to define the tag's data.
-    pub fn add_tag<S: Into<TagSignature> + Copy>(&mut self, signature: S) -> TagSetter<'_, S> {
+    pub fn with_tag<S: Into<TagSignature> + Copy>(&mut self, signature: S) -> TagSetter<'_, S> {
         TagSetter {
             profile: self,
             signature,
@@ -145,7 +138,7 @@ mod tests {
         // is `CurveType`. The `.with_data()` method is available, and the closure
         // argument `curve` is correctly inferred as `&mut CurveType`.
         //
-        // profile.add_tag(tag::RedTRC).with_data(|curve| {
+        // profile.with_tag(tag::RedTRC).with_data(|curve| {
         //     curve.set_gamma(1.8);
         // });
 
@@ -155,9 +148,9 @@ mod tests {
         //
         // Instead, the user must choose one of the valid `.as_...()` methods.
         //
-        // profile.add_tag(tag::Desc).as_multi_localized_unicode(|mlu| {
-        //     mlu.set_text("en-US", "My Profile Description");
-        //     mlu.set_text("de-DE", "Meine Profilbeschreibung");
+        // profile.with_tag(tag::Desc).as_multi_localized_unicode(|mlu| {
+        //     mlu.add_text("en-US", "My Profile Description");
+        //     mlu.add_text("de-DE", "Meine Profilbeschreibung");
         // });
         //
         // --- Example 3: Compile-Time Error ---
@@ -167,7 +160,7 @@ mod tests {
         //
         // The following line would fail to compile:
         //
-        // profile.add_tag(tag::RedTRC).as_text_description(|text| {
+        // profile.with_tag(tag::RedTRC).as_text_description(|text| {
         //     text.set_ascii("This is not allowed!");
         // });
     }

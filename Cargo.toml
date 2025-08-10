@@ -26,6 +26,9 @@ colorimetry = "0.0.7"
 delegate = "0.13.4"
 md5 = "0.8.0"
 paste = "1.0.15"
+strum = {version = "0.25", features = ["derive"]}  # for enum iteration and derive macros
+hex = "0.4.3"
+toml = "0.9.5"
 
 [dev-dependencies]
 glob = "0.3.0"

@@ -48,6 +48,7 @@ impl Default for RawProfile {
     }
 }
 
+
 impl RawProfile {
 
     /// Reads an ICC profile from a file.

@@ -3,7 +3,7 @@ use crate::signatures::Signature;
 /// Represents the Profile Connection Space (PCS) of an ICC profile.
 // The PCS defines the color space used for the profile connection, which is essential for color management.
 // The PCS can be XYZ (CIE1931 XYZ), Lab (CIELAB), or Spectral.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::Display)]
 pub enum Platform {
     Apple = 0x4150504C,           // 'APPL' - Apple Computer Inc.
     Microsoft = 0x4D534654,       // 'MSFT' - Microsoft Corporation',

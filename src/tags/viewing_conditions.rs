@@ -1,3 +1,4 @@
+/*
 use super::measurement::StandardIlluminant;
 use crate::tags::common::*;
 use num::FromPrimitive;
@@ -21,3 +22,5 @@ impl ViewingConditions {
         })
     }
 }
+
+ */

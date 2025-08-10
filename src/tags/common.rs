@@ -2,12 +2,14 @@ use chrono::{DateTime, Datelike, Timelike, Utc, TimeZone};
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + 'static>>;
 
+#[allow(unused)]
 #[derive(Debug, serde::Serialize, Clone, PartialEq)]
 pub enum Lut {
     Bit8(Vec<u8>),
     Bit16(Vec<u16>),
 }
 
+#[allow(unused)]
 pub fn zero_as_none<T: num::Num + num::Zero>(v: T) -> Option<T> {
     if v.is_zero() {
         None
@@ -16,42 +18,49 @@ pub fn zero_as_none<T: num::Num + num::Zero>(v: T) -> Option<T> {
     }
 }
 
+#[allow(unused)]
 pub fn read_be_f16(input: &mut &[u8]) -> Result<half::f16> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<half::f16>());
     *input = rest;
     Ok(half::f16::from_be_bytes(int_bytes.try_into()?))
 }
 
+#[allow(unused)]
 pub fn read_be_f32(input: &mut &[u8]) -> Result<f32> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<f32>());
     *input = rest;
     Ok(f32::from_be_bytes(int_bytes.try_into()?))
 }
 
+#[allow(unused)]
 pub fn read_be_f64(input: &mut &[u8]) -> Result<f64> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<f64>());
     *input = rest;
     Ok(f64::from_be_bytes(int_bytes.try_into()?))
 }
 
+#[allow(unused)]
 pub fn read_u8(input: &mut &[u8]) -> Result<u8> {
     let (byte, rest) = input.split_at(std::mem::size_of::<u8>());
     *input = rest;
     Ok(byte[0])
 }
 
+#[allow(unused)]
 pub fn read_be_u16(input: &mut &[u8]) -> Result<u16> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<u16>());
     *input = rest;
     Ok(u16::from_be_bytes(int_bytes.try_into()?))
 }
 
+#[allow(unused)]
 pub fn read_be_u32(input: &mut &[u8]) -> Result<u32> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<u32>());
     *input = rest;
     Ok(u32::from_be_bytes(int_bytes.try_into()?))
 }
 
+#[allow(unused)]
 pub fn read_be_i32(input: &mut &[u8]) -> Result<i32> {
     let (int_bytes, rest) = input.split_at(std::mem::size_of::<i32>());
     *input = rest;
@@ -133,6 +142,7 @@ pub fn read_signature(icc_buf: &mut &[u8]) -> Result<Option<String>> {
     }
 }
 
+#[allow(unused)]
 pub fn read_xyz(icc_buf: &mut &[u8]) -> Result<Option<[f64; 3]>> {
     let x_i32 = read_be_i32(icc_buf)?;
     let y_i32 = read_be_i32(icc_buf)?;
@@ -183,6 +193,7 @@ pub fn mcs_to_be_bytes(n_mcs: Option<u16>) -> [u8; 4] {
     }
 }
 
+#[allow(unused)]
 pub fn read_vec(input: &mut &[u8], n: usize) -> Result<Vec<u8>> {
     if n > input.len() {
         return Err("request exceeds buffer length".into());
@@ -192,6 +203,7 @@ pub fn read_vec(input: &mut &[u8], n: usize) -> Result<Vec<u8>> {
     Ok(bytes.to_vec())
 }
 
+#[allow(unused)]
 pub fn read_vec_u16(input: &mut &[u8], n: usize) -> Result<Vec<u16>> {
     if n > input.len() {
         return Err("request exceeds buffer length".into());
@@ -205,13 +217,14 @@ pub fn read_vec_u16(input: &mut &[u8], n: usize) -> Result<Vec<u16>> {
     Ok(v)
 }
 
+#[allow(unused)]
 pub fn read_ascii_string(buf: &mut &[u8], n: usize) -> Result<String> {
     let v = read_vec(buf, n)?;
     Ok(std::str::from_utf8(&v)?
         .trim_end_matches(char::from(0))
         .to_owned())
 }
-
+#[allow(unused)]
 pub fn read_unicode_string(buf: &mut &[u8], n: usize) -> Result<String> {
     let v = read_vec_u16(buf, n / 2)?;
     Ok(String::from_utf16(&v)?
@@ -219,18 +232,21 @@ pub fn read_unicode_string(buf: &mut &[u8], n: usize) -> Result<String> {
         .to_owned())
 }
 
+#[allow(unused)]
 pub fn read_s15fixed16(buf: &mut &[u8]) -> Result<f32> {
     let v_i32 = read_be_i32(buf)?;
     let v = v_i32 as f32 / 65536.0;
     Ok(v)
 }
 
+#[allow(unused)]
 pub fn read_f32_from_u16_fixed16(buf: &mut &[u8]) -> Result<f32> {
     let v_u32 = read_be_u32(buf)?;
     let v = v_u32 as f32 / 65536.0;
     Ok(v)
 }
 
+#[allow(unused)]
 pub fn read_s15fixed16_array(buf: &mut &[u8], n: Option<usize>) -> Result<Vec<f32>> {
     let n = n.unwrap_or(buf.len());
     if n > buf.len() {

@@ -7,7 +7,7 @@ use crate::signatures::Signature;
 /// specific CMM used to create the ICC profile, and to identify the CMM that should be used
 /// when interpreting the profile in case custom tags are used.
 /// 
-#[derive(Debug, serde::Serialize, PartialEq)]
+#[derive(Debug, serde::Serialize, PartialEq, strum::Display)]
 pub enum Cmm {
     Adobe,             /* 'ADBE' */
     Agfa,              /* 'ACMS' */

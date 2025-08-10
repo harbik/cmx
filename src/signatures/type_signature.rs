@@ -10,6 +10,8 @@
 
 use serde::Serialize;
 
+use crate::error::ParseError;
+
 /// ICC Type Signatures, which are used to identify the type of data stored in a tag data block.
 ///
 /// Each variant corresponds to a specific 4-byte type signature as defined in the ICC specification.
@@ -223,7 +225,12 @@ impl std::str::FromStr for TypeSignature {
     type Err = crate::error::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let value = u32::from_str_radix(s, 16).map_err(|e| crate::error::Error::ParseError(e.to_string()))?;
+        let value = 
+            u32::from_str_radix(s, 16)
+            .map_err(|e| 
+                {
+                    ParseError::new(e.to_string())
+                })?;
         Ok(Self::from_u32(value))
     }
 }
@@ -232,5 +239,12 @@ impl From<[u8; 4]> for TypeSignature {
     fn from(bytes: [u8; 4]) -> Self {
         let value = u32::from_be_bytes(bytes);
         Self::from_u32(value)
+    }
+}
+
+impl From<TypeSignature> for [u8; 4] {
+    fn from(signature: TypeSignature) -> Self {
+        let value = signature.to_u32();
+        value.to_be_bytes()
     }
 }

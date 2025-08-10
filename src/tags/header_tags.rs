@@ -1,3 +1,7 @@
+// use std::ffi::os_str::Display; // Removed incorrect import
+
+use std::fmt::Display;
+
 use zerocopy::{FromBytes, IntoBytes, Unaligned, KnownLayout, Immutable, U32, BigEndian};
 
 
@@ -41,7 +45,13 @@ impl From<f64> for S15Fixed16 {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+impl Display for S15Fixed16 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", f64::from(*self))
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::Display)]
 #[repr(C)]
 pub enum RenderingIntent {
     Perceptual = 0,

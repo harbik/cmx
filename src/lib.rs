@@ -1,4 +1,4 @@
-#![allow(dead_code, unused_imports)]
+//#![allow(dead_code, unused_imports)]
 #![doc = include_str!("../README.md")]
 
 /*
@@ -22,6 +22,28 @@ pub mod header;
 pub mod signatures;
 pub mod tags;
 pub mod error;
+pub mod language;
 
 pub use error::Error;
+use num::Zero;
 
+
+/// Rounds a floating-point value to the specified precision.
+/// For example, round_to_precision(1.23456, 100.0) returns 1.23.
+///
+/// # Arguments
+/// * `value` - The value to round.
+/// * `precision` - The precision
+///
+/// # Returns
+/// The rounded value.
+pub(crate) fn round_to_precision(value: f64, precision: i32) -> f64 {
+    let multiplier = 10f64.powi(precision);
+    (value * multiplier).round() / multiplier
+}
+
+// Add this helper function
+// Make the helper function generic
+pub(crate) fn is_zero<T: Zero>(n: &T) -> bool {
+    n.is_zero()
+}

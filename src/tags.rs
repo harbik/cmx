@@ -1,6 +1,6 @@
 mod chromaticity;
 mod common;
-mod curve_type;
+mod curve;
 mod lut8;
 mod make_model;
 mod measurement;
@@ -8,16 +8,19 @@ mod multi_localized_unicode;
 mod named_color2;
 mod native_display_info;
 mod parametric_curve;
+mod raw;
 mod text_description;
 mod vcgp;
 mod vcgt;
 mod viewing_conditions;
+mod xyz;
 //mod tag_builders;
 
+mod toml;
+pub use toml::TagToml;
 mod header_tags;
 
 pub use header_tags::{GamutCheck, Interpolate, Quality, RenderingIntent, S15Fixed16};
-use zerocopy::{BigEndian, IntoBytes, U16};
 
 use crate::signatures::{type_signature::TypeSignature, TagSignature};
 
@@ -39,64 +42,50 @@ pub trait TagTraits {
     }
 }
 
-// This macro defines low-level wrapper types for ICC tag data, one for each tag type passed in.
-// Each type is a simple `struct` that wraps the raw bytes (`Vec<u8>`) representing the tag’s payload,
-// and implements a common interface (`TagTraits`) for working with the tag in a uniform way.
-//
-// These wrapper structs are intentionally minimal and efficient: they do not parse or interpret
-// the contents of the byte buffer, but provide direct access to it for reading, writing, or deferred parsing.
-//
-// This macro accepts a list of identifiers (e.g., ChromaticityType, CurveType) and generates:
-//   - A `pub struct Name(pub Vec<u8>)` for each identifier
-//   - An implementation of the `TagTraits` trait for each struct,
-//     providing methods for access and manipulation of the underlying byte buffer.
-//
-// Usage example:
-//
-// define_tag_types!(
-//     ChromaticityType,
-//     CurveType,
-//     TextType,
-// );
-//
-// This expands to:
-//
-//   pub struct ChromaticityType(pub Vec<u8>);
-//   impl TagTraits for ChromaticityType { ... }
-//
-//   pub struct CurveType(pub Vec<u8>);
-//   impl TagTraits for CurveType { ... }
-//
-//   pub struct TextType(pub Vec<u8>);
-//   impl TagTraits for TextType { ... }
-//
-// Each type now supports:
-//   - `.into_bytes()` to extract ownership of the internal byte buffer
-//   - `.as_slice()` to get a reference to the raw data
-//   - `.pad(n)` to resize the buffer with trailing zeros (e.g., to align to expected size)
-//
-// The `$(...)+` syntax in the macro ensures that the enclosed block is repeated for every type provided.
-macro_rules! define_tag_types {
+/// Defines all tag-related structs and the main `Tag` enum from a single list of names.
+///
+/// For each `Name` provided (e.g., `Curve`, `XYZ`), this macro generates:
+/// 1. A `pub struct NameType(pub Vec<u8>)` to wrap the raw tag data.
+/// 2. Implementations of `TagTraits` and `Default` for `NameType`.
+/// 3. A `Tag` enum with a `Name(NameType)` variant for each name.
+/// 4. Implementations of `TagTraits` for the `Tag` enum.
+/// 5. Helper methods on `Tag` like `.as_curve()` and `.as_curve_mut()`.
+///
+/// # Macro-Driven Design
+///
+/// This macro is the cornerstone of the tag system, designed to eliminate a significant
+/// amount of repetitive boilerplate code. By defining a single, authoritative list of
+/// tag type names, it ensures consistency across the entire module.
+///
+/// The core benefit is maintainability. To add a new tag type to the system, one only
+/// needs to add its name to the list in the `define_tags_and_types!` invocation. The
+/// macro then automatically generates the corresponding `...Type` struct, adds the
+/// new variant to the `Tag` enum, and implements all necessary traits and helper
+/// functions. This prevents common errors that arise from manually keeping multiple
+/// lists and implementations in sync.
+///
+/// It leverages the `paste` crate to dynamically create identifiers, such as turning
+/// the input `Curve` into the struct name `CurveType` and the helper method name
+/// `as_curve`. The generated helper methods (`as_...` and `as_..._mut`) are particularly important,
+/// as they provide a safe, ergonomic, and idiomatic Rust API for accessing the data
+/// within a `Tag` enum variant.
+macro_rules! define_tags_and_types {
     ($($name:ident),+ $(,)?) => {
-        // The `$(...)+` block will repeat its contents for each `$name` matched.
         paste! {
+            // --- Part 1: Generate the individual `...Type` structs and their traits ---
+            // This is the logic from your old `define_tag_types!` macro.
             $(
                 #[derive(Debug, Serialize, Clone, PartialEq)]
                 pub struct [< $name Type >](pub Vec<u8>);
 
                 impl TagTraits for [< $name Type >] {
                     fn into_bytes(self) -> Vec<u8> {
-                        // This is the most efficient implementation: it just moves
-                        // the Vec<u8> out of the struct without any copying.
                         self.0
                     }
                     fn as_slice(&self) -> &[u8] {
-                        // This returns a slice of the internal Vec<u8>.
                         &self.0
                     }
                     fn pad(&mut self, size: usize) {
-                        // This pads the internal Vec<u8> to the specified size.
-                        // If the current length is less than size, it appends zeros.
                         if self.0.len() < size {
                             self.0.resize(size, 0);
                         }
@@ -105,57 +94,94 @@ macro_rules! define_tag_types {
 
                 impl Default for [< $name Type >] {
                     fn default() -> Self {
-                        // Default implementation creates an empty Vec<u8>
-                        Self(Vec::new())
+                       Self(Vec::new())
                     }
                 }
             )+
-        }
-    };
-}
 
-
-macro_rules! define_tag_type {
-    ($name:ident) => {
-        paste! {
+            // --- Part 2: Generate the main `Tag` enum ---
+            // This is the logic from your old `enum_tags!` macro.
+            /// This enum encapsulates the various tag types defined in the ICC specification.
             #[derive(Debug, Serialize, Clone, PartialEq)]
-            pub struct [< $name Type >](pub Vec<u8>);
+            pub enum Tag {
+                $($name([< $name Type >])),+
+            }
 
-            impl TagTraits for [< $name Type >] {
+            // --- Part 3: Generate trait impls and helpers for the `Tag` enum ---
+            impl TagTraits for Tag {
                 fn into_bytes(self) -> Vec<u8> {
-                    // This is the most efficient implementation: it just moves
-                    // the Vec<u8> out of the struct without any copying.
-                    self.0
+                    match self {
+                        $(Self::$name(t) => t.into_bytes()),+
+                    }
                 }
                 fn as_slice(&self) -> &[u8] {
-                    // This returns a slice of the internal Vec<u8>.
-                    &self.0
+                    match self {
+                        $(Self::$name(t) => t.as_slice()),+
+                    }
                 }
                 fn pad(&mut self, size: usize) {
-                    // This pads the internal Vec<u8> to the specified size.
-                    // If the current length is less than size, it appends zeros.
-                    if self.0.len() < size {
-                        self.0.resize(size, 0);
+                    match self {
+                        $(Self::$name(t) => t.pad(size)),+
                     }
                 }
             }
 
-            impl Default for [< $name Type >] {
-                fn default() -> Self {
-                    // Default implementation creates an empty Vec<u8>
-                    Self(Vec::new())
-                }
+            impl Tag {
+                $(
+                    // Returns a reference to the inner struct if the variant matches.
+                    //
+                    // Example:
+                    // ```
+                    // // Construct a Curve tag and query it with the generated helper.
+                    // let tag = crate::tags::Tag::Curve(crate::tags::CurveType(vec![]));
+                    // assert!(tag.as_curve().is_some());
+                    // // Querying for a different variant returns None.
+                    // assert!(tag.as_xyz().is_none());
+                    // ```
+                    pub fn [< as_ $name:snake >](&self) -> Option<&[< $name Type >]> {
+                        if let Self::$name(v) = self {
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    }
+
+                    // Returns a mutable reference to the inner struct if the variant matches.
+                    //
+                    // Example (for mutable access):
+                    // ```
+                    // // Construct a Curve tag.
+                    // let mut tag = crate::tags::Tag::Curve(crate::tags::CurveType(vec![1, 2, 3]));
+                    //
+                    // // Get a mutable reference and modify the data.
+                    // if let Some(curve) = tag.as_curve_mut() {
+                    //     curve.0.push(4);
+                    // }
+                    //
+                    // // Verify the change.
+                    // assert_eq!(tag.as_slice(), &[1, 2, 3, 4]);
+                    // ```
+                    pub fn [< as_ $name:snake _mut >](&mut self) -> Option<&mut [< $name Type >]> {
+                        if let Self::$name(v) = self {
+                            Some(v)
+                        } else {
+                            None
+                        }
+                    }
+                )+
             }
         }
     };
 }
+
 // This defines all the tag types, as wrappers around `Vec<u8>`, the raw data for each tag.
 // It alo implements the `TagTraits` for each tag type, allowing them to be converted to bytes,
 // sliced, and padded as needed. The length and type signature methods are also provided through
 // the trait.
 // Change to TagTypes
-define_tag_types!(
+define_tags_and_types!(
     Raw,
+    CrdInfo,
     Cicp,
     Chromaticity,
     ColorantOrder,
@@ -228,159 +254,6 @@ impl TagEntry {
     }
 }
 
-// The `Tag` enum serves as a unified wrapper for all supported ICC tag types.
-// Each variant of the enum corresponds to a specific ICC tag type defined in the ICC specification,
-// and wraps a strongly-typed struct (e.g., ChromaticityType, CurveType), which itself wraps the raw `Vec<u8>` data.
-//
-// The purpose of the `Tag` enum is to allow type-safe, centralized handling of heterogeneous tag types
-// while preserving the ability to perform runtime type checks and access tag-specific functionality.
-//
-// Variants are generated using a macro, with one variant per ICC tag type identifier passed to it.
-// For example, the macro generates variants such as:
-//     Tag::Chromaticity(ChromaticityType)
-//     Tag::Curve(CurveType)
-//     Tag::Text(TextType)
-//     ...and so on.
-//
-// The `Tag` enum implements the `TagTraits` trait, which defines shared behavior for all tag types,
-// such as serialization, deserialization, and type signature retrieval.
-//
-// For ergonomic and type-safe access, the macro also generates variant-specific accessors ("named inherent methods")
-// for each tag type:
-//     - `tag.as_chromaticity()` returns `Some(&ChromaticityType)` if the tag is of type Chromaticity, otherwise `None`.
-//     - `tag.as_curve_mut()` returns `Some(&mut CurveType)` if the tag is a mutable CurveType, otherwise `None`.
-//     - Similar methods exist for all supported tag types.
-//
-// These accessors allow clients to write clear, safe code when interacting with the dynamic set of tags
-// in an ICC profile, without resorting to manual downcasting or unsafe operations.
-//
-// This design pattern enables flexible runtime dispatch over tag types, while retaining compile-time type safety
-// and encapsulating the raw binary representation within each tag-specific type.
-macro_rules! enum_tags {
-    ( $(#[$doc:meta])* $($variant:ident),+ $(,)?) => {
-        paste! {
-            /// An enum representing all possible ICC profile tag types.
-            #[derive(Debug, Serialize, Clone, PartialEq)]
-            pub enum Tag {
-                $($variant([< $variant Type >])),+
-            }
-
-            /// Implement the `TagTraits` for the `Tag` enum itself.
-            /// This implementation dispatches the method call to the specific
-            /// variant contained within the enum.
-            impl TagTraits for Tag {
-                fn as_slice(&self) -> &[u8] {
-                    match self {
-                        // For each variant, generate a match arm that calls `.as_slice()`
-                        // on the inner struct.
-                        $(
-                            Self::$variant(tag) => tag.as_slice(),
-                        )+
-                    }
-                }
-
-                fn into_bytes(self) -> Vec<u8> {
-                    match self {
-                        $(
-                            Self::$variant(tag) => tag.into_bytes(),
-                        )+
-                    }
-                }
-
-                fn pad(&mut self, size: usize) {
-                    match self {
-                        $(
-                            Self::$variant(tag) => tag.pad(size),
-                        )+
-                    }
-                }
-            }
-
-
-            impl Tag {
-                // For each variant name passed to the macro...
-                $(
-                    /// Returns a reference to the inner struct if the variant matches, otherwise
-                    /// returns `None`.
-                    pub fn [< as_ $variant:snake >](&self) -> Option<&[< $variant Type >]> {
-                        if let Self::$variant(v) = self {
-                            Some(v)
-                        } else {
-                            None
-                        }
-                    }
-
-                    /// Returns a mutable reference to the inner struct if the variant matches,
-                    /// otherwise returns `None`.
-                    pub fn [< as_ $variant:snake _mut >](&mut self) -> Option<&mut [< $variant Type >]> {
-                        if let Self::$variant(v) = self {
-                            Some(v)
-                        } else {
-                            None
-                        }
-                    }
-                )+
-            }
-
-
-
-        }
-    };
-}
-
-
-// enums and type
-enum_tags!(
-    /// This enum is used to encapsulate the various tag types defined in the ICC specification.
-    /// Each variant corresponds to a specific tag type, allowing for type-safe handling of ICC profile tags.
-    Raw,
-    Chromaticity,
-    ColorantOrder,
-    ColorantTable,
-    Curve,
-    Data,
-    DateTime,
-    Dict,
-    EmbeddedHeigthImage,
-    EmbeddedNormalImage,
-    Float16Array,
-    Float32Array,
-    Float64Array,
-    GamutBoundaryDescription,
-    Lut8,
-    LutAToB,
-    LutBToA,
-    Measurement,
-    MakeAndModel,
-    MultiLocalizedUnicode,
-    MultiProcessElements,
-    NativeDisplayInfo,
-    NamedColor2,
-    ParametricCurve,
-    ProfileSequenceDesc,
-    S15Fixed16Array,
-    Signature,
-    SparseMatrixArray,
-    SpectralViewingConditions,
-    TagStruct,
-    Technology, // tag derived type
-    Text,
-    TextDescription,
-    U16Fixed16Array, // 'uf32'
-    UInt8Array,      // 'ui16'
-    UInt16Array,     // 'ui16'
-    UInt32Array,     // 'ui32'
-    UInt64Array,     // 'ui64'
-    Utf8,            // 'utf8'
-    Utf16,           // 'ut16'
-    Utf8Zip,         // 'zut8'
-    Vcgt,            // 'vcgt'
-    Vcgp,            // 'vcgp'
-    ViewingConditions,
-    XYZ
-);
-
-
 impl Tag {
     /// Creates a new `Tag` from a `TagSignature` and its raw byte data.
     ///
@@ -439,11 +312,18 @@ impl Tag {
             TagSignature::ViewingConditionsTag => {
                 Self::ViewingConditions(ViewingConditionsType(data))
             }
-            TagSignature::ProfileDescriptionTag => {
-                Self::MultiLocalizedUnicode(MultiLocalizedUnicodeType(data))
-            }
 
             // ambiguous tags
+
+            TagSignature::ProfileDescriptionTag => match type_signature {
+                TypeSignature::TextDescriptionType => {
+                    Self::TextDescription(TextDescriptionType(data))
+                }
+                TypeSignature::MultiLocalizedUnicodeType => {
+                    Self::MultiLocalizedUnicode(MultiLocalizedUnicodeType(data))
+                }
+                _ => Self::Raw(RawType(data)),
+            }
             TagSignature::GreenTRCTag => match type_signature {
                 TypeSignature::CurveType => Self::Curve(CurveType(data)),
                 TypeSignature::ParametricCurveType => {
@@ -485,88 +365,164 @@ impl Tag {
     }
 }
 
-/// Marker traits for tag signatures that can be used in a type-safe manner.
-pub trait IsCurveTag {}
-pub trait IsTextDescriptionTag {}
-pub trait IsMultiLocalizedUnicodeTag {}
 
 /// A trait for tag signatures that have only one valid data type.
 pub trait UnambiguousTag {
     /// The single data type associated with this tag signature.
-    type DataType: Default;
+    type TagType: Default;
 
-    /// A function to create the correct `Tag` enum variant from the data.
-    fn new_tag(data: Self::DataType) -> Tag;
+    /// A function to create the correct `Tag` enum variant from the Tag block data.
+    fn new_tag(tag_type_instance: Self::TagType) -> Tag;
 }
 
 /// A helper macro to reduce boilerplate when implementing `UnambiguousTag`.
 macro_rules! impl_unambiguous_tag {
-    // Change the first argument to an `ident` to capture just the name (e.g., `RedTRCTag`).
-    ($tag_type_name:ident, $data_type:ty, $tag_variant:ident) => {
-        // No paste needed. Just write the full path to the type inside the macro.
-        // The compiler will correctly substitute the identifier at the end.
-        // This also uses the correct ZST pattern (implementing on the type, not a reference).
-        impl UnambiguousTag for crate::signatures::tag_signature::$tag_type_name {
-            type DataType = $data_type;
-            fn new_tag(data: Self::DataType) -> Tag {
-                Tag::$tag_variant(data)
+    ($tag_type_name:ident, /*$data_type:ty,*/ $tag_variant:ident) => {
+        paste! {
+            // No paste needed. Just write the full path to the type inside the macro.
+            // The compiler will correctly substitute the identifier at the end.
+            // This also uses the correct ZST pattern (implementing on the type, not a reference).
+            impl UnambiguousTag for crate::signatures::tag_signature::$tag_type_name {
+                type TagType = [< $tag_variant Type >];
+                fn new_tag(tag_type_instance: Self::TagType) -> Tag {
+                    Tag::$tag_variant(tag_type_instance)
+                }
             }
         }
     };
 }
 
 // Tags of type XYZType
-impl_unambiguous_tag!(MediaWhitePointTag, XYZType, XYZ);
-impl_unambiguous_tag!(MediaBlackPointTag, XYZType, XYZ);
-impl_unambiguous_tag!(LuminanceTag, XYZType, XYZ);
+impl_unambiguous_tag!(MediaWhitePointTag, XYZ);
+impl_unambiguous_tag!(MediaBlackPointTag, XYZ);
+impl_unambiguous_tag!(LuminanceTag, XYZ);
 
 // Tags of type CurveType
-impl_unambiguous_tag!(RedTRCTag, CurveType, Curve);
-impl_unambiguous_tag!(GreenTRCTag, CurveType, Curve);
-impl_unambiguous_tag!(BlueTRCTag, CurveType, Curve);
-impl_unambiguous_tag!(GrayTRCTag, CurveType, Curve); // Assuming you have a GrayTRCTag ZST
+impl_unambiguous_tag!(RedTRCTag, Curve);
+impl_unambiguous_tag!(GreenTRCTag, Curve);
+impl_unambiguous_tag!(BlueTRCTag, Curve);
+impl_unambiguous_tag!(GrayTRCTag, Curve); // Assuming you have a GrayTRCTag ZST
 
 // Tags of type TextDescriptionType
-impl_unambiguous_tag!(CopyrightTag, TextDescriptionType, TextDescription);
-impl_unambiguous_tag!(DeviceMfgDescTag, TextDescriptionType, TextDescription);
-impl_unambiguous_tag!(DeviceModelDescTag, TextDescriptionType, TextDescription);
-impl_unambiguous_tag!(ScreeningDescTag, TextDescriptionType, TextDescription);
-impl_unambiguous_tag!(ViewingCondDescTag, TextDescriptionType, TextDescription);
+impl_unambiguous_tag!(CopyrightTag, TextDescription);
+impl_unambiguous_tag!(DeviceMfgDescTag, TextDescription);
+impl_unambiguous_tag!(DeviceModelDescTag, TextDescription);
+impl_unambiguous_tag!(ScreeningDescTag, TextDescription);
+impl_unambiguous_tag!(ViewingCondDescTag, TextDescription);
 
 // Tags of type TextType
-impl_unambiguous_tag!(CharTargetTag, TextType, Text);
+impl_unambiguous_tag!(CharTargetTag, Text);
 
 // Tags of type SignatureType
-impl_unambiguous_tag!(TechnologyTag, SignatureType, Signature);
-impl_unambiguous_tag!(ColorimetricIntentImageStateTag, SignatureType, Signature); // Assuming ZST exists
+impl_unambiguous_tag!(TechnologyTag, Signature);
+impl_unambiguous_tag!(ColorimetricIntentImageStateTag,Signature); // Assuming ZST exists
 
 // Chromaticity and Colorant Tags
-impl_unambiguous_tag!(ChromaticityTag, ChromaticityType, Chromaticity);
-impl_unambiguous_tag!(ColorantOrderTag, ColorantOrderType, ColorantOrder);
-impl_unambiguous_tag!(ColorantTableTag, ColorantTableType, ColorantTable);
-impl_unambiguous_tag!(ColorantTableOutTag, ColorantTableType, ColorantTable); // Often same type as clrt
-impl_unambiguous_tag!(NamedColor2Tag, NamedColor2Type, NamedColor2);
+impl_unambiguous_tag!(ChromaticityTag,Chromaticity);
+impl_unambiguous_tag!(ColorantOrderTag, ColorantOrder);
+impl_unambiguous_tag!(ColorantTableTag, ColorantTable);
+impl_unambiguous_tag!(ColorantTableOutTag, ColorantTable); // Often same type as clrt
+impl_unambiguous_tag!(NamedColor2Tag, NamedColor2);
 
 // Metadata and Informational Tags
-impl_unambiguous_tag!(CalibrationDateTimeTag, DateTimeType, DateTime);
-impl_unambiguous_tag!(
-    ProfileSequenceDescTag,
-    ProfileSequenceDescType,
-    ProfileSequenceDesc
-);
-impl_unambiguous_tag!(CrdInfoTag, CrdInfoType, CrdInfo); // Assuming CrdInfoType exists
+impl_unambiguous_tag!(CalibrationDateTimeTag, DateTime);
+impl_unambiguous_tag!(ProfileSequenceDescTag, ProfileSequenceDesc);
+impl_unambiguous_tag!(CrdInfoTag, CrdInfo);
 
 // Measurement and Viewing Conditions Tags
-impl_unambiguous_tag!(MeasurementTag, MeasurementType, Measurement);
-impl_unambiguous_tag!(
-    ViewingConditionsTag,
-    ViewingConditionsType,
-    ViewingConditions
-);
+impl_unambiguous_tag!(MeasurementTag, Measurement);
+impl_unambiguous_tag!(ViewingConditionsTag, ViewingConditions);
 
 // Video Color Gamut Tags (from VCGT spec)
-impl_unambiguous_tag!(VcgtTag, VcgtType, Vcgt);
-impl_unambiguous_tag!(VcgpTag, VcgpType, Vcgp); // Assuming VcgpType exists
+impl_unambiguous_tag!(VcgtTag, Vcgt);
+impl_unambiguous_tag!(VcgpTag, Vcgp);
+
+//  --- Implementations for Ambiguous Tags ---
+
+pub trait IsCurveTag {}
+pub trait IsParametricCurveTag {}
+pub trait IsTextDescriptionTag {}
+pub trait IsMultiLocalizedUnicodeTag {}
+pub trait IsLut8TypeTag {}
+pub trait IsLut16TypeTag {}
+pub trait IsLutAtoBTypeTag {}
+pub trait IsLutBtoATypeTag {}
+
+// Add other LUT type traits if you have them, e.g., IsGamutTypeTag
+
+// 2. Import the ZSTs for all the ambiguous tags you will define.
+use crate::signatures::tag_signature::{
+    AToB0Tag, AToB1Tag, AToB2Tag, BToA0Tag, BToA1Tag, BToA2Tag, BlueTRCTag, DeviceMfgDescTag,
+    DeviceModelDescTag, GamutTag, GreenTRCTag, GrayTRCTag, Preview0Tag, Preview1Tag, Preview2Tag,
+    ProfileDescriptionTag, RedTRCTag,
+};
+
+// 3. Implement the traits for each ambiguous tag.
+
+// The 'desc' tag can be either textDescriptionType or multiLocalizedUnicodeType.
+impl IsTextDescriptionTag for ProfileDescriptionTag {}
+impl IsMultiLocalizedUnicodeTag for ProfileDescriptionTag {}
+
+// The device manufacturer and model tags are also often ambiguous in practice.
+impl IsTextDescriptionTag for DeviceMfgDescTag {}
+impl IsMultiLocalizedUnicodeTag for DeviceMfgDescTag {}
+impl IsTextDescriptionTag for DeviceModelDescTag {}
+impl IsMultiLocalizedUnicodeTag for DeviceModelDescTag {}
+
+// The Tone Reproduction Curve (TRC) tags can be a simple curve or a parametric curve.
+// NOTE: Remove these from your `impl_unambiguous_tag!` list.
+impl IsCurveTag for RedTRCTag {}
+impl IsParametricCurveTag for RedTRCTag {}
+impl IsCurveTag for GreenTRCTag {}
+impl IsParametricCurveTag for GreenTRCTag {}
+impl IsCurveTag for BlueTRCTag {}
+impl IsParametricCurveTag for BlueTRCTag {}
+impl IsCurveTag for GrayTRCTag {}
+impl IsParametricCurveTag for GrayTRCTag {}
+
+// The main Look-Up Table (LUT) tags for rendering intents are ambiguous.
+impl IsLut8TypeTag for AToB0Tag {}
+impl IsLut16TypeTag for AToB0Tag {}
+impl IsLutAtoBTypeTag for AToB0Tag {}
+
+impl IsLut8TypeTag for AToB1Tag {}
+impl IsLut16TypeTag for AToB1Tag {}
+impl IsLutAtoBTypeTag for AToB1Tag {}
+
+impl IsLut8TypeTag for AToB2Tag {}
+impl IsLut16TypeTag for AToB2Tag {}
+impl IsLutAtoBTypeTag for AToB2Tag {}
+
+impl IsLut8TypeTag for BToA0Tag {}
+impl IsLut16TypeTag for BToA0Tag {}
+impl IsLutBtoATypeTag for BToA0Tag {}
+
+impl IsLut8TypeTag for BToA1Tag {}
+impl IsLut16TypeTag for BToA1Tag {}
+impl IsLutBtoATypeTag for BToA1Tag {}
+
+impl IsLut8TypeTag for BToA2Tag {}
+impl IsLut16TypeTag for BToA2Tag {}
+impl IsLutBtoATypeTag for BToA2Tag {}
+
+// The gamut tag is also a LUT.
+impl IsLut8TypeTag for GamutTag {}
+impl IsLut16TypeTag for GamutTag {}
+impl IsLutBtoATypeTag for GamutTag {}
+
+// The preview tags are also LUTs.
+impl IsLut8TypeTag for Preview0Tag {}
+impl IsLut16TypeTag for Preview0Tag {}
+impl IsLutAtoBTypeTag for Preview0Tag {}
+
+impl IsLut8TypeTag for Preview1Tag {}
+impl IsLut16TypeTag for Preview1Tag {}
+impl IsLutAtoBTypeTag for Preview1Tag {}
+
+impl IsLut8TypeTag for Preview2Tag {}
+impl IsLut16TypeTag for Preview2Tag {}
+impl IsLutAtoBTypeTag for Preview2Tag {}
+
 
 impl ColorantOrderType {
     pub fn new(colorant_order: Vec<u8>) -> Self {

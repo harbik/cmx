@@ -1,5 +1,8 @@
 
 mod raw_profile;
+use std::fmt;
+
+use indexmap::IndexMap;
 pub use raw_profile::RawProfile;
 
 mod input_profile;
@@ -24,6 +27,7 @@ mod named_color_profile;
 pub use named_color_profile::NamedColorProfile;
 
 mod spectral_profile;
+use serde::Serialize;
 pub use spectral_profile::SpectralProfile;
 
 /// delegates methods from the RawProfile to all Profiles.
@@ -35,6 +39,8 @@ mod tag_setter;
 pub use tag_setter::TagSetter;
 
 mod checksum;
+use crate::{header::IccHeaderToml, tags::TagToml};
+
 pub use {checksum::set_profile_id,  checksum::md5checksum};
 
 #[derive(Debug)]
@@ -50,242 +56,91 @@ pub enum Profile {
     Raw(RawProfile),
 }
 
-
-/*
-/// Represents a single ICC tag (raw).
-#[derive(Debug, Clone, Serialize)]
-pub struct DataBlock {
-    pub offset: u32,
-    pub size: u32,
-    pub data: Vec<u8>,
-}
-
-pub struct Data {
-    pub type_signature: TypeSignature,
-    pub data: Vec<u8>,
-}
-
-/// An ICC profile, deconstructed in:
-/// 
-/// - a raw header array, with a length of 128 bytes,
-/// - a indexmap of datablocks, with a ProfileTag as key and DataBlock as value.
-/// 
-/// An indexmap is used to preserve the insertion order of tags, which is technically not required
-/// by the ICC specification, but is used to maintain the order of tags as they appear in profiles
-/// read from a a file file, and to maximize compatibility with existing ICC profiles.
-/// 
-/// It does not include a separate tag table; the profile tags are the used as the indexmap's key,
-/// while offsets and sizes are included in the `DataBlock` struct. Those offsets and sizes
-/// are used to recreate the tag table on writing.
-/// Whenever the size of a tag's data changes, the offsets and sizes of all tags are updated.
-/// 
-/// 
-/// 
-
-#[derive(Debug, Clone, Serialize)]
-pub struct RawProfile {
-    #[serde(with = "serde_arrays")]
-    pub header: [ u8; 128 ], // 128 bytes
-    pub tags: IndexMap<ProfileTag, DataBlock>, // preserves insertion order
-    pub padding: usize, // number of padding bytes found in a profile read
-}
-
-
-impl RawProfile {
-    /// Reads an ICC profile from a file.
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let mut file = File::open(path)?;
-        let mut buf = Vec::new();
-        file.read_to_end(&mut buf)?;
-        Self::from_bytes(&buf)
-    }
-
-    /// Reads an ICC profile from a byte slice.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        let mut cursor = Cursor::new(bytes);
-
-        // Read the header (first 128 bytes)
-      //  let mut header = vec![0u8; 128];
-        let mut header = [0u8; 128];
-        cursor.read_exact(&mut header)?;
-
-        // Read the tag count (next 4 bytes)
-        let mut count_buf = [0u8; 4];
-        cursor.read_exact(&mut count_buf)?;
-        let tag_count = u32::from_be_bytes(count_buf);
-
-        // Read the tag table (next tag_count * 12 bytes)
-        // Each tag entry consists of 12 bytes:
-        // - 4 bytes for signature
-        // - 4 bytes for offset in the file
-        // - 4 bytes for size
-        let mut tag_entries = Vec::with_capacity(tag_count as usize);
-
-        let mut total_data_size = 0;
-        for _ in 0..tag_count {
-            let mut entry = [0u8; 12];
-            cursor.read_exact(&mut entry)?;
-
-            // Parse the tag entry
-            let signature_value = u32::from_be_bytes([entry[0], entry[1], entry[2], entry[3]]);
-            let signature = ProfileTag::new(signature_value);
-
-            // Convert the offset and size from big-endian to u32
-            let offset = u32::from_be_bytes([entry[4], entry[5], entry[6], entry[7]]);
-            let size = u32::from_be_bytes([entry[8], entry[9], entry[10], entry[11]]);
-            // Store the tag entry in the tag table
-            tag_entries.push((signature, offset, size));
-            total_data_size += size as usize;
+impl Profile {
+    fn as_raw_profile(&self) -> &RawProfile {
+        match self {
+            Profile::Input(p) => &p.0,
+            Profile::Display(p) => &p.0,
+            Profile::Output(p) => &p.0,
+            Profile::DeviceLink(p) => &p.0,
+            Profile::Abstract(p) => &p.0,
+            Profile::ColorSpace(p) => &p.0,
+            Profile::NamedColor(p) => &p.0,
+            Profile::Spectral(p) => &p.0,
+            Profile::Raw(p) => p,
         }
+    }
+}
 
-        // Create a map to hold the tags
-        let mut tags = IndexMap::with_capacity(tag_count as usize);
+/// A serde-friendly TOML façade for an ICC profile.
+///
+/// This struct is used to:
+/// - Pretty-print a profile to TOML (currently used by `RawProfile`'s `Display` impl to write to
+///   standard output).
+/// - Eventually deserialize a profile from TOML as an alternative to reading a binary ICC file.
+///
+/// Layout:
+/// - `header`: Stored as `IccHeaderToml`, providing a structured view of the 128-byte ICC header.
+/// - `tags` (flattened): An `IndexMap` from stringified tag signatures to `TagToml`. The map is
+///   flattened into the top level of the TOML document (i.e., each tag appears as its own top-level
+///   TOML key next to the `header` table). `IndexMap` preserves insertion order to retain the
+///   original tag order for readability and compatibility.
+///
+/// Tag representation:
+/// - Every tag type implements its own `TagTypeToml`.
+/// - `TagToml` is an enum that encapsulates all tag-type-specific TOML representations, allowing the
+///   `tags` map to hold heterogeneous tag values while remaining serializable/deserializable.
+///
+/// Round-tripping notes:
+/// - On serialization, tags are emitted in their insertion order.
+#[derive(Serialize)]
+pub struct ProfileToml {
+    pub header: IccHeaderToml,
+    #[serde(flatten)]
+    pub tags: IndexMap<String, TagToml>,
+}
 
-        // Read each tag's data based on the offsets and sizes from the tag table
-        // Note: The tag data is read from the original byte slice, not from the cursor.
-        // This is because the tag data blocks are not contiguous in the file,
-        // and we need to read them at their specified offsets.
-        for (signature, offset, size) in &tag_entries {
-            // Move the cursor to the tag's offset and read its data
-            cursor.set_position(*offset as u64);
-            let mut data = vec![0u8; *size as usize];
-            cursor.read_exact(&mut data)?;
+/// A display implementation for `RawProfile` that serializes the profile to a TOML string.
+impl fmt::Display for Profile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 
-            tags.insert(*signature, DataBlock {
-                offset: *offset,
-                size: *size,
-                data,
-            });
+        // See header::icc_header_toml.rs for the IccHeaderToml struct
+        // and its conversion from RawProfile.
+        let header = IccHeaderToml::from(self.as_raw_profile());
+        
+        // Convert tags to a flattened IndexMap<String, TagToml>, using the tag signature as the
+        // key, and converting each TagEntry's tag to a TagToml using its From<TagType>
+        // implementation, which needs to be implemented by each TagType individually.
+        // TagEntry is a struct that contains the offset, size, and the "Tag" enum,
+        // which encapsulates the tag data.
+        let tags: IndexMap<String, TagToml> = 
+            self.as_raw_profile().tags.iter()
+            .map(|(sig, entry)|{
+                (sig.to_string(), TagToml::from(&entry.tag))
+            }) 
+            .collect();
+        
+
+        let profile_toml = ProfileToml { header, tags };
+        
+        match toml::to_string_pretty(&profile_toml) {
+            Ok(s) => write!(f, "{}", s),
+            Err(_) => Err(fmt::Error),
         }
-
-        // In the ICC profile format, each tag's data block starts at the offset specified in the tag table,
-        // and the size is given in the tag table as well. The tag data block itself starts with a 4-byte type signature
-        // and a 4-byte reserved field, followed by the actual tag data.
-
-        let size =
-            128 + // header size
-            4 + // tag count byte size
-            tag_count as usize * 20 +
-            total_data_size;
-
-        let padding = if bytes.len() > size {
-            bytes.len() - size
-        } else {
-            0
-        };
-        Ok(RawProfile { header, tags, padding })
     }
+}
 
-    /// Reads an ICC profile from a string (as bytes).
-    pub fn from_str(s: &str) -> Result<Self> {
-        Self::from_bytes(s.as_bytes())
-    }
+#[cfg(test)]
+mod test {
+    use crate::profile::RawProfile;
 
-    /// Writes the ICC profile to a file.
-    pub fn to_file<P: AsRef<Path>>(self, path: P) -> Result<()> {
-        let bytes = self.into_bytes()?;
-        let mut file = File::create(path)?;
-        file.write_all(&bytes)?;
+    #[test]
+    fn print() -> Result<(), Box<dyn std::error::Error>> {
+
+        let profile = include_bytes!("../tests/profiles/sRGB.icc");
+        let raw_profile = RawProfile::from_bytes(profile).unwrap();
+        println!("{}", crate::profile::Profile::Raw(raw_profile));
         Ok(())
     }
-
-    /// Serializes the ICC profile to a Vec<u8>.
-    pub fn into_bytes(self) -> Result<Vec<u8>> {
-        // Update offsets and sizes of tags based on their data
-        let updated_self = self.with_updated_offsets_and_sizes();
-        //let updated_self = self;
-        let mut buf = Vec::new();
-        buf.extend_from_slice(&updated_self.header);
-
-        let tag_count = updated_self.tags.len() as u32;
-        buf.extend_from_slice(&tag_count.to_be_bytes());
-
-        // Write tag table using updated offsets and sizes
-        for (sig, tag) in &updated_self.tags {
-            buf.extend_from_slice(sig.to_u32().to_be_bytes().as_ref());
-            buf.extend_from_slice(&tag.offset.to_be_bytes());
-            buf.extend_from_slice(&tag.size.to_be_bytes());
-        }
-
-        // Find the end of the tag table
-        let data_start = 128 + 4 + updated_self.tags.len() * 12;
-        // Prepare a buffer large enough for all tag data
-        let mut data_buf = vec![0u8; updated_self.tags.values().map(|t| (t.offset + t.size) as usize).max().unwrap_or(data_start)];
-
-        // Copy tag data into the correct offsets
-        for tag in updated_self.tags.values() {
-            let start = tag.offset as usize;
-            let end = start + tag.size as usize;
-            data_buf[start..end].copy_from_slice(&tag.data);
-        }
-        buf.extend_from_slice(&data_buf[data_start..]);
-
-        // copy any padding in the orginal profile, if present
-        if updated_self.padding > 0 {
-            buf.extend_from_slice(&vec![0u8; updated_self.padding as usize]);
-        }
-        Ok(buf)
-    }
-
-    /// Serializes the ICC profile to a String (lossless for binary data).
-    pub fn into_string(self) -> Result<String> {
-        let bytes = self.into_bytes()?;
-        Ok(String::from_utf8_lossy(&bytes).into_owned())
-    }
-
-    /// Builds a tags table as a vector of an array of three u32 values:
-    ///
-    /// - The first u32 is the tag signature (as u32),
-    /// - The second u32 is the offset of the tag data in the profile,
-    /// - The third u32 is the size of the tag data.
-    ///
-    /// It only uses the data field
-    pub fn with_updated_offsets_and_sizes(mut self) -> Self {
-        // Build a BTreeMap to sort tags by their original offset
-        let mut btree_map = BTreeMap::new();
-        for (tag_signature, tag) in &self.tags {
-            btree_map.insert(tag.offset, *tag_signature);
-        }
-        // Collect tag signatures in order of original offset
-        let tag_signatures_by_data_order: Vec<ProfileTag> = btree_map.values().cloned().collect();
-
-        let mut changed = false;
-        for tag_signature in tag_signatures_by_data_order.clone() {
-            if let Some(tag) = self.tags.get_mut(&tag_signature) {
-                if tag.size != tag.data.len() as u32 {
-                    changed = true;
-                    break; 
-                }
-            }
-        }
-
-        // If no changes are needed, return the profile as is
-        if !changed {
-            return self;
-        }
-
-        // Calculate the starting offset for tag data (after header and tag table)
-        let mut offset = 128 + 4 + self.tags.len() * 12;
-
-        // For each tag (in data order), update its offset and size, and pad data to 4 bytes
-        for tag_signature in tag_signatures_by_data_order {
-            if let Some(tag) = self.tags.get_mut(&tag_signature) {
-                let pad = (4 - (tag.data.len() % 4)) % 4;
-                if tag.size != tag.data.len() as u32 {
-                    if pad > 0 {
-                        tag.data.extend(std::iter::repeat(0u8).take(pad));
-                    }
-                    tag.size = tag.data.len() as u32;
-                }
-                tag.offset = offset as u32;
-                offset += tag.size as usize;
-            }
-        }
-        self
-    }
-
-
+        
 }
-
-
- */

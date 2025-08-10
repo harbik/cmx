@@ -429,6 +429,8 @@ impl TagSignature {
 
 /// Defines Zero-Sized Types (ZSTs) for tag signatures and implements
 /// the `From` trait to convert them into their runtime `TagSignature` enum variant.
+/// This is used when adding a Tag into the Profile's tag map, using the with_tag method, which uses
+/// a TagSignature as key, and a TagType instance as value.
 macro_rules! define_tag_zsts {
     // The macro accepts one or more comma-separated identifiers.
     ($($zst_name:ident),+ $(,)?) => {

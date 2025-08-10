@@ -1,10 +1,14 @@
+mod icc_header_toml;
+pub use icc_header_toml::IccHeaderToml;
+
 use chrono::{DateTime, Datelike, Timelike};
 use zerocopy::{
     BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, Ref, Unaligned, U16, U32, U64,
+
 };
 
 use crate::{
-    error::Error, 
+    error::{Error, HeaderParseError}, 
     profile::RawProfile, 
     signatures::{Cmm, ColorSpace, DeviceClass, Pcs, Platform, Signature},
     tags::{GamutCheck, Interpolate, Quality, RenderingIntent, S15Fixed16},
@@ -14,14 +18,13 @@ use crate::{
 fn validate_version(major: u8, minor: u8) -> Result<(u8, u8), Error> {
     match (major, minor) {
         (2, 0) => Ok((2, 0)),
+        (2, 1) => Ok((2, 1)),
         (4, 0) => Ok((4, 0)),
         (4, 2) => Ok((4, 2)),
         (4, 3) => Ok((4, 3)),
         (4, 4) => Ok((4, 4)),
         (5, 0) => Ok((5, 0)),
-        _ => Err(Error::HeaderParseError(
-            "Invalid ICC profile version".to_string(),
-        )),
+        _ => Err(HeaderParseError::new(format!("Invalid ICC profile version: V{major}.{minor}")).into()),
     }
 }
 
@@ -53,6 +56,7 @@ pub struct IccHeader {
     pub profile_id: [u8; 16],
     pub reserved: [u8; 28],
 }
+
 
 impl RawProfile {
     /// Returns a reference to the ICC profile header, from an zerocopy overlay.
@@ -683,6 +687,12 @@ impl RawProfile {
         self
     }
 
+    pub fn creator(&self) -> Signature {
+        let header = self.header();
+        let c = header.creator.get();
+        Signature(c)
+    }
+
     /// Returns the profile ID of the profile, which is a unique identifier for the profile.
     /// The profile ID is a 16-byte array that is typically used to identify the profile in a unique way.
     /// # Example:
@@ -703,6 +713,8 @@ impl RawProfile {
     }
 
 }
+
+
 
 #[cfg(test)]
 mod test {

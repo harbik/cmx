@@ -1,6 +1,6 @@
 use crate::signatures::Signature;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::Display, serde::Serialize)]
 #[repr(u32)]
 pub enum DeviceClass {
     Unknown,

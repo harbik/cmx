@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::signatures::Signature;
 
-#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize, Deserialize, strum::Display)]
 pub enum ColorSpace {
     NONE = 0,
     XYZ = 0x58595A20,

@@ -1,6 +1,6 @@
 use std::{fmt::{Display, Debug}, str::FromStr};
 
-use crate::Error;
+use crate::{error::ParseError};
 
 mod cmm;
 pub use cmm::Cmm;
@@ -74,7 +74,7 @@ impl FromStr for Signature {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() > 4 || s.len() < 1 {
-            return Err(Error::ParseError(format!("Signature must be between 1 and 4 characters - got: {}", s)));
+            return Err(ParseError::new(format!("Signature must be between 1 and 4 characters - got: {}", s)).into());
         }
         // Pad the string to 4 characters with spaces if necessary
         let padded = format!("{: <4}", s); // Pad with spaces to ensure it's 4 characters
