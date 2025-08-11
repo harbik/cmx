@@ -1,7 +1,8 @@
 use serde::Serialize;
 use zerocopy::{BigEndian, FromBytes, Immutable, KnownLayout, Unaligned, I32};
 
-use crate::tags::XYZType;
+use crate::tag::tag_value::XYZArrayType;
+
 
 /// The fixed-point denominator for an s15Fixed16Number (2^16).
 const S15_FIXED_16_DIVISOR: f64 = 65536.0;
@@ -13,7 +14,7 @@ const S15_FIXED_16_DIVISOR: f64 = 65536.0;
 #[repr(C)]
 #[derive(FromBytes, KnownLayout, Unaligned, Immutable)]
 struct XYZTagLayout {
-    /// Tag signature, must be `b"XYZ "`.
+    /// TagValue signature, must be `b"XYZ "`.
     signature: [u8; 4],
     /// Reserved, must be 0.
     _reserved: [u8; 4],
@@ -23,26 +24,31 @@ struct XYZTagLayout {
 
 // Serializable structs for each tag type
 #[derive(Serialize)]
-pub struct XYZTypeToml(Vec<[f64;3]>);
+pub struct XYZArrayTypeToml{
+    xyz: Vec<f64>
+}
 
 
 /// Parses the raw data wrapped in XYZType into a XYZTypeToml instance,
 /// as used 
-impl From<&XYZType> for XYZTypeToml {
-    fn from(xyz: &XYZType) -> Self {
+impl From<&XYZArrayType> for XYZArrayTypeToml {
+    fn from(xyz: &XYZArrayType) -> Self {
+        let layout = XYZTagLayout::ref_from_bytes(&xyz.0).unwrap();
         
-        let layout = 
-            XYZTagLayout::ref_from_bytes(&xyz.0).unwrap();
+        // Flatten directly during the conversion
+        let xyz_vec: Vec<f64> = layout.xyz.iter()
+            .flat_map(|xyz| {
+                [
+                    xyz[0].get() as f64 / S15_FIXED_16_DIVISOR,
+                    xyz[1].get() as f64 / S15_FIXED_16_DIVISOR,
+                    xyz[2].get() as f64 / S15_FIXED_16_DIVISOR,
+                ]
+            })
+            .collect();
 
-        let xyz_vec: Vec<[f64;3]> =layout.xyz.iter().map(|xyz| {
-            [
-                xyz[0].get() as f64 / S15_FIXED_16_DIVISOR,
-                xyz[1].get() as f64 / S15_FIXED_16_DIVISOR,
-                xyz[2].get() as f64 / S15_FIXED_16_DIVISOR,
-            ]
-        }).collect();
-
-        Self(xyz_vec)
+        Self{
+           xyz: xyz_vec
+        }
     }
 }
 

@@ -1,5 +1,3 @@
-use crate::tags::MultiLocalizedUnicodeType;
-
 use isocountry::CountryCode;
 use isolang::Language;
 use zerocopy::{BigEndian, Immutable, IntoBytes, KnownLayout, TryFromBytes, Unaligned, U16, U32};
@@ -34,18 +32,22 @@ pub struct MultiLocalizedUnicodeMapHeader {
 pub struct MultiLocalizedUnicodeMapRecordsTable {
     records: [MultiLocalizedUnicodeRecord],
 }
+
+pub struct MultiLocalizedUnicodeType(pub Vec<u8>);
      
 impl MultiLocalizedUnicodeType {
     pub fn try_ref_from_bytes(&self) -> Vec<MultiLocalizedUnicodeEntry> {
-        let r = MultiLocalizedUnicodeMapHeader::try_ref_from_bytes(&self.0[0..16]).unwrap();
-        let n = r.number_of_records.get() as usize;
-        let record_size = r.record_size.get() as usize;
-        let table_end = n * record_size + 16;
+        let header = MultiLocalizedUnicodeMapHeader::try_ref_from_bytes(&self.0[..16]).unwrap();
+        let n = header.number_of_records.get() as usize;
+        let record_size = header.record_size.get() as usize;
+        let table_end = 16 + n * record_size;
         let table = MultiLocalizedUnicodeMapRecordsTable::try_ref_from_bytes(&self.0[16..table_end]).unwrap();
         let mut entries = Vec::with_capacity(n);
         for r in &table.records {
-            let language = Language::from_639_1(r.language.get().to_string().as_str()).unwrap();
-            let country = CountryCode::for_alpha2_caseless(r.country.get().to_string().as_str()).ok();
+            let lang_code_bytes = r.language.get().to_be_bytes();
+            let language = Language::from_639_1(std::str::from_utf8(&lang_code_bytes).unwrap()).unwrap();
+            let country_code_bytes = r.country.get().to_be_bytes();
+            let country = CountryCode::for_alpha2_caseless(std::str::from_utf8(&country_code_bytes).unwrap()).ok();
             let offset = r.offset.get() as usize;
             let length = r.length.get() as usize;
             let value_bytes = &self.0[offset..offset + length];

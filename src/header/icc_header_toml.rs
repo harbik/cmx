@@ -1,5 +1,5 @@
 
-use crate::{is_zero, round_to_precision, signatures::Signature, tags::RenderingIntent};
+use crate::{is_zero, round_to_precision, signatures::Signature, tag::RenderingIntent};
 
 #[derive(serde::Serialize)]
 pub struct IccHeaderToml {

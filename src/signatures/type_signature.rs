@@ -23,6 +23,7 @@ use crate::error::ParseError;
 pub enum TypeSignature {
     UndefinedType = 0x00000000,
     ChromaticityType = 0x6368726D,              /* 'chrm' */
+    CicpType = 0x63696370,                      /* 'cicp' */
     ColorantOrderType = 0x636C726F,             /* 'clro' */
     ColorantTableType = 0x636C7274,             /* 'clrt' */
     CrdInfoType = 0x63726469,                   /* 'crdi' Removed in V4 */
@@ -150,6 +151,7 @@ impl TypeSignature {
             TypeSignature::ChromaticityType => 0x6368726D,
             TypeSignature::ColorantOrderType => 0x636C726F,
             TypeSignature::ColorantTableType => 0x636C7274,
+            TypeSignature::CicpType => 0x63696370,
             TypeSignature::CrdInfoType => 0x63726469,
             TypeSignature::CurveType => 0x63757276,
             TypeSignature::DataType => 0x64617461,

@@ -11,7 +11,7 @@ use crate::{
     error::{Error, HeaderParseError}, 
     profile::RawProfile, 
     signatures::{Cmm, ColorSpace, DeviceClass, Pcs, Platform, Signature},
-    tags::{GamutCheck, Interpolate, Quality, RenderingIntent, S15Fixed16},
+    tag::{GamutCheck, Interpolate, Quality, RenderingIntent, S15Fixed16},
 };
 
 

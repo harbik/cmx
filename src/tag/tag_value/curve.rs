@@ -2,11 +2,13 @@ use serde::Serialize;
 
 
 #[derive(Serialize)]
-pub struct CurveTypeToml(Vec<u16>);
+pub struct CurveTypeToml{
+    points: Vec<u16>
+}
 
 impl From<&super::CurveType> for CurveTypeToml {
     fn from(curve: &super::CurveType) -> Self {
-        CurveTypeToml(curve.data())
+        CurveTypeToml{points: curve.data()}
     }
 }
 

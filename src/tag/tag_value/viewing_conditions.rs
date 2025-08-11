@@ -1,3 +1,5 @@
+#![allow(unused)]
+use serde::Serialize;
 /*
 use super::measurement::StandardIlluminant;
 use crate::tags::common::*;

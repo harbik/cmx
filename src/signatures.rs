@@ -8,14 +8,13 @@ pub use cmm::Cmm;
 mod device_class;
 pub use device_class::DeviceClass;
 
-pub(crate) mod tag_signature;
-pub use tag_signature::TagSignature;
+//pub(crate) mod tag_signature;
 
 mod colorspace;
 pub use colorspace::ColorSpace;
 
 pub mod technology;
-pub mod type_signature;
+//pub mod type_signature;
 
 mod pcs;
 pub use pcs::Pcs;

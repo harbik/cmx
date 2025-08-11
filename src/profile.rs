@@ -33,13 +33,14 @@ pub use spectral_profile::SpectralProfile;
 /// delegates methods from the RawProfile to all Profiles.
 mod delegate;
 
-mod with_tag;
 
-mod tag_setter;
-pub use tag_setter::TagSetter;
+// TODO
+// mod with_tag;
+//mod tag_setter;
+//pub use tag_setter::TagSetter;
 
 mod checksum;
-use crate::{header::IccHeaderToml, tags::TagToml};
+use crate::{header::IccHeaderToml, tag::TagToml};
 
 pub use {checksum::set_profile_id,  checksum::md5checksum};
 
@@ -86,7 +87,7 @@ impl Profile {
 ///   TOML key next to the `header` table). `IndexMap` preserves insertion order to retain the
 ///   original tag order for readability and compatibility.
 ///
-/// Tag representation:
+/// TagValue representation:
 /// - Every tag type implements its own `TagTypeToml`.
 /// - `TagToml` is an enum that encapsulates all tag-type-specific TOML representations, allowing the
 ///   `tags` map to hold heterogeneous tag values while remaining serializable/deserializable.
@@ -109,14 +110,16 @@ impl fmt::Display for Profile {
         let header = IccHeaderToml::from(self.as_raw_profile());
         
         // Convert tags to a flattened IndexMap<String, TagToml>, using the tag signature as the
-        // key, and converting each TagEntry's tag to a TagToml using its From<TagType>
+        // key, and converting each TagTable's tag to a TagToml using its From<TagType>
         // implementation, which needs to be implemented by each TagType individually.
-        // TagEntry is a struct that contains the offset, size, and the "Tag" enum,
+        // TagTable is a struct that contains the offset, size, and the "TagValue" enum,
         // which encapsulates the tag data.
         let tags: IndexMap<String, TagToml> = 
             self.as_raw_profile().tags.iter()
             .map(|(sig, entry)|{
-                (sig.to_string(), TagToml::from(&entry.tag))
+            //    let name: &str = sig.as_ref();
+            //    (name.to_string(), entry.tag.as_table())
+                (sig.to_string(), entry.tag.as_table())
             }) 
             .collect();
         
@@ -135,9 +138,18 @@ mod test {
     use crate::profile::RawProfile;
 
     #[test]
-    fn print() -> Result<(), Box<dyn std::error::Error>> {
+    fn print_rgb() -> Result<(), Box<dyn std::error::Error>> {
 
         let profile = include_bytes!("../tests/profiles/sRGB.icc");
+        let raw_profile = RawProfile::from_bytes(profile).unwrap();
+        println!("{}", crate::profile::Profile::Raw(raw_profile));
+        Ok(())
+    }
+
+    #[test]
+    fn print_display_p3() -> Result<(), Box<dyn std::error::Error>> {
+
+        let profile = include_bytes!("../tests/profiles/Display P3.icc");
         let raw_profile = RawProfile::from_bytes(profile).unwrap();
         println!("{}", crate::profile::Profile::Raw(raw_profile));
         Ok(())

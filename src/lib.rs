@@ -20,7 +20,7 @@
 pub mod profile;
 pub mod header;
 pub mod signatures;
-pub mod tags;
+pub mod tag;
 pub mod error;
 pub mod language;
 

@@ -1,11 +1,23 @@
 use crate::{
     profile::RawProfile,
-    signatures::TagSignature,
-    tags::{
-        CurveType, IsCurveTag, IsMultiLocalizedUnicodeTag,
-        MultiLocalizedUnicodeType, Tag, TagEntry, UnambiguousTag,
+    tag::{
+        tag_value::CurveType, 
+        tag_value::MultiLocalizedUnicodeType, tag_value::TagValue, TagTable,
+        TagSignature,
     },
 };
+
+// Marker traits (families of allowed inner types)
+pub trait UnambiguousTag {}
+pub trait IsTextDescriptionTag {}
+pub trait IsMultiLocalizedUnicodeTag {}
+pub trait IsCurveTag {}
+pub trait IsParametricCurveTag {}
+pub trait IsLut8TypeTag {}
+pub trait IsLut16TypeTag {}
+pub trait IsLutAtoBTypeTag {}
+pub trait IsLutBtoATypeTag {}
+
 
 /*
 Allows for a ergonomic way to set tag data in a `RawProfile`.
@@ -63,7 +75,7 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
         // as this is a new tag, it did not get assigned an offset and length yet.
         self.profile
             .tags
-            .insert(self.signature.into(), TagEntry::new(0, 0, tag));
+            .insert(self.signature.into(), TagTable::new(0, 0, tag));
         self.profile
     }
 
@@ -76,10 +88,10 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
     {
         let mut curve = CurveType::default();
         configure(&mut curve);
-        let curve_tag = Tag::Curve(curve);
+        let curve_tag = TagValue::Curve(curve);
         self.profile
             .tags
-            .insert(self.signature.into(), TagEntry::new(0, 0, curve_tag));
+            .insert(self.signature.into(), TagTable::new(0, 0, curve_tag));
         self.profile
     }
 
@@ -90,10 +102,10 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
     {
         let mut mlu = MultiLocalizedUnicodeType::default();
         configure(&mut mlu);
-        let mlu_tag = Tag::MultiLocalizedUnicode(mlu);
+        let mlu_tag = TagValue::MultiLocalizedUnicode(mlu);
         self.profile
             .tags
-            .insert(self.signature.into(), TagEntry::new(0, 0, mlu_tag));
+            .insert(self.signature.into(), TagTable::new(0, 0, mlu_tag));
         self.profile // Return a mutable reference to the profile itself
     }
 }

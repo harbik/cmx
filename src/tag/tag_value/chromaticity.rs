@@ -20,7 +20,7 @@ use num_derive::{FromPrimitive, ToPrimitive};
 use serde::Serialize;
 use zerocopy::{BigEndian, Immutable, IntoBytes, KnownLayout, TryFromBytes, U32, U16};
 
-use crate::{signatures::type_signature::TypeSignature, tags::ChromaticityType};
+use crate::{tag::tag_value::TypeSignature, tag::tag_value::ChromaticityType};
 use colorimetry::xyz as cmt;
 
 const ITU: [cmt::Chromaticity;3] = [

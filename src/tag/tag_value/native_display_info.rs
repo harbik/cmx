@@ -1,3 +1,5 @@
+#![allow(unused)]
+use serde::Serialize;
 /*
 use crate::tags::common::*;
 use serde::Serialize;

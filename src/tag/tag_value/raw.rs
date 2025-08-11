@@ -1,11 +1,14 @@
 
-use crate::tags::RawType;
 use serde::Serialize;
 use zerocopy::{FromBytes, Immutable, KnownLayout, Unaligned};
+
+use crate::tag::tag_value::RawType;
 
 #[derive(Serialize)]
 pub struct RawTypeToml{
     type_signature: String,
+    #[serde(skip)]
+    #[allow(unused)]
     data: Vec<u8>,
     hex: String,
 }
@@ -13,7 +16,7 @@ pub struct RawTypeToml{
 #[repr(C)]
 #[derive(FromBytes, KnownLayout, Unaligned, Immutable)]
 pub struct RawTagTypeLayout {
-    /// Tag signature, must be `b"raw "`.
+    /// TagValue signature, must be `b"raw "`.
     signature: [u8; 4],
     /// Reserved, must be 0.
     _reserved: [u8; 4],

@@ -6,8 +6,9 @@ use std::io::{Cursor, Read, Result, Write};
 use std::path::Path;
 
 use crate::profile::Profile;
-use crate::signatures::{DeviceClass, TagSignature};
-use crate::tags::{Tag, TagEntry, TagTraits};
+use crate::signatures::DeviceClass;
+use crate::tag::{Tag, TagSignature};
+use crate::tag::TagTable;
 
 
 /// An ICC profile, deconstructed in:
@@ -31,7 +32,7 @@ use crate::tags::{Tag, TagEntry, TagTraits};
 pub struct RawProfile {
     #[serde(with = "serde_arrays")]
     pub header: [ u8; 128 ], // 128 bytes
-    pub tags: IndexMap<TagSignature, TagEntry>, // preserves insertion order
+    pub tags: IndexMap<TagSignature, TagTable>, // preserves insertion order
     pub padding: usize, // number of padding bytes found in a profile read
 }
 
@@ -110,10 +111,11 @@ impl RawProfile {
             let mut data = vec![0u8; *size as usize];
             cursor.read_exact(&mut data)?;
 
-            tags.insert(*signature, TagEntry {
+            tags.insert(*signature, TagTable {
                 offset: *offset,
                 size: *size,
-                tag: Tag::new(*signature, data),
+                // this needs to be e.g. Tag(Tagvalue(TagType::Raw(data)))
+                tag: Tag::parse(*signature, data),
             });
         }
 
