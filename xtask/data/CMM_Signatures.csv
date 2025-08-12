@@ -1,0 +1,30 @@
+Vendor,Hex value,ASCII,Date,Description
+"Adobe Systems, Inc.",41444245,‘ADBE’,2004-01-13,Adobe CMM
+Agfa Graphics N.V.,41434D53,‘ACMS’,2009-03-16,Agfa CMM
+Apple Computer,6170706C,‘appl’,2004-01-23,Apple CMM
+Canon,43434D53,‘CCMS’,2004-01-13,ColorGear CMM
+Canon,5543434D,‘UCCM’,2004-01-13,ColorGear CMM Lite
+Canon,55434D53,‘UCMS’,2011-03-09,ColorGear CMM C
+EFI,45464920,‘EFI ‘,2009-01-07,EFI CMM
+Fujifilm Corporation,46462020,‘FF  ‘,2004-02-25,Fujifilm CMM
+ExactCODE GmbH,45584143h,‘EXAC’,2013-03-23,ExactScan CMM
+Global Graphics Software Inc,48434d4d,‘HCMM’,2004-02-11,Harlequin RIP CMM
+Graeme Gill,6172676C,'argl',2004-11-20,Argyll CMS CMM
+GretagMacbeth,44676f53,‘LgoS’,2004-01-20,LogoSync CMM
+Heidelberger Druckmaschinen AG,48444d20,‘HDM ‘,2004-01-13,Heidelberg CMM
+Hewlett Packard,6C636d73,‘lcms’,2004-01-08,Little CMS CMM
+ICC,52494d58,‘RIMX’,2018-03-07,RefIccMAX CMM
+ICC,44494d58,‘DIMX’,2021-02-25,DemoIccMAX CMM
+Kodak,4b434d53,‘KCMS’,2004-01-09,Kodak CMM
+Konica Minolta,4d434d44,‘MCML’,2003-11-25,Konica Minolta CMM
+Microsoft,57435320,‘WCS ‘,2013-09-05,Windows Color System CMM
+Mutoh,5349474E,‘SIGN’,2005-08-31,Mutoh CMM
+Onyx Graphics,4f4e5958,‘ONYX’,2018-03-07,Onyx Graphics CMM
+Reprointelligence,72657072,‘repr’,2024-01-27,Reprointelligence CMM
+Rolf Gierling Multitools,52474d53,‘RGMS’,2007-09-30,DeviceLink CMM
+SampleICC,53494343,‘SICC’,2005-03-16,SampleICC CMM
+Toshiba TEC Corporation,54434d4d,‘TCMM’,2013-08-02,Toshiba CMM
+the imaging factory,33324254,'32BT',2004-10-14,the imaging factory CMM
+Vivo Mobile Communication,7669766f,‘vivo’,2017-10-27,Vivo CMM
+Ware To Go,57544720,‘WTG ‘,2009-11-03,Ware to Go CMM
+Zoran Corporation,7a633030,‘zc00’,2008-2-23,Zoran CMM

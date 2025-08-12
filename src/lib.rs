@@ -1,22 +1,77 @@
-#![doc = include_str!("../README.md")]
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
 
-/*
-  Copyright 2021, Harbers Bik LLC
+//#![allow(dead_code, unused_imports)]
+//! This crate provides a set of utilities for working with ICC Color Profiles
+//! and the Colorimetry Library.
+//!
+//! The main functionality at this stage it to parse ICC profiles, and convert them
+//! to TOML format using the cmx command line tool:
+//!
+//! ```bash
+//! cmx profile.icc -o profile.toml
+//!  ```
+//! Every ICC profile tag is converted to a key in the TOML file, with the tag's
+//! values serialized to key-value pairs.
+//! The values are all given as single line output, so that the TOML file is
+//! human-readable and easy to inspect.
+//!
+//! Install the `cmx` tool using Cargo:
+//!
+//! ```bash
+//! cargo install cmx
+//! ```
+//!
+//! To use the `cmx` library, run the following command in your Rust project:
+//!
+//! ```bash
+//! cargo add cmx
+//! ```
+//!
+//! Its documentation is available at [docs.rs/cmx](https://docs.rs/cmx).
+//!
+//! # Roadmap
+//!
+//! - [X] Implement a full ICC profile parser
+//! - [X] Convert to TOML file format
+//! - [ ] Parse TOML files back to ICC profiles
+//! - [ ] Create ICC profiles using the [`Colorimetry`](https://docs.rs/colorimetry/latest/colorimetry/) library features
+//!
+//! The intention is to fully support advanced ICC Color management,
+//! with the ability to use spectral data, and advanced color models,
+//! while maintaining compatibility with existing ICC profiles.
+//!
 
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-
-pub mod common;
+pub mod error;
+pub mod header;
+pub mod language;
 pub mod profile;
-pub mod tags;
 pub mod signatures;
+pub mod tag;
+
+pub use error::Error;
+use num::Zero;
+
+/// Rounds a floating-point value to the specified precision.
+/// For example, round_to_precision(1.23456, 100.0) returns 1.23.
+///
+/// # Arguments
+/// * `value` - The value to round.
+/// * `precision` - The precision
+///
+/// # Returns
+/// The rounded value.
+fn round_to_precision(value: f64, precision: i32) -> f64 {
+    let multiplier = 10f64.powi(precision);
+    (value * multiplier).round() / multiplier
+}
+
+// Add this helper function
+// Make the helper function generic
+fn is_zero<T: Zero>(n: &T) -> bool {
+    n.is_zero()
+}
+
+fn from_s15fixed16(v: i32) -> f64 {
+    round_to_precision(v as f64 / 65536.0, 6)
+}
