@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2024-2025, Harbers Bik LLC
 
@@ -27,12 +26,11 @@ pub enum Error {
     InvalidICCProfile,
 }
 
-
 /// Generates a `new()` constructor and a `From<&str>` impl
 /// for an error wrapper around a `String`.
-/// 
+///
 /// Usage:
-/// 
+///
 /// ```
 macro_rules! define_string_error {
     ($name:ident, $msg:literal) => {

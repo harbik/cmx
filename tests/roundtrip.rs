@@ -1,12 +1,15 @@
+use cmx::profile::RawProfile;
 use std::fs;
-use std::path::Path;
-use cmx::profile::RawProfile; // Adjust the path to your crate/module
+use std::path::Path; // Adjust the path to your crate/module
 
 fn print_first_diff(a: &[u8], b: &[u8]) {
     let min_len = a.len().min(b.len());
     for i in 0..min_len {
         if a[i] != b[i] {
-            println!("Difference at byte {}: left = {}, right = {}", i, a[i], b[i]);
+            println!(
+                "Difference at byte {}: left = {}, right = {}",
+                i, a[i], b[i]
+            );
             return;
         }
     }
@@ -28,12 +31,19 @@ fn test_icc_roundtrip() {
     // Write back to bytes
     let roundtrip = profile.into_bytes().expect("Failed to serialize profile");
     if original.len() != roundtrip.len() {
-        println!("Original length: {}, Roundtrip length: {}", original.len(), roundtrip.len());
+        println!(
+            "Original length: {}, Roundtrip length: {}",
+            original.len(),
+            roundtrip.len()
+        );
         print_first_diff(&original, &roundtrip);
     }
     if original != roundtrip {
         print_first_diff(&original, &roundtrip);
-        assert_eq!(original, roundtrip, "Round-trip ICC profile does not match original");
+        assert_eq!(
+            original, roundtrip,
+            "Round-trip ICC profile does not match original"
+        );
         return;
     }
 

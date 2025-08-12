@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
 
 use std::fmt;
 
@@ -48,7 +50,7 @@ impl fmt::Display for Language {
         if self.language == [0, 0] {
             return write!(f, "undefined");
         }
-        
+
         // Safely convert byte arrays to string slices for printing.
         let lang_str = std::str::from_utf8(&self.language).unwrap_or("??");
         let country_str = std::str::from_utf8(&self.country).unwrap_or("??");

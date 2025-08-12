@@ -1,31 +1,36 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
+
 mod icc_header_toml;
 pub use icc_header_toml::IccHeaderToml;
 
 use chrono::{DateTime, Datelike, Timelike};
 use zerocopy::{
     BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, Ref, Unaligned, U16, U32, U64,
-
 };
 
 use crate::{
-    error::{Error, HeaderParseError}, 
-    profile::RawProfile, 
+    error::{Error, HeaderParseError},
+    profile::RawProfile,
     signatures::{Cmm, ColorSpace, DeviceClass, Pcs, Platform, Signature},
     tag::{GamutCheck, Interpolate, Quality, RenderingIntent, S15Fixed16},
 };
-
 
 fn validate_version(major: u8, minor: u8) -> Result<(u8, u8), Error> {
     match (major, minor) {
         (2, 0) => Ok((2, 0)),
         (2, 1) => Ok((2, 1)),
         (2, 2) => Ok((2, 2)),
+        (2, 3) => Ok((2, 3)),
+        (2, 4) => Ok((2, 4)),
         (4, 0) => Ok((4, 0)),
         (4, 2) => Ok((4, 2)),
         (4, 3) => Ok((4, 3)),
         (4, 4) => Ok((4, 4)),
         (5, 0) => Ok((5, 0)),
-        _ => Err(HeaderParseError::new(format!("Invalid ICC profile version: V{major}.{minor}")).into()),
+        _ => Err(
+            HeaderParseError::new(format!("Invalid ICC profile version: V{major}.{minor}")).into(),
+        ),
     }
 }
 
@@ -52,12 +57,11 @@ pub struct IccHeader {
     pub attributes: U64<BigEndian>,
     pub rendering_intent: U32<BigEndian>,
     pub pcs_illuminant: [S15Fixed16; 3],
-   // pub pcs_illuminant: [u8; 12],
+    // pub pcs_illuminant: [u8; 12],
     pub creator: U32<BigEndian>,
     pub profile_id: [u8; 16],
     pub reserved: [u8; 28],
 }
-
 
 impl RawProfile {
     /// Returns a reference to the ICC profile header, from an zerocopy overlay.
@@ -305,7 +309,10 @@ impl RawProfile {
     /// assert_eq!(date, creation_date);
     /// ```
     pub fn with_creation_date(mut self, opt_date: Option<DateTime<chrono::Utc>>) -> Self {
-        let date = opt_date.unwrap_or_else(|| chrono::Utc::now()).with_nanosecond(0).unwrap();
+        let date = opt_date
+            .unwrap_or_else(|| chrono::Utc::now())
+            .with_nanosecond(0)
+            .unwrap();
         let naive = date.naive_utc();
         let header = self.header_mut();
         header.creation_year = U16::new(naive.year() as u16);
@@ -411,13 +418,13 @@ impl RawProfile {
         let use_embedded_only = (flags & 0x00000002) != 0; // bit 1
         (embedded, use_embedded_only)
     }
-    
+
     /// Clears the flags of the profile.
     pub fn with_cleared_flags(mut self) -> Self {
         self.header_mut().flags = U32::new(0x0);
         self
     }
-    
+
     /// Sets the flags of the profile.
     /// This method allows you to specify whether the profile is embedded and whether it should be used only when embedded.
     /// The flags are represented as a bitmask:
@@ -437,11 +444,7 @@ impl RawProfile {
     /// # Note:
     /// This bit can also be used as an indication, by the CMM, that the profile should not be copied and used
     /// for your own purposes, in addition to the copyright and license information in contained in the `CopyrightTag` "cprt" tag .
-    pub fn with_flags(
-        mut self,
-        embedded: bool,
-        use_embedded_only: bool,
-    ) -> Result<Self, Error> {
+    pub fn with_flags(mut self, embedded: bool, use_embedded_only: bool) -> Result<Self, Error> {
         let mut flags = 0x0;
         if embedded {
             flags |= 0x00000001; // set bit 0
@@ -595,7 +598,7 @@ impl RawProfile {
     }
 
     /// Returns the model of the profile, which is a tag that indicates the specific model of the device or software that created the profile.
-    /// 
+    ///
     /// # Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Signature};
@@ -641,7 +644,7 @@ impl RawProfile {
         let header = self.header();
         header.attributes.get()
     }
-    
+
     /// Sets the attributes of the profile.
     /// This method allows you to specify the attributes using a 64-bit unsigned integer.
     /// # Example:
@@ -712,10 +715,7 @@ impl RawProfile {
         self.header_mut().profile_id = [0u8; 16];
         self
     }
-
 }
-
-
 
 #[cfg(test)]
 mod test {

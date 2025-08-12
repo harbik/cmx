@@ -1,18 +1,21 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
+
 use crate::signatures::Signature;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, strum::Display, serde::Serialize)]
 #[repr(u32)]
 pub enum DeviceClass {
     Unknown,
-    Input        = 0x73636E72, // 'scnr'
-    Display      = 0x6D6E7472, // 'mntr'
-    Output       = 0x70727472, // 'prtr'
-    DeviceLink   = 0x6C696E6B, // 'link'
-    Abstract     = 0x61627374, // 'abst'
-    ColorSpace   = 0x73706163, // 'spac'
-    NamedColor   = 0x6E6D636C, // 'nmcl'
+    Input = 0x73636E72,      // 'scnr'
+    Display = 0x6D6E7472,    // 'mntr'
+    Output = 0x70727472,     // 'prtr'
+    DeviceLink = 0x6C696E6B, // 'link'
+    Abstract = 0x61627374,   // 'abst'
+    ColorSpace = 0x73706163, // 'spac'
+    NamedColor = 0x6E6D636C, // 'nmcl'
     // ICC.2 (ICCmax) additions:
-    Spectral     = 0x73706563, // 'spec'
+    Spectral = 0x73706563, // 'spec'
 }
 
 impl DeviceClass {

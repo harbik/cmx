@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
 
 mod raw_profile;
 use std::fmt;
@@ -33,7 +35,6 @@ pub use spectral_profile::SpectralProfile;
 /// delegates methods from the RawProfile to all Profiles.
 mod delegate;
 
-
 // TODO
 // mod with_tag;
 //mod tag_setter;
@@ -42,7 +43,7 @@ mod delegate;
 mod checksum;
 use crate::{header::IccHeaderToml, tag::TagToml};
 
-pub use {checksum::set_profile_id,  checksum::md5checksum};
+pub use {checksum::md5checksum, checksum::set_profile_id};
 
 #[derive(Debug)]
 pub enum Profile {
@@ -76,7 +77,7 @@ impl Profile {
 /// A serde-friendly TOML façade for an ICC profile.
 ///
 /// This struct is used to:
-/// - Pretty-print a profile to TOML (currently used by `RawProfile`'s `Display` impl to write to
+/// - Print a profile to TOML (currently used by `RawProfile`'s `Display` impl to write to
 ///   standard output).
 /// - Eventually deserialize a profile from TOML as an alternative to reading a binary ICC file.
 ///
@@ -104,30 +105,30 @@ pub struct ProfileToml {
 /// A display implementation for `RawProfile` that serializes the profile to a TOML string.
 impl fmt::Display for Profile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-
         // See header::icc_header_toml.rs for the IccHeaderToml struct
         // and its conversion from RawProfile.
         let header = IccHeaderToml::from(self.as_raw_profile());
-        
+
         // Convert tags to a flattened IndexMap<String, TagToml>, using the tag signature as the
         // key, and converting each TagTable's tag to a TagToml using its From<TagType>
         // implementation, which needs to be implemented by each TagType individually.
         // TagTable is a struct that contains the offset, size, and the "TagValue" enum,
         // which encapsulates the tag data.
-        let tags: IndexMap<String, TagToml> = 
-            self.as_raw_profile().tags.iter()
-            .map(|(sig, entry)|{
-            //    let name: &str = sig.as_ref();
-            //    (name.to_string(), entry.tag.as_table())
+        let tags: IndexMap<String, TagToml> = self
+            .as_raw_profile()
+            .tags
+            .iter()
+            .map(|(sig, entry)| {
+                //    let name: &str = sig.as_ref();
+                //    (name.to_string(), entry.tag.as_table())
                 (sig.to_string(), entry.tag.as_table())
-            }) 
+            })
             .collect();
-        
 
         let profile_toml = ProfileToml { header, tags };
-        
+
         match toml::to_string(&profile_toml) {
-      //  match toml::to_string_pretty(&profile_toml) {
+            //  match toml::to_string_pretty(&profile_toml) {
             Ok(s) => write!(f, "{}", s),
             Err(_) => Err(fmt::Error),
         }
@@ -140,7 +141,6 @@ mod test {
 
     #[test]
     fn print_rgb() -> Result<(), Box<dyn std::error::Error>> {
-
         let profile = include_bytes!("../tests/profiles/sRGB.icc");
         let raw_profile = RawProfile::from_bytes(profile).unwrap();
         println!("{}", crate::profile::Profile::Raw(raw_profile));
@@ -149,11 +149,9 @@ mod test {
 
     #[test]
     fn print_display_p3() -> Result<(), Box<dyn std::error::Error>> {
-
         let profile = include_bytes!("../tests/profiles/Display P3.icc");
         let raw_profile = RawProfile::from_bytes(profile).unwrap();
         println!("{}", crate::profile::Profile::Raw(raw_profile));
         Ok(())
     }
-        
 }

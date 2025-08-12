@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
+
 // use std::ffi::os_str::Display; // Removed incorrect import
 
 use std::fmt::Display;
 
-use zerocopy::{FromBytes, IntoBytes, Unaligned, KnownLayout, Immutable, U32, BigEndian};
-
+use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, Unaligned, U32};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Quality {

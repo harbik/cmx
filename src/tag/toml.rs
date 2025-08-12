@@ -1,13 +1,15 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
+
 use serde::Serialize;
 
 use crate::tag::{
     tag_value::{
-        chromaticity::ChromaticityTypeToml, curve::CurveTypeToml,
+        chromaticity::ChromaticityTypeToml, curve::CurveTypeToml, lut8::Lut8TypeToml,
         multi_localized_unicode::MultiLocalizedUnicodeTypeToml,
         parametric_curve::ParametricCurveTypeToml, raw::RawTypeToml,
         s15fixed16array::S15Fixed16ArrayTypeToml, text::TextTypeToml,
         text_description::TextDescriptionTypeToml, xyz::XYZArrayTypeToml,
-        lut8::Lut8TypeToml,
     },
     TagTraits, TagValue,
 };

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
+
 use crate::signatures::Signature;
 
 /// Represents the Profile Connection Space (PCS) of an ICC profile.
@@ -9,7 +12,7 @@ pub enum Platform {
     Microsoft = 0x4D534654,       // 'MSFT' - Microsoft Corporation',
     SiliconGraphics = 0x53474920, // 'SGI ' - Silicon Graphics Inc.
     SunMicrosystems = 0x53554E57, // 'SUN ' - Sun Microsystems Inc.
-    All = 0x00000000,           // Not set
+    All = 0x00000000,             // Not set
 }
 
 impl Platform {

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
+
 use num_derive::FromPrimitive;
 use serde::{Deserialize, Serialize};
 
@@ -64,8 +67,6 @@ impl ColorSpace {
             0x46434C52 => ColorSpace::CLRF,
             0x6E630000 => ColorSpace::NC, // V5: n channel device data
             _ => ColorSpace::NONE,
-            
-
         }
     }
 }

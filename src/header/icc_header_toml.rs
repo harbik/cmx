@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
 
 use crate::{is_zero, round_to_precision, signatures::Signature, tag::RenderingIntent};
 
@@ -33,7 +35,7 @@ impl From<&super::RawProfile> for IccHeaderToml {
     fn from(raw_profile: &super::RawProfile) -> Self {
         let header = raw_profile.header();
         let (major, minor) = raw_profile.version().unwrap();
-        let version= format!("{major}.{minor}");
+        let version = format!("{major}.{minor}");
         let (embedded, use_embedded_only) = raw_profile.flags();
         let profile_id_raw = raw_profile.profile_id();
         let profile_id = if profile_id_raw.iter().all(is_zero) {

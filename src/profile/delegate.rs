@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
+
 //! This module provides a delegation pattern for RawProfile to methoall the Device Profile structs.
 
 use delegate::delegate;
-
 
 macro_rules! impl_header_methods {
     ($($profile:ident),*) => {
@@ -16,7 +18,7 @@ macro_rules! impl_header_methods {
                         pub fn primary_platform(&self) -> crate::signatures::Platform;
                         pub fn manufacturer(&self) -> crate::signatures::Signature;
                         pub fn model(&self) -> crate::signatures::Signature;
-                        // no 
+                        // no
                     }
                 }
 
@@ -42,6 +44,3 @@ impl_header_methods!(
     NamedColorProfile,
     SpectralProfile
 );
-
-
-

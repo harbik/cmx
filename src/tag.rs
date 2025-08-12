@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
+
 pub mod tag_value;
 /*
 mod parse;
@@ -9,10 +12,8 @@ pub use toml::TagToml;
 mod header_tags;
 pub use header_tags::{GamutCheck, Interpolate, Quality, RenderingIntent, S15Fixed16};
 
-use tag_value::TypeSignature;
 use tag_value::TagValue;
-
-
+use tag_value::TypeSignature;
 
 use serde::Serialize;
 
@@ -55,214 +56,6 @@ impl TagTable {
         self.tag.into_bytes()
     }
 }
-
-/*
-// ...existing code...
-
-/// Defines a `TagSignature`-like enum from a list of (Variant, b"CODE") pairs.
-///
-/// This macro generates:
-/// 1. A `#[repr(u32)]` enum with discriminants calculated from the byte strings.
-/// 2. `const` helper functions to convert between the enum, `u32`, and `[u8; 4]`.
-/// 3. A `Display` implementation to show the 4-char code as a string.
-/// 4. A `Serialize` implementation to serialize the enum as its string code.
-macro_rules! define_tag_signature {
-    (
-        $(#[$meta:meta])*
-        $vis:vis enum $name:ident {
-            $(
-                ($variant:ident, $bytes:literal)
-            ),+
-            $(,)? // Allow trailing comma
-        }
-    ) => {
-        $(#[$meta])*
-        #[repr(u32)]
-        $vis enum $name {
-            $(
-                $variant = u32::from_be_bytes(*$bytes),
-            )+
-        }
-
-        impl $name {
-            /// Returns the `u32` representation of the signature.
-            pub const fn code(self) -> u32 {
-                self as u32
-            }
-
-            /// Returns the 4-byte `[u8; 4]` representation of the signature.
-            pub const fn as_bytes(self) -> [u8; 4] {
-                self.code().to_be_bytes()
-            }
-
-            /// Creates a signature from a 4-byte array, if valid.
-            pub const fn from_be_bytes(bytes: [u8; 4]) -> Option<Self> {
-                let value = u32::from_be_bytes(bytes);
-                // This requires a `match` to map the value back to an enum variant.
-                // Note: A direct `transmute` is unsafe. This is the safe way.
-                match value {
-                    $(
-                        v if v == Self::$variant as u32 => Some(Self::$variant),
-                    )+
-                    _ => None,
-                }
-            }
-        }
-
-        impl fmt::Display for $name {
-            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                let bytes = self.as_bytes();
-                write!(f, "{}{}{}{}", bytes[0] as char, bytes[1] as char, bytes[2] as char, bytes[3] as char)
-            }
-        }
-
-        impl Serialize for $name {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: serde::Serializer,
-            {
-                serializer.serialize_str(&self.to_string())
-            }
-        }
-    };
-}
-
-define_tag_signature! {
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-    pub enum TagSignature {
-        (AToB0Tag,b"A2B0"),
-        (AToB1Tag,b"A2B1"),
-        (AToB2Tag,b"A2B2"),
-        (AToB3Tag,b"A2B3"),
-        (AToM0Tag,b"A2M0"),
-        (BlueMatrixColumnTag,b"bXYZ"),
-        (BlueTRCTag,b"bTRC"),
-        (BrdfColorimetricParameter0Tag,b"bcp0"),
-        (BrdfColorimetricParameter1Tag,b"bcp1"),
-        (BrdfColorimetricParameter2Tag,b"bcp2"),
-        (BrdfColorimetricParameter3Tag,b"bcp3"),
-        (BrdfSpectralParameter0Tag,b"bsp0"),
-        (BrdfSpectralParameter1Tag,b"bsp1"),
-        (BrdfSpectralParameter2Tag,b"bsp2"),
-        (BrdfSpectralParameter3Tag,b"bsp3"),
-        (BRDFAToB0Tag,b"bAB0"),
-        (BRDFAToB1Tag,b"bAB1"),
-        (BRDFAToB2Tag,b"bAB2"),
-        (BRDFAToB3Tag,b"bAB3"),
-        (BRDFDToB0Tag,b"bDB0"),
-        (BRDFDToB1Tag,b"bDB1"),
-        (BRDFDToB2Tag,b"bDB2"),
-        (BRDFDToB3Tag,b"bDB3"),
-        (BRDFMToB0Tag,b"bMB0"),
-        (BRDFMToB1Tag,b"bMB1"),
-        (BRDFMToB2Tag,b"bMB2"),
-        (BRDFMToB3Tag,b"bMB3"),
-        (BRDFMToS0Tag,b"bMS0"),
-        (BRDFMToS1Tag,b"bMS1"),
-        (BRDFMToS2Tag,b"bMS2"),
-        (BRDFMToS3Tag,b"bMS3"),
-        (BToA0Tag,b"B2A0"),
-        (BToA1Tag,b"B2A1"),
-        (BToA2Tag,b"B2A2"),
-        (BToA3Tag,b"B2A3"),
-        (CalibrationDateTimeTag,b"calt"),
-        (CharTargetTag,b"targ"),
-        (ChromaticAdaptationTag,b"chad"),
-        (ChromaticityTag,b"chrm"),
-        (ColorEncodingParamsTag,b"cept"),
-        (ColorSpaceNameTag,b"csnm"),
-        (ColorantInfoTag,b"clin"),
-        (ColorantInfoOutTag,b"clio"),
-        (ColorantOrderTag,b"clro"),
-        (ColorantOrderOutTag,b"cloo"),
-        (ColorantTableTag,b"clrt"),
-        (ColorantTableOutTag,b"clot"),
-        (ColorimetricIntentImageStateTag,b"ciis"),
-        (CopyrightTag,b"cprt"),
-        (CrdInfoTag,b"crdi"),
-        (CustomToStandardPccTag,b"c2sp"),
-        (CxFTag,b"CxF "),
-        (DataTag,b"data"),
-        (DateTimeTag,b"dtim"),
-        (DeviceMediaWhitePointTag,b"dmwp"),
-        (DeviceMfgDescTag,b"dmnd"),
-        (DeviceModelDescTag,b"dmdd"),
-        (DeviceSettingsTag,b"devs"),
-        (DToB0Tag,b"D2B0"),
-        (DToB1Tag,b"D2B1"),
-        (DToB2Tag,b"D2B2"),
-        (DToB3Tag,b"D2B3"),
-        (BToD0Tag,b"B2D0"),
-        (BToD1Tag,b"B2D1"),
-        (BToD2Tag,b"B2D2"),
-        (BToD3Tag,b"B2D3"),
-        (GamutTag,b"gamt"),
-        (GamutBoundaryDescription0Tag,b"gbd0"),
-        (GamutBoundaryDescription1Tag,b"gbd1"),
-        (GamutBoundaryDescription2Tag,b"gbd2"),
-        (GamutBoundaryDescription3Tag,b"gbd3"),
-        (GrayTRCTag,b"kTRC"),
-        (GreenMatrixColumnTag,b"gXYZ"),
-        (GreenTRCTag,b"gTRC"),
-        (LuminanceTag,b"lumi"),
-        (MaterialDefaultValuesTag,b"mdv "),
-        (MaterialTypeArrayTag,b"mcta"),
-        (MToA0Tag,b"M2A0"),
-        (MToB0Tag,b"M2B0"),
-        (MToB1Tag,b"M2B1"),
-        (MToB2Tag,b"M2B2"),
-        (MToB3Tag,b"M2B3"),
-        (MToS0Tag,b"M2S0"),
-        (MToS1Tag,b"M2S1"),
-        (MToS2Tag,b"M2S2"),
-        (MToS3Tag,b"M2S3"),
-        (MeasurementTag,b"meas"),
-        (MediaBlackPointTag,b"bkpt"),
-        (MediaWhitePointTag,b"wtpt"),
-        (MetaDataTag,b"meta"),
-        (NamedColorTag,b"ncol"),
-        (NamedColorV5Tag,b"nmcl"),
-        (NamedColor2Tag,b"ncl2"),
-        (OutputResponseTag,b"resp"),
-        (PerceptualRenderingIntentGamutTag,b"rig0"),
-        (Preview0Tag,b"pre0"),
-        (Preview1Tag,b"pre1"),
-        (Preview2Tag,b"pre2"),
-        (PrintConditionTag,b"ptcn"),
-        (ProfileDescriptionTag,b"desc"),
-        (ProfileSequenceDescTag,b"pseq"),
-        (ProfileSequceIdTag,b"psid"),
-        (Ps2CRD0Tag,b"psd0"),
-        (Ps2CRD1Tag,b"psd1"),
-        (Ps2CRD2Tag,b"psd2"),
-        (Ps2CRD3Tag,b"psd3"),
-        (Ps2CSATag,b"ps2s"),
-        (Ps2RenderingIntentTag,b"ps2i"),
-        (RedMatrixColumnTag,b"rXYZ"),
-        (RedTRCTag,b"rTRC"),
-        (ReferenceNameTag,b"rfnm"),
-        (SaturationRenderingIntentGamutTag,b"rig2"),
-        (ScreeningDescTag,b"scrd"),
-        (ScreeningTag,b"scrn"),
-        (SpectralDataInfoTag,b"sdin"),
-        (SpectralWhitePointTag,b"swpt"),
-        (SpectralViewingConditionsTag,b"svcn"),
-        (StandardToCustomPccTag,b"s2cp"),
-        (SurfaceMapTag,b"smap"),
-        (TechnologyTag,b"tech"),
-        (UcrBgTag,b"bfd "),
-        (ViewingCondDescTag,b"vued"),
-        (ViewingConditionsTag,b"view"),
-        (EmbeddedV5ProfileTag,b"ICC5"),
-        (MakeAndModelTag,b"mmod"),
-        (MultilocalizedDescriptionStringTag,b"dscm"),
-        (NativeDisplayInfoTag,b"ndin"),
-        (VcgtTag,b"vcgt"),
-        (VcgpTag,b"vcgp"),
-        (AbsToRelTransSpaceTag,b"arts"),
-    }
-}
- */
 
 #[derive(Debug, Serialize, Clone, PartialEq)]
 pub enum Tag {
@@ -517,7 +310,6 @@ impl_tag_dispatch! {
     AbsToRelTransSpace
 }
 
-
 impl Tag {
     pub fn new(tag_sig_u32: u32, tag_value: TagValue) -> Self {
         match tag_sig_u32 {
@@ -657,11 +449,9 @@ impl Tag {
 
     /// Creates a new `Tag` by parsing the raw data based on its signature.
     pub fn parse(signature: TagSignature, data: Vec<u8>) -> Self {
-
         let tag_value = TagValue::new(data);
         Tag::new(signature.to_u32(), tag_value)
     }
-
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, strum::AsRefStr)]
 #[repr(u32)]
@@ -1088,4 +878,3 @@ impl TagSignature {
         }
     }
 }
-

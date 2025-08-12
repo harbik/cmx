@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
+
 pub mod chromaticity;
 pub mod curve;
 pub mod lut8;
@@ -15,7 +18,6 @@ pub mod vcgp;
 pub mod vcgt;
 pub mod viewing_conditions;
 pub mod xyz;
-
 
 use serde::Serialize;
 
@@ -88,7 +90,7 @@ pub enum TypeSignature {
     ZipUtf8TextType = 0x7a757438,     /* 'zut8' */
     ZipXmlType = 0x5a584d4c,          /* 'ZXML' */
     EmbeddedProfileType = 0x49434370, /* 'ICCp' */
-    Unknown(u32)
+    Unknown(u32),
 }
 
 impl TypeSignature {
@@ -236,12 +238,7 @@ impl std::str::FromStr for TypeSignature {
     type Err = crate::error::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let value = 
-            u32::from_str_radix(s, 16)
-            .map_err(|e| 
-                {
-                    ParseError::new(e.to_string())
-                })?;
+        let value = u32::from_str_radix(s, 16).map_err(|e| ParseError::new(e.to_string()))?;
         Ok(Self::from_u32(value))
     }
 }
@@ -296,7 +293,7 @@ macro_rules! define_tags_and_types {
         paste! {
             $(
                 // Define the `TagValue` types, which are, at this point, just wrappers
-                // around `Vec<u8>`, the raw data for each tag, and the core of the 
+                // around `Vec<u8>`, the raw data for each tag, and the core of the
                 // internal representation in this libray.
                 // Examples of these are `CurveType`, `XYZType`, etc.
                 #[derive(Debug, Serialize, Clone, PartialEq)]
@@ -447,7 +444,7 @@ define_tags_and_types!(
     SparseMatrixArray,
     SpectralViewingConditions,
     TagStruct,
- //   Technology,
+    //   Technology,
     Text,
     TextDescription,
     U16Fixed16Array,
@@ -466,8 +463,7 @@ define_tags_and_types!(
     EmbeddedProfile,
 );
 
-
-impl TagValue  {
+impl TagValue {
     pub fn new(data: Vec<u8>) -> Self {
         let type_sig_bytes = data[0..4].try_into().unwrap_or([0; 4]);
         let type_signature = TypeSignature::from(type_sig_bytes);
@@ -482,28 +478,46 @@ impl TagValue  {
             TypeSignature::DataType => Self::Data(DataType(data)),
             TypeSignature::DateTimeType => Self::DateTime(DateTimeType(data)),
             TypeSignature::DictType => Self::Dict(DictType(data)),
-            TypeSignature::EmbeddedHeightImageType => Self::EmbeddedHeigthImage(EmbeddedHeigthImageType(data)),
-            TypeSignature::EmbeddedNormalImageType => Self::EmbeddedNormalImage(EmbeddedNormalImageType(data)),
+            TypeSignature::EmbeddedHeightImageType => {
+                Self::EmbeddedHeigthImage(EmbeddedHeigthImageType(data))
+            }
+            TypeSignature::EmbeddedNormalImageType => {
+                Self::EmbeddedNormalImage(EmbeddedNormalImageType(data))
+            }
             TypeSignature::Float16ArrayType => Self::Float16Array(Float16ArrayType(data)),
             TypeSignature::Float32ArrayType => Self::Float32Array(Float32ArrayType(data)),
             TypeSignature::Float64ArrayType => Self::Float64Array(Float64ArrayType(data)),
-            TypeSignature::GamutBoundaryDescType => Self::GamutBoundaryDescription(GamutBoundaryDescriptionType(data)),
+            TypeSignature::GamutBoundaryDescType => {
+                Self::GamutBoundaryDescription(GamutBoundaryDescriptionType(data))
+            }
             TypeSignature::Lut8Type => Self::Lut8(Lut8Type(data)),
             TypeSignature::Lut16Type => Self::Lut16(Lut16Type(data)),
             TypeSignature::LutAtoBType => Self::LutAToB(LutAToBType(data)),
             TypeSignature::LutBtoAType => Self::LutBToA(LutBToAType(data)),
             TypeSignature::MeasurementType => Self::Measurement(MeasurementType(data)),
             TypeSignature::MakeAndModelType => Self::MakeAndModel(MakeAndModelType(data)),
-            TypeSignature::MultiLocalizedUnicodeType => Self::MultiLocalizedUnicode(MultiLocalizedUnicodeType(data)),
-            TypeSignature::NativeDisplayInfoType => Self::NativeDisplayInfo(NativeDisplayInfoType(data)),
+            TypeSignature::MultiLocalizedUnicodeType => {
+                Self::MultiLocalizedUnicode(MultiLocalizedUnicodeType(data))
+            }
+            TypeSignature::NativeDisplayInfoType => {
+                Self::NativeDisplayInfo(NativeDisplayInfoType(data))
+            }
             TypeSignature::NamedColor2Type => Self::NamedColor2(NamedColor2Type(data)),
             TypeSignature::ParametricCurveType => Self::ParametricCurve(ParametricCurveType(data)),
-            TypeSignature::ProfileSequenceDescType => Self::ProfileSequenceDesc(ProfileSequenceDescType(data)),
-            TypeSignature::ProfileSequceIdType => Self::ProfileSequenceId(ProfileSequenceIdType(data)),
+            TypeSignature::ProfileSequenceDescType => {
+                Self::ProfileSequenceDesc(ProfileSequenceDescType(data))
+            }
+            TypeSignature::ProfileSequceIdType => {
+                Self::ProfileSequenceId(ProfileSequenceIdType(data))
+            }
             TypeSignature::S15Fixed16ArrayType => Self::S15Fixed16Array(S15Fixed16ArrayType(data)),
             TypeSignature::SignatureType => Self::Signature(SignatureType(data)),
-            TypeSignature::SparseMatrixArrayType => Self::SparseMatrixArray(SparseMatrixArrayType(data)),
-            TypeSignature::SpectralViewingConditionsType => Self::SpectralViewingConditions(SpectralViewingConditionsType(data)),
+            TypeSignature::SparseMatrixArrayType => {
+                Self::SparseMatrixArray(SparseMatrixArrayType(data))
+            }
+            TypeSignature::SpectralViewingConditionsType => {
+                Self::SpectralViewingConditions(SpectralViewingConditionsType(data))
+            }
             TypeSignature::TagStructType => Self::TagStruct(TagStructType(data)),
             TypeSignature::TextType => Self::Text(TextType(data)),
             TypeSignature::TextDescriptionType => Self::TextDescription(TextDescriptionType(data)),
@@ -517,16 +531,15 @@ impl TagValue  {
             TypeSignature::ZipUtf8TextType => Self::ZipUtf8Text(ZipUtf8TextType(data)),
             TypeSignature::VcgtType => Self::Vcgt(VcgtType(data)),
             TypeSignature::VcgpType => Self::Vcgp(VcgpType(data)),
-            TypeSignature::ViewingConditionsType => Self::ViewingConditions(ViewingConditionsType(data)),
+            TypeSignature::ViewingConditionsType => {
+                Self::ViewingConditions(ViewingConditionsType(data))
+            }
             TypeSignature::XYZArrayType => Self::XYZArray(XYZArrayType(data)),
             // If the type signature is not recognized, we return a Raw tag.
-           _ =>  Self::Raw(RawType(data)),
-            
+            _ => Self::Raw(RawType(data)),
         }
     }
 }
-
-
 
 impl ColorantOrderType {
     pub fn new(colorant_order: Vec<u8>) -> Self {

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
 
 use serde::Serialize;
 use zerocopy::{FromBytes, Immutable, KnownLayout, Unaligned};
@@ -5,7 +7,7 @@ use zerocopy::{FromBytes, Immutable, KnownLayout, Unaligned};
 use crate::tag::tag_value::RawType;
 
 #[derive(Serialize)]
-pub struct RawTypeToml{
+pub struct RawTypeToml {
     type_signature: String,
     #[serde(skip)]
     #[allow(unused)]
@@ -26,8 +28,7 @@ pub struct RawTagTypeLayout {
 
 impl From<&RawType> for RawTypeToml {
     fn from(raw: &RawType) -> Self {
-        let layout = 
-            RawTagTypeLayout::ref_from_bytes(&raw.0).unwrap();
+        let layout = RawTagTypeLayout::ref_from_bytes(&raw.0).unwrap();
 
         Self {
             type_signature: String::from_utf8_lossy(&layout.signature).to_string(),

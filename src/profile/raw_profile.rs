@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
+
 use indexmap::IndexMap;
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -7,33 +10,32 @@ use std::path::Path;
 
 use crate::profile::Profile;
 use crate::signatures::DeviceClass;
-use crate::tag::{Tag, TagSignature};
 use crate::tag::TagTable;
-
+use crate::tag::{Tag, TagSignature};
 
 /// An ICC profile, deconstructed in:
-/// 
+///
 /// - a raw header array, with a length of 128 bytes,
 /// - a indexmap of datablocks, with a `TagSignature`` as key and `TagBytes`` as value.
-/// 
+///
 /// An indexmap is used to preserve the insertion order of tags, which is technically not required
 /// by the ICC specification, but is used to maintain the order of tags as they appear in profiles
 /// read from a a file file, and to maximize compatibility with existing ICC profiles.
-/// 
+///
 /// It does not include a separate tag table; the profile tags are the used as the indexmap's key,
 /// while offsets and sizes are included in the `DataBlock` struct. Those offsets and sizes
 /// are used to recreate the tag table on writing.
 /// Whenever the size of a tag's data changes, the offsets and sizes of all tags are updated.
-/// 
-/// 
-/// 
+///
+///
+///
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct RawProfile {
     #[serde(with = "serde_arrays")]
-    pub header: [ u8; 128 ], // 128 bytes
+    pub header: [u8; 128], // 128 bytes
     pub tags: IndexMap<TagSignature, TagTable>, // preserves insertion order
-    pub padding: usize, // number of padding bytes found in a profile read
+    pub padding: usize,                         // number of padding bytes found in a profile read
 }
 
 impl Default for RawProfile {
@@ -44,14 +46,13 @@ impl Default for RawProfile {
             padding: 0,
         }
         .with_valid_file_signature()
-        .with_version(4,3).unwrap()
+        .with_version(4, 3)
+        .unwrap()
         .with_creation_date(None) // Current date and time
     }
 }
 
-
 impl RawProfile {
-
     /// Reads an ICC profile from a file.
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
         let mut file = File::open(path)?;
@@ -65,7 +66,7 @@ impl RawProfile {
         let mut cursor = Cursor::new(bytes);
 
         // Read the header (first 128 bytes)
-      //  let mut header = vec![0u8; 128];
+        //  let mut header = vec![0u8; 128];
         let mut header = [0u8; 128];
         cursor.read_exact(&mut header)?;
 
@@ -111,20 +112,22 @@ impl RawProfile {
             let mut data = vec![0u8; *size as usize];
             cursor.read_exact(&mut data)?;
 
-            tags.insert(*signature, TagTable {
-                offset: *offset,
-                size: *size,
-                // this needs to be e.g. Tag(Tagvalue(TagType::Raw(data)))
-                tag: Tag::parse(*signature, data),
-            });
+            tags.insert(
+                *signature,
+                TagTable {
+                    offset: *offset,
+                    size: *size,
+                    // this needs to be e.g. Tag(Tagvalue(TagType::Raw(data)))
+                    tag: Tag::parse(*signature, data),
+                },
+            );
         }
 
         // In the ICC profile format, each tag's data block starts at the offset specified in the tag table,
         // and the size is given in the tag table as well. The tag data block itself starts with a 4-byte type signature
         // and a 4-byte reserved field, followed by the actual tag data.
 
-        let size =
-            128 + // header size
+        let size = 128 + // header size
             4 + // tag count byte size
             tag_count as usize * 20 +
             total_data_size;
@@ -134,7 +137,11 @@ impl RawProfile {
         } else {
             0
         };
-        Ok(RawProfile { header, tags, padding })
+        Ok(RawProfile {
+            header,
+            tags,
+            padding,
+        })
     }
 
     /// Reads an ICC profile from a string (as bytes).
@@ -171,7 +178,15 @@ impl RawProfile {
         // Find the end of the tag table
         let data_start = 128 + 4 + updated_self.tags.len() * 12;
         // Prepare a buffer large enough for all tag data
-        let mut data_buf = vec![0u8; updated_self.tags.values().map(|t| (t.offset + t.size) as usize).max().unwrap_or(data_start)];
+        let mut data_buf = vec![
+            0u8;
+            updated_self
+                .tags
+                .values()
+                .map(|t| (t.offset + t.size) as usize)
+                .max()
+                .unwrap_or(data_start)
+        ];
 
         // Copy tag data into the correct offsets
         for tag in updated_self.tags.values() {
@@ -215,7 +230,7 @@ impl RawProfile {
             if let Some(tag) = self.tags.get_mut(&tag_signature) {
                 if tag.size != tag.tag.len() as u32 {
                     changed = true;
-                    break; 
+                    break;
                 }
             }
         }
@@ -255,4 +270,3 @@ impl RawProfile {
         }
     }
 }
-

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
+
 //! # Chromaticity Type
 //! - The chromaticity tag type provides basic chromaticity data and type of phosphors or colorants of a monitor to
 //!   applications and utilities. The byte assignment shall be as given in `ChromaticityMap`.
@@ -72,7 +75,7 @@ const ITU2020: [cmt::Chromaticity; 3] = [
     IntoBytes,
     KnownLayout,
     Immutable,
-    strum::Display
+    strum::Display,
 )]
 #[repr(C)]
 /// Colorant and Phosphor Encoding, or Primaries, as defined in Table 31 of the

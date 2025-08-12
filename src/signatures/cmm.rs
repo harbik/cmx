@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
+
 use crate::signatures::Signature;
 
 /// Color Management Modules, also known as CMMs, are software components that handle color
@@ -6,7 +9,7 @@ use crate::signatures::Signature;
 /// Each CMM is identified by a unique signature, which is a 4-character code that indicates the
 /// specific CMM used to create the ICC profile, and to identify the CMM that should be used
 /// when interpreting the profile in case custom tags are used.
-/// 
+///
 #[derive(Debug, serde::Serialize, PartialEq, strum::Display)]
 pub enum Cmm {
     Adobe,             /* 'ADBE' */
@@ -87,7 +90,6 @@ impl From<Cmm> for Signature {
         Signature(val)
     }
 }
-    
 
 impl Cmm {
     pub fn new(sig: Signature) -> Self {

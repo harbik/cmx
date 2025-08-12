@@ -1,4 +1,7 @@
-use serde::{Serialize};
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
+
+use serde::Serialize;
 
 use crate::profile::Profile;
 

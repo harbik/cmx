@@ -1,7 +1,6 @@
-
+use cmx::profile::RawProfile;
 use std::fs;
-use std::path::Path;
-use cmx::profile::RawProfile; // Adjust the path to your crate/module
+use std::path::Path; // Adjust the path to your crate/module
 
 #[test]
 fn test_profile_toml_display() {
@@ -26,7 +25,6 @@ fn toml_all_profiles() {
             let profile_bytes = fs::read(path).expect("Failed to read test profile");
             let profile = RawProfile::from_bytes(&profile_bytes).expect("Failed to parse profile");
             println!("{}", cmx::profile::Profile::Raw(profile));
-
         }
     }
 }

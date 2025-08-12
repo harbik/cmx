@@ -1,6 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+// Copyright (c) 2021-2025, Harbers Bik LLC
+
+use crate::{is_zero, tag::tag_value::ParametricCurveType};
 use serde::Serialize;
 use zerocopy::{BigEndian, FromBytes, Immutable, KnownLayout, Unaligned, I32, U16};
-use crate::{is_zero, tag::tag_value::ParametricCurveType};
 
 /// Represents the raw memory layout of an ICC `ParametricCurveType` tag.
 #[repr(C)]
@@ -17,35 +20,35 @@ struct ParametricCurveTagLayout {
 
 // Serializable structs for each tag type
 #[derive(Serialize)]
-pub struct ParametricCurveTypeToml{
-    #[serde(skip_serializing_if="is_zero")]
+pub struct ParametricCurveTypeToml {
+    #[serde(skip_serializing_if = "is_zero")]
     a: f64,
-    #[serde(skip_serializing_if="is_zero")]
+    #[serde(skip_serializing_if = "is_zero")]
     b: f64,
-    #[serde(skip_serializing_if="is_zero")]
+    #[serde(skip_serializing_if = "is_zero")]
     c: f64,
-    #[serde(skip_serializing_if="is_zero")]
+    #[serde(skip_serializing_if = "is_zero")]
     d: f64,
-    #[serde(skip_serializing_if="is_zero")]
+    #[serde(skip_serializing_if = "is_zero")]
     e: f64,
-    #[serde(skip_serializing_if="is_zero")]
+    #[serde(skip_serializing_if = "is_zero")]
     f: f64,
-    #[serde(skip_serializing_if="is_zero")]
+    #[serde(skip_serializing_if = "is_zero")]
     g: f64,
 }
 
 /// Parses the raw data wrapped in XYZType into a XYZTypeToml instance,
-/// as used 
+/// as used
 impl From<&ParametricCurveType> for ParametricCurveTypeToml {
     fn from(para: &ParametricCurveType) -> Self {
         const S15_FIXED_16_DIVISOR: f64 = 65536.0;
         let layout = ParametricCurveTagLayout::ref_from_bytes(&para.0).unwrap();
-        
+
         // Flatten directly during the conversion
-        let vec: Vec<f64> = layout.parameters.iter()
-            .map(|v| {
-                    crate::round_to_precision(v.get() as f64 / S15_FIXED_16_DIVISOR, 4)
-            })
+        let vec: Vec<f64> = layout
+            .parameters
+            .iter()
+            .map(|v| crate::round_to_precision(v.get() as f64 / S15_FIXED_16_DIVISOR, 4))
             .collect();
 
         // Copy up to 7 values, defaulting the rest to zero
@@ -55,7 +58,14 @@ impl From<&ParametricCurveType> for ParametricCurveTypeToml {
         }
         let [g, a, b, c, d, e, f] = params;
 
-        Self { g, a, b, c, d, e, f }
+        Self {
+            g,
+            a,
+            b,
+            c,
+            d,
+            e,
+            f,
+        }
     }
 }
-
