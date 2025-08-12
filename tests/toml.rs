@@ -20,7 +20,7 @@ fn toml_all_profiles() {
         let entry = entry.expect("Failed to read entry");
         let path = entry.path();
         // bold ANSI escape code bold
-        println!("\u{001b}[1;4mProfile: {:?} ... \u{001b}[0m", path);
+        println!("\u{001b}[1;4mProfile: {path:?} ... \u{001b}[0m");
         if path.extension().and_then(|s| s.to_str()) == Some("icc") {
             let profile_bytes = fs::read(path).expect("Failed to read test profile");
             let profile = RawProfile::from_bytes(&profile_bytes).expect("Failed to parse profile");

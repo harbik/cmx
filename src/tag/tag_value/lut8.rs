@@ -46,9 +46,9 @@ impl From<&Lut8Type> for Lut8TypeToml {
 
         // Calculate sizes and offsets
         let header_size = 48; // 8 + 4 + 36
-        let input_luts_size = n as usize * 256;
-        let clut_size = (g as usize).pow(n as u32) * m as usize;
-        let output_luts_size = m as usize * 256;
+        let input_luts_size = n * 256;
+        let clut_size = g.pow(n as u32) * m;
+        let output_luts_size = m * 256;
 
         // Calculate offsets
         let input_luts_offset = header_size;
@@ -73,7 +73,7 @@ impl From<&Lut8Type> for Lut8TypeToml {
             .collect();
 
         Lut8TypeToml {
-            g: g as usize,
+            g,
             e_mat,
             input_luts,
             output_luts,

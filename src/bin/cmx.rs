@@ -3,7 +3,7 @@
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use cmx::profile::{RawProfile, Profile};
+use cmx::profile::{Profile, RawProfile};
 use std::fs;
 use std::io::{self, Write};
 use std::path::PathBuf;
@@ -33,14 +33,14 @@ fn main() -> Result<()> {
     // Parse the profile
     let raw_profile = RawProfile::from_bytes(&profile_bytes)
         .with_context(|| format!("Failed to parse profile {:?}", cli.profile))?;
-    
+
     let profile = Profile::Raw(raw_profile);
     let toml_output = profile.to_string();
 
     // Output based on -o flag
     if let Some(output_path) = cli.output {
         fs::write(&output_path, toml_output)
-            .with_context(|| format!("Failed to write to {:?}", output_path))?;
+            .with_context(|| format!("Failed to write to {output_path:?}"))?;
     } else {
         io::stdout().write_all(toml_output.as_bytes())?;
     }

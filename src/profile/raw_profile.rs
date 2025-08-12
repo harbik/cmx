@@ -7,6 +7,7 @@ use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{Cursor, Read, Result, Write};
 use std::path::Path;
+use std::str::FromStr;
 
 use crate::profile::Profile;
 use crate::signatures::DeviceClass;
@@ -144,10 +145,12 @@ impl RawProfile {
         })
     }
 
+    /*
     /// Reads an ICC profile from a string (as bytes).
     pub fn from_str(s: &str) -> Result<Self> {
         Self::from_bytes(s.as_bytes())
     }
+     */
 
     /// Writes the ICC profile to a file.
     pub fn to_file<P: AsRef<Path>>(self, path: P) -> Result<()> {
@@ -157,7 +160,7 @@ impl RawProfile {
         Ok(())
     }
 
-    /// Serializes the ICC profile to a Vec<u8>.
+    /// Serializes the ICC profile to a `Vec<u8>`.
     pub fn into_bytes(self) -> Result<Vec<u8>> {
         // Update offsets and sizes of tags based on their data
         let updated_self = self.with_updated_offsets_and_sizes();
@@ -192,13 +195,13 @@ impl RawProfile {
         for tag in updated_self.tags.values() {
             let start = tag.offset as usize;
             let end = start + tag.size as usize;
-            data_buf[start..end].copy_from_slice(&tag.tag.as_slice());
+            data_buf[start..end].copy_from_slice(tag.tag.as_slice());
         }
         buf.extend_from_slice(&data_buf[data_start..]);
 
         // copy any padding in the orginal profile, if present
         if updated_self.padding > 0 {
-            buf.extend_from_slice(&vec![0u8; updated_self.padding as usize]);
+            buf.extend_from_slice(&vec![0u8; updated_self.padding]);
         }
         Ok(buf)
     }
@@ -268,5 +271,13 @@ impl RawProfile {
             DeviceClass::Spectral => Profile::Spectral(super::SpectralProfile(self)),
             DeviceClass::Unknown => Profile::Raw(self),
         }
+    }
+}
+
+impl FromStr for RawProfile {
+    type Err = std::io::Error;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Self::from_bytes(s.as_bytes())
     }
 }

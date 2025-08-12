@@ -71,6 +71,12 @@ use super::RawProfile;
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct InputProfile(pub(crate) RawProfile);
 
+impl Default for InputProfile {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InputProfile {
     /// Creates a new, empty, `InputProfile` with
     ///

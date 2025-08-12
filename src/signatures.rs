@@ -49,9 +49,9 @@ fn format_u32_as_string(f: &mut std::fmt::Formatter<'_>, value: u32) -> std::fmt
     let bytes = value.to_be_bytes();
     let s = String::from_utf8_lossy(&bytes);
     if s.is_ascii() && s.len() == 4 {
-        write!(f, "{}", s)
+        write!(f, "{s}")
     } else {
-        write!(f, "{:08X}", value)
+        write!(f, "{value:08X}")
     }
 }
 
@@ -78,15 +78,14 @@ impl FromStr for Signature {
     type Err = crate::error::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() > 4 || s.len() < 1 {
+        if s.len() > 4 || s.is_empty() {
             return Err(ParseError::new(format!(
-                "Signature must be between 1 and 4 characters - got: {}",
-                s
+                "Signature must be between 1 and 4 characters - got: {s}"
             ))
             .into());
         }
         // Pad the string to 4 characters with spaces if necessary
-        let padded = format!("{: <4}", s); // Pad with spaces to ensure it's 4 characters
+        let padded = format!("{s: <4}"); // Pad with spaces to ensure it's 4 characters
         let bytes = padded.as_bytes();
         let value = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
         Ok(Signature(value))

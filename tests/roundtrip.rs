@@ -44,7 +44,6 @@ fn test_icc_roundtrip() {
             original, roundtrip,
             "Round-trip ICC profile does not match original"
         );
-        return;
     }
 
     // Compare
@@ -56,7 +55,7 @@ fn test_icc_roundtrip_all_profiles() {
     for entry in fs::read_dir(profiles_dir).expect("Failed to read profiles directory") {
         let entry = entry.expect("Failed to read entry");
         let path = entry.path();
-        println!("Testing profile: {:?} ... ", path);
+        println!("Testing profile: {path:?} ... ");
         if path.extension().and_then(|s| s.to_str()) == Some("icc") {
             let original = fs::read(&path).expect("Failed to read test profile");
             let profile = RawProfile::from_bytes(&original).expect("Failed to parse profile");

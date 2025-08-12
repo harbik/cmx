@@ -70,7 +70,7 @@ impl RenderingIntent {
             2 => RenderingIntent::Saturation,
             3 => RenderingIntent::AbsoluteColorimetric,
             _ => {
-                panic!("Invalid RenderingIntent value: {}", value);
+                panic!("Invalid RenderingIntent value: {value}");
             }
         }
     }

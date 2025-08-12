@@ -171,8 +171,7 @@ impl RawProfile {
     pub fn device_class(&self) -> DeviceClass {
         let header = self.header();
         let d = header.device_class.get();
-        let device_class = DeviceClass::new(Signature(d));
-        device_class
+        DeviceClass::new(Signature(d))
     }
 
     /// Sets the device class of the profile.
@@ -248,7 +247,7 @@ impl RawProfile {
         let header = self.header();
         let pcs = header.pcs.get();
         // TODO: PCS field can be any color space in the device link profile.
-        Ok(Pcs::new(Signature(pcs))?)
+        Pcs::new(Signature(pcs))
     }
 
     /// Sets the Profile Connection Space (PCS) of the profile.
@@ -289,7 +288,8 @@ impl RawProfile {
         let second = header.creation_seconds.get() as u32;
         let naive = chrono::NaiveDate::from_ymd_opt(year, month, day)
             .and_then(|d| d.and_hms_opt(hour, minute, second))
-            .expect(format!("Invalid date in ICC header: {year}-{month:02}-{day:02} {hour:02}:{minute:02}:{second:02}").as_ref());
+            .unwrap_or_else(|| panic!("Invalid date in ICC header: {year}-{month:02}-{day:02} {hour:02}:{minute:02}:{second:02}"));
+        // .expect(format!("Invalid date in ICC header: {year}-{month:02}-{day:02} {hour:02}:{minute:02}:{second:02}").as_ref());
         DateTime::from_naive_utc_and_offset(naive, chrono::Utc)
     }
 
@@ -310,7 +310,7 @@ impl RawProfile {
     /// ```
     pub fn with_creation_date(mut self, opt_date: Option<DateTime<chrono::Utc>>) -> Self {
         let date = opt_date
-            .unwrap_or_else(|| chrono::Utc::now())
+            .unwrap_or_else(chrono::Utc::now)
             .with_nanosecond(0)
             .unwrap();
         let naive = date.naive_utc();

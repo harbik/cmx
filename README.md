@@ -10,6 +10,10 @@ to TOML format using the cmx command line tool:
 ```bash
 cmx profile.icc -o profile.toml
  ```
+Every ICC profile tag is converted to a key in the TOML file, with the tag's
+values serialized to key-value pairs.
+The values are all given as single line output, so that the TOML file is
+human-readable and easy to inspect.
 
 Install the `cmx` tool using Cargo:
 
@@ -30,7 +34,11 @@ Its documentation is available at [docs.rs/cmx](https://docs.rs/cmx).
 - [X] Implement a full ICC profile parser
 - [X] Convert to TOML file format
 - [ ] Parse TOML files back to ICC profiles
-- [ ] Create ICC profiles using the [`Colorimetry`] library features
+- [ ] Create ICC profiles using the [`Colorimetry`](https://docs.rs/colorimetry/latest/colorimetry/) library features
+
+The intention is to fully support advanced ICC Color management,
+with the ability to use spectral data, and advanced color models,
+while maintaining compatibility with existing ICC profiles.
 
 <!-- cargo-rdme end -->
 

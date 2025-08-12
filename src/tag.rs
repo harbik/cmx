@@ -24,6 +24,9 @@ pub trait TagTraits {
     fn len(&self) -> usize {
         self.as_slice().len()
     }
+    fn is_empty(&self) -> bool {
+        self.as_slice().is_empty()
+    }
     fn pad(&mut self, size: usize);
     fn type_signature(&self) -> TypeSignature {
         // Default implementation to return a slice of the bytes.
@@ -224,6 +227,10 @@ macro_rules! impl_tag_dispatch {
 
             pub fn len(&self) -> usize {
                 self.as_slice().len()
+            }
+
+            pub fn is_empty(&self) -> bool {
+                self.as_slice().is_empty()
             }
 
             pub fn pad(&mut self, size: usize) {
@@ -734,9 +741,9 @@ impl std::fmt::Display for TagSignature {
         let bytes = value.to_be_bytes();
         let s = String::from_utf8_lossy(&bytes);
         if s.is_ascii() && s.len() == 4 {
-            write!(f, "{}", s)
+            write!(f, "{s}")
         } else {
-            write!(f, "{:08X}", value)
+            write!(f, "{value:08X}")
         }
     }
 }

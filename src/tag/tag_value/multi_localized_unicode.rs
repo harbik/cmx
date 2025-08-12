@@ -102,7 +102,7 @@ impl From<&super::MultiLocalizedUnicodeType> for MultiLocalizedUnicodeTypeToml {
                     format!(
                         "{}-{}",
                         entry.language.to_string().to_lowercase(),
-                        country.alpha2().to_string()
+                        country.alpha2()
                     )
                 } else {
                     entry.language.to_string().to_lowercase()

@@ -172,11 +172,16 @@ impl From<&ChromaticityType> for ChromaticityTypeToml {
         let chromaticities_opt = chromaticity.get_custom_chromaticities();
         let primaries = FromPrimitive::from_u16(chromaticity.chromaticity_map().primaries.get());
 
+        /*
         let chromaticities = if let Some(chromaticities) = chromaticities_opt {
             Some(chromaticities.iter().map(|c| [c.x(), c.y()]).collect())
         } else {
             None
         };
+         */
+
+        let chromaticities = chromaticities_opt
+            .map(|chromaticities| chromaticities.iter().map(|c| [c.x(), c.y()]).collect());
 
         ChromaticityTypeToml {
             primaries,

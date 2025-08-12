@@ -54,6 +54,6 @@ impl fmt::Display for Language {
         // Safely convert byte arrays to string slices for printing.
         let lang_str = std::str::from_utf8(&self.language).unwrap_or("??");
         let country_str = std::str::from_utf8(&self.country).unwrap_or("??");
-        write!(f, "{}-{}", lang_str, country_str)
+        write!(f, "{lang_str}-{country_str}")
     }
 }

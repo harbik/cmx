@@ -129,7 +129,7 @@ impl fmt::Display for Profile {
 
         match toml::to_string(&profile_toml) {
             //  match toml::to_string_pretty(&profile_toml) {
-            Ok(s) => write!(f, "{}", s),
+            Ok(s) => write!(f, "{s}"),
             Err(_) => Err(fmt::Error),
         }
     }
