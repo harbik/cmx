@@ -42,6 +42,18 @@ impl From<&super::RawProfile> for IccHeaderToml {
             hex::encode(profile_id_raw)
         };
 
+        let model = if header.model == 0 {
+            String::new()
+        } else {
+            Signature(header.model.get()).to_string()
+        };
+
+        let manufacturer = if header.manufacturer == 0 {
+            String::new()
+        } else {
+            Signature(header.manufacturer.get()).to_string()
+        };
+
         IccHeaderToml {
             profile_size: raw_profile.profile_size() as u32,
             cmm: raw_profile.cmm().to_string(),
@@ -53,8 +65,8 @@ impl From<&super::RawProfile> for IccHeaderToml {
             primary_platform: raw_profile.primary_platform().to_string(),
             embedded,
             use_embedded_only,
-            manufacturer: Signature(header.manufacturer.get()).to_string(),
-            model: Signature(header.model.get()).to_string(),
+            manufacturer,
+            model,
             attributes: header.attributes.get(),
             rendering_intent: RenderingIntent::from(header.rendering_intent.get()).to_string(),
             pcs_illuminant: (

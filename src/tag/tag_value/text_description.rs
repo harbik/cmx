@@ -103,10 +103,13 @@ impl TextDescriptionTypeToml {
         }
         let mut mac_bytes = vec![0u8; mac_len];
         cursor.read_exact(&mut mac_bytes).map_err(|e| e.to_string())?;
-        let mac_script_name = str::from_utf8(&mac_bytes)
+        let mut mac_script_name = str::from_utf8(&mac_bytes)
             .map_err(|e| e.to_string())?
-            .to_string();
+            .trim_end_matches('\0').to_string();
 
+        if mac_script_name == ascii {
+            mac_script_name.clear(); // If the mac script name is the same as ASCII, clear it
+        }
         Ok(TextDescriptionTypeToml {
             ascii,
             unicode,

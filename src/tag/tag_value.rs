@@ -8,6 +8,8 @@ pub mod named_color2;
 pub mod native_display_info;
 pub mod parametric_curve;
 pub mod raw;
+pub mod s15fixed16array;
+pub mod text;
 pub mod text_description;
 pub mod vcgp;
 pub mod vcgt;

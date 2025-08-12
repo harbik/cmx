@@ -37,13 +37,17 @@ use num::Zero;
 ///
 /// # Returns
 /// The rounded value.
-pub(crate) fn round_to_precision(value: f64, precision: i32) -> f64 {
+fn round_to_precision(value: f64, precision: i32) -> f64 {
     let multiplier = 10f64.powi(precision);
     (value * multiplier).round() / multiplier
 }
 
 // Add this helper function
 // Make the helper function generic
-pub(crate) fn is_zero<T: Zero>(n: &T) -> bool {
+fn is_zero<T: Zero>(n: &T) -> bool {
     n.is_zero()
+}
+
+fn from_s15fixed16(v: i32) -> f64 {
+    round_to_precision(v as f64 / 65536.0, 6)
 }

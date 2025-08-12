@@ -19,6 +19,7 @@ fn validate_version(major: u8, minor: u8) -> Result<(u8, u8), Error> {
     match (major, minor) {
         (2, 0) => Ok((2, 0)),
         (2, 1) => Ok((2, 1)),
+        (2, 2) => Ok((2, 2)),
         (4, 0) => Ok((4, 0)),
         (4, 2) => Ok((4, 2)),
         (4, 3) => Ok((4, 3)),

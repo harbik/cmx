@@ -3,12 +3,28 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct CurveTypeToml{
-    points: Vec<u16>
+    #[serde(skip_serializing_if = "Option::is_none")]
+    points: Option<Vec<u16>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    gamma: Option<f64>,
 }
 
 impl From<&super::CurveType> for CurveTypeToml {
     fn from(curve: &super::CurveType) -> Self {
-        CurveTypeToml{points: curve.data()}
+        let data = curve.data();
+        if data.len() == 1 {
+            let value = data[0] as f64 / 256.0;
+            CurveTypeToml { 
+                points:  None,
+                gamma: Some(crate::round_to_precision(value, 4))
+            }
+        } else {
+            CurveTypeToml{
+                points: Some(curve.data()),
+                gamma: None,
+            }
+
+        }
     }
 }
 
