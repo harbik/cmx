@@ -4,12 +4,12 @@
 use serde::Serialize;
 use zerocopy::{BigEndian, FromBytes, Immutable, KnownLayout, Unaligned, I32};
 
-use crate::tag::tagdata::XYZArrayType;
+use crate::tag::tagdata::XYZArrayData;
 
 /// The fixed-point denominator for an s15Fixed16Number (2^16).
 const S15_FIXED_16_DIVISOR: f64 = 65536.0;
 
-/// Represents the raw memory layout of an ICC `XYZType` tag.
+/// Represents the raw memory layout of an ICC `XYZData` tag.
 ///
 /// It is marked with `#[repr(C)]` to ensure a predictable field order
 /// and memory layout, which is required for safe, zero-cost casting.
@@ -26,14 +26,14 @@ struct XYZTagLayout {
 
 // Serializable structs for each tag type
 #[derive(Serialize)]
-pub struct XYZArrayTypeToml {
+pub struct XYZArrayDataToml {
     xyz: Vec<f64>,
 }
 
-/// Parses the raw data wrapped in XYZType into a XYZTypeToml instance,
+/// Parses the raw data wrapped in XYZData into a XYZDataToml instance,
 /// as used
-impl From<&XYZArrayType> for XYZArrayTypeToml {
-    fn from(xyz: &XYZArrayType) -> Self {
+impl From<&XYZArrayData> for XYZArrayDataToml {
+    fn from(xyz: &XYZArrayData) -> Self {
         let layout = XYZTagLayout::ref_from_bytes(&xyz.0).unwrap();
 
         // Flatten directly during the conversion

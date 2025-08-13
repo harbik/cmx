@@ -4,9 +4,9 @@
 use serde::Serialize;
 use zerocopy::{BigEndian, FromBytes, Immutable, KnownLayout, Unaligned, I32};
 
-use crate::tag::tagdata::S15Fixed16ArrayType;
+use crate::tag::tagdata::S15Fixed16ArrayData;
 
-/// Represents the raw memory layout of an ICC `XYZType` tag.
+/// Represents the raw memory layout of an ICC `XYZData` tag.
 ///
 /// It is marked with `#[repr(C)]` to ensure a predictable field order
 /// and memory layout, which is required for safe, zero-cost casting.
@@ -23,15 +23,15 @@ struct Layout {
 
 // Serializable structs for each tag type
 #[derive(Serialize)]
-pub struct S15Fixed16ArrayTypeToml {
+pub struct S15Fixed16ArrayType {
     #[serde(skip_serializing_if = "Option::is_none")]
     values: Option<Vec<f64>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     matrix: Option<[[f64; 3]; 3]>,
 }
 
-impl From<&S15Fixed16ArrayType> for S15Fixed16ArrayTypeToml {
-    fn from(xyz: &S15Fixed16ArrayType) -> Self {
+impl From<&S15Fixed16ArrayData> for S15Fixed16ArrayType {
+    fn from(xyz: &S15Fixed16ArrayData) -> Self {
         let layout = Layout::ref_from_bytes(&xyz.0).unwrap();
 
         let values: Vec<f64> = layout

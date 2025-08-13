@@ -6,7 +6,7 @@ use num_derive::{FromPrimitive, ToPrimitive};
 use serde::Serialize;
 use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, I32, U32};
 
-use crate::tag::tagdata::MeasurementType;
+use crate::tag::tagdata::MeasurementData;
 
 #[derive(Serialize, Debug, Clone, PartialEq, FromPrimitive, ToPrimitive)]
 #[repr(u32)]
@@ -68,7 +68,7 @@ struct Layout {
 
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
-pub struct Measurement {
+pub struct MeasurementType {
     pub observer: Observer,
     pub xyz: Option<[f64; 3]>,
     pub geometry: Option<Geometry>,
@@ -76,8 +76,8 @@ pub struct Measurement {
     pub illuminant: Illuminant,
 }
 
-impl From<&MeasurementType> for Measurement {
-    fn from(measurement: &MeasurementType) -> Self {
+impl From<&MeasurementData> for MeasurementType {
+    fn from(measurement: &MeasurementData) -> Self {
         let layout = Layout::ref_from_bytes(&measurement.0).unwrap();
         let xyz = if layout.xyz[0].get() == 0 && layout.xyz[1].get() == 0 && layout.xyz[2].get() == 0 {
             None
@@ -95,7 +95,7 @@ impl From<&MeasurementType> for Measurement {
             Some(g)
         };
 
-        Measurement {
+        MeasurementType {
             observer: FromPrimitive::from_u32(layout.standard_observer.get()).unwrap_or(Observer::Unknown),
             xyz,
             geometry,

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
-//! # Chromaticity Type
+//! # Chromaticity Data
 //! - The chromaticity tag type provides basic chromaticity data and type of phosphors or colorants of a monitor to
 //!   applications and utilities. The byte assignment shall be as given in `ChromaticityMap`.
 //! - Chromaticity data are the CIE xy values of the phosphors or colorants of a monitor, using the CIE 1931
@@ -15,7 +15,7 @@
 //! - The CIE xy values shall be as measured, and shall not be chromatically adapted to the PCS
 //!   adopted white.
 //! - The standard requires that: "Each colour component shall be assigned to a device channel. Table 38
-//!   lut16Type channel encodings” shows these assignments." The tag has no field for this.
+//!   lut16Data channel encodings” shows these assignments." The tag has no field for this.
 //!   Defacto, `RGB` channels are used, as also implied by the standard primaries, but this is not enforced by the ICC standard.
 //! - This type and the Chromaticity tag is not a required for any device profile, and also not mentioned in the ICC specification as optional tag for any of them.
 use num::FromPrimitive;
@@ -23,7 +23,7 @@ use num_derive::{FromPrimitive, ToPrimitive};
 use serde::Serialize;
 use zerocopy::{BigEndian, Immutable, IntoBytes, KnownLayout, TryFromBytes, U16, U32};
 
-use crate::{tag::tagdata::ChromaticityType, tag::tagdata::TypeSignature};
+use crate::{tag::tagdata::ChromaticityData, tag::tagdata::DataSignature};
 use colorimetry::xyz as cmt;
 
 const ITU: [cmt::Chromaticity; 3] = [
@@ -150,7 +150,7 @@ impl WriteLayout<1> {
 impl Default for WriteLayout<1> {
     fn default() -> Self {
         WriteLayout {
-            type_signature: TypeSignature::ChromaticityType.into(),
+            type_signature: DataSignature::ChromaticityData.into(),
             reserved: [0; 4],
             channels: U16::new(1),
             primaries: U16::new(1), // e.g., ITU-R BT.709 colorant
@@ -160,15 +160,15 @@ impl Default for WriteLayout<1> {
 }
 
 #[derive(Serialize)]
-pub struct Chromaticity {
+pub struct ChromaticityType {
     #[serde(skip_serializing_if = "Option::is_none")]
     primaries: Option<StandardPrimaries>,
     #[serde(skip_serializing_if = "Option::is_none")]
     chromaticities: Option<Vec<[f64; 2]>>,
 }
 
-impl From<&ChromaticityType> for Chromaticity {
-    fn from(chromaticity: &ChromaticityType) -> Self {
+impl From<&ChromaticityData> for ChromaticityType {
+    fn from(chromaticity: &ChromaticityData) -> Self {
         let chromaticities_opt = chromaticity.get_custom_chromaticities();
         let primaries = FromPrimitive::from_u16(chromaticity.chromaticity_map().primaries.get());
 
@@ -183,15 +183,15 @@ impl From<&ChromaticityType> for Chromaticity {
         let chromaticities = chromaticities_opt
             .map(|chromaticities| chromaticities.iter().map(|c| [c.x(), c.y()]).collect());
 
-        Chromaticity {
+        ChromaticityType {
             primaries,
             chromaticities,
         }
     }
 }
 
-// The ChromaticityType is a thin wrapper around a Vec<u6>, containing the raw bytes of the RawProfile.
-impl ChromaticityType {
+// The ChromaticityData is a thin wrapper around a Vec<u6>, containing the raw bytes of the RawProfile.
+impl ChromaticityData {
     /// Returns the primaries of the chromaticity map.
     fn chromaticity_map(&self) -> &Layout {
         Layout::try_ref_from_bytes(self.0.as_slice())

@@ -30,7 +30,7 @@ impl RawProfile {
 use crate::profile::Profile;
 use crate::signatures::{tag, TagSignature};
 use crate::tags::{
-    CurveType, MultiLocalizedUnicodeType, TagData, TextDescriptionType,
+    CurveData, MultiLocalizedUnicodeData, TagData, TextDescriptionData,
     // ... import other tag data types as you need them ...
 };
 
@@ -39,13 +39,13 @@ use crate::tags::{
 // These traits identify what a TagSignature is allowed to contain.
 // --------------------------------------------------------------------------------
 
-/// A marker trait for signatures that can be a `curveType`.
+/// A marker trait for signatures that can be a `curveData`.
 pub trait IsCurveTag {}
 
-/// A marker trait for signatures that can be a `textDescriptionType`.
+/// A marker trait for signatures that can be a `textDescriptionData`.
 pub trait IsTextDescriptionTag {}
 
-/// A marker trait for signatures that can be a `multiLocalizedUnicodeType`.
+/// A marker trait for signatures that can be a `multiLocalizedUnicodeData`.
 pub trait IsMultiLocalizedUnicodeTag {}
 
 // ... define other marker traits for each possible data type ...
@@ -58,10 +58,10 @@ pub trait IsMultiLocalizedUnicodeTag {}
 /// A trait for tag signatures that have only one valid data type.
 pub trait UnambiguousTag {
     /// The single data type associated with this tag signature.
-    type DataType: Default;
+    type DataData: Default;
 
     /// A function to create the correct `TagData` enum variant from the data.
-    fn new_tag(data: Self::DataType) -> TagData;
+    fn new_tag(data: Self::DataData) -> TagData;
 }
 
 /// A helper macro to reduce boilerplate when implementing `UnambiguousTag`.
@@ -69,8 +69,8 @@ macro_rules! impl_unambiguous_tag {
     // Takes the tag constant, its data type, and the corresponding TagData enum variant.
     ($tag_const:path, $data_type:ty, $tag_variant:ident) => {
         impl UnambiguousTag for $tag_const {
-            type DataType = $data_type;
-            fn new_tag(data: Self::DataType) -> TagData {
+            type DataData = $data_type;
+            fn new_tag(data: Self::DataData) -> TagData {
                 TagData::$tag_variant(data)
             }
         }
@@ -83,10 +83,10 @@ macro_rules! impl_unambiguous_tag {
 // --------------------------------------------------------------------------------
 
 // --- Implementations for Unambiguous Tags ---
-// impl_unambiguous_tag!(tag::RedTRC, CurveType, Curve);
-// impl_unambiguous_tag!(tag::GreenTRC, CurveType, Curve);
-// impl_unambiguous_tag!(tag::BlueTRC, CurveType, Curve);
-// impl_unambiguous_tag!(tag::Copyright, TextDescriptionType, TextDescription);
+// impl_unambiguous_tag!(tag::RedTRC, CurveData, Curve);
+// impl_unambiguous_tag!(tag::GreenTRC, CurveData, Curve);
+// impl_unambiguous_tag!(tag::BlueTRC, CurveData, Curve);
+// impl_unambiguous_tag!(tag::Copyright, TextDescriptionData, TextDescription);
 // ... etc.
 
 // --- Implementations for Ambiguous Tags ---
@@ -136,9 +136,9 @@ mod tests {
         // let mut profile = Profile::new();
 
         // --- Example 1: Unambiguous TagData ---
-        // The compiler knows `tag::RedTRC` is an `UnambiguousTag` whose `DataType`
-        // is `CurveType`. The `.with_data()` method is available, and the closure
-        // argument `curve` is correctly inferred as `&mut CurveType`.
+        // The compiler knows `tag::RedTRC` is an `UnambiguousTag` whose `DataData`
+        // is `CurveData`. The `.with_data()` method is available, and the closure
+        // argument `curve` is correctly inferred as `&mut CurveData`.
         //
         // profile.with_tag(tag::RedTRC).with_data(|curve| {
         //     curve.set_gamma(1.8);

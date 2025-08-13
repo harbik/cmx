@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
-use crate::{is_zero, tag::tagdata::ParametricCurveType};
+use crate::{is_zero, tag::tagdata::ParametricCurveData};
 use serde::Serialize;
 use zerocopy::{BigEndian, FromBytes, Immutable, KnownLayout, Unaligned, I32, U16};
 
-/// Represents the raw memory layout of an ICC `ParametricCurveType` tag.
+/// Represents the raw memory layout of an ICC `ParametricCurveData` tag.
 #[repr(C)]
 #[derive(FromBytes, KnownLayout, Unaligned, Immutable)]
 struct ParametricCurveTagLayout {
@@ -20,7 +20,7 @@ struct ParametricCurveTagLayout {
 
 // Serializable structs for each tag type
 #[derive(Serialize)]
-pub struct ParametricCurveTypeToml {
+pub struct ParametricCurveType {
     #[serde(skip_serializing_if = "is_zero")]
     a: f64,
     #[serde(skip_serializing_if = "is_zero")]
@@ -37,10 +37,10 @@ pub struct ParametricCurveTypeToml {
     g: f64,
 }
 
-/// Parses the raw data wrapped in XYZType into a XYZTypeToml instance,
+/// Parses the raw data wrapped in XYZData into a XYZDataToml instance,
 /// as used
-impl From<&ParametricCurveType> for ParametricCurveTypeToml {
-    fn from(para: &ParametricCurveType) -> Self {
+impl From<&ParametricCurveData> for ParametricCurveType {
+    fn from(para: &ParametricCurveData) -> Self {
         const S15_FIXED_16_DIVISOR: f64 = 65536.0;
         let layout = ParametricCurveTagLayout::ref_from_bytes(&para.0).unwrap();
 

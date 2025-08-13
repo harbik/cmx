@@ -5,7 +5,7 @@ use serde::Serialize;
 use zerocopy::I32;
 use zerocopy::{BigEndian, Immutable, KnownLayout, TryFromBytes, Unaligned};
 
-use crate::tag::tagdata::Lut8Type;
+use crate::tag::tagdata::Lut8Data;
 
 #[derive(TryFromBytes, KnownLayout, Unaligned, Immutable)]
 #[repr(C, packed)]
@@ -20,7 +20,7 @@ struct Lut8HeaderLayout {
 }
 
 #[derive(Serialize)]
-pub struct Lut8TypeToml {
+pub struct Lut8Type {
     g: usize,                  // number of grid points
     e_mat: [f64; 9],           // s15Fixed16Number array
     input_luts: Vec<Vec<u8>>,  // input LUT
@@ -28,8 +28,8 @@ pub struct Lut8TypeToml {
     multi_lut: Vec<u8>,        // multi-dimensional LUT
 }
 
-impl From<&Lut8Type> for Lut8TypeToml {
-    fn from(lut8: &Lut8Type) -> Self {
+impl From<&Lut8Data> for Lut8Type {
+    fn from(lut8: &Lut8Data) -> Self {
         let (layout, _) = Lut8HeaderLayout::try_ref_from_prefix(&lut8.0).unwrap();
         let n = layout.n as usize;
         let m = layout.m as usize;
@@ -72,7 +72,7 @@ impl From<&Lut8Type> for Lut8TypeToml {
             .map(|chunk| chunk.to_vec())
             .collect();
 
-        Lut8TypeToml {
+        Lut8Type {
             g,
             e_mat,
             input_luts,

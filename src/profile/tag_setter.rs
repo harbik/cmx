@@ -4,8 +4,8 @@
 use crate::{
     profile::RawProfile,
     tag::{
-        tag_value::CurveType, 
-        tag_value::MultiLocalizedUnicodeType, tag_value::TagData, TagTable,
+        tag_value::CurveData, 
+        tag_value::MultiLocalizedUnicodeData, tag_value::TagData, TagTable,
         TagSignature,
     },
 };
@@ -16,10 +16,10 @@ pub trait IsTextDescriptionTag {}
 pub trait IsMultiLocalizedUnicodeTag {}
 pub trait IsCurveTag {}
 pub trait IsParametricCurveTag {}
-pub trait IsLut8TypeTag {}
-pub trait IsLut16TypeTag {}
-pub trait IsLutAtoBTypeTag {}
-pub trait IsLutBtoATypeTag {}
+pub trait IsLut8DataTag {}
+pub trait IsLut16DataTag {}
+pub trait IsLutAtoBDataTag {}
+pub trait IsLutBtoADataTag {}
 
 
 /*
@@ -31,7 +31,7 @@ let mut profile = RawProfile::new()
     .with_creation_date(None)
     .add_tag(ChromaticityTag)
         .with_data(|data| { // all umbiguous tags can use this method
-            // use data to set the ChromaticityType
+            // use data to set the ChromaticityData
             data.set_standard(Primaries::ITU);
         }) // This returns &mut RawProfile, so we can chain...
     .add_tag(ProfileDescriptionTag)
@@ -70,9 +70,9 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
     pub fn with_data<F>(self, configure: F) -> &'a mut RawProfile
     where
         S: UnambiguousTag, // This method is only available for unambiguous tags!
-        F: FnOnce(&mut S::TagType),
+        F: FnOnce(&mut S::TagData),
     {
-        let mut data = S::TagType::default();
+        let mut data = S::TagData::default();
         configure(&mut data);
         let tag = S::new_tag(data);
         // as this is a new tag, it did not get assigned an offset and length yet.
@@ -82,14 +82,14 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
         self.profile
     }
 
-    /// Sets the tag's data as a `curveType`.
+    /// Sets the tag's data as a `curveData`.
     /// This method is only available if the signature implements `IsCurveTag`.
     pub fn as_curve<F>(self, configure: F) -> &'a mut RawProfile
     where
         S: IsCurveTag, // The compile-time safety check!
-        F: FnOnce(&mut CurveType),
+        F: FnOnce(&mut CurveData),
     {
-        let mut curve = CurveType::default();
+        let mut curve = CurveData::default();
         configure(&mut curve);
         let curve_tag = TagData::Curve(curve);
         self.profile
@@ -101,9 +101,9 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
     pub fn as_multi_localized_unicode<F>(self, configure: F) -> &'a mut RawProfile
     where
         S: IsMultiLocalizedUnicodeTag,
-        F: FnOnce(&mut MultiLocalizedUnicodeType),
+        F: FnOnce(&mut MultiLocalizedUnicodeData),
     {
-        let mut mlu = MultiLocalizedUnicodeType::default();
+        let mut mlu = MultiLocalizedUnicodeData::default();
         configure(&mut mlu);
         let mlu_tag = TagData::MultiLocalizedUnicode(mlu);
         self.profile

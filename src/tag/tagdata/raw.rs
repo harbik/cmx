@@ -4,10 +4,10 @@
 use serde::Serialize;
 use zerocopy::{FromBytes, Immutable, KnownLayout, Unaligned};
 
-use crate::tag::tagdata::RawType;
+use crate::tag::tagdata::RawData;
 
 #[derive(Serialize)]
-pub struct RawTypeToml {
+pub struct RawType {
     type_signature: String,
     #[serde(skip)]
     #[allow(unused)]
@@ -17,7 +17,7 @@ pub struct RawTypeToml {
 
 #[repr(C)]
 #[derive(FromBytes, KnownLayout, Unaligned, Immutable)]
-pub struct RawTagTypeLayout {
+pub struct RawTagDataLayout {
     /// TagData signature, must be `b"raw "`.
     signature: [u8; 4],
     /// Reserved, must be 0.
@@ -26,9 +26,9 @@ pub struct RawTagTypeLayout {
     data: [u8],
 }
 
-impl From<&RawType> for RawTypeToml {
-    fn from(raw: &RawType) -> Self {
-        let layout = RawTagTypeLayout::ref_from_bytes(&raw.0).unwrap();
+impl From<&RawData> for RawType {
+    fn from(raw: &RawData) -> Self {
+        let layout = RawTagDataLayout::ref_from_bytes(&raw.0).unwrap();
 
         Self {
             type_signature: String::from_utf8_lossy(&layout.signature).to_string(),

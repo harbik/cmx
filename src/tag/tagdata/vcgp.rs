@@ -5,7 +5,7 @@
 use serde::Serialize;
 
 // Typical structure for Vcgp tag
-pub struct VcgpType {
+pub struct VcgpData {
     // Header/signature
     signature: [u8; 4], // "vcgp"
 

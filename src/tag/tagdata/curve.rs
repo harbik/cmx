@@ -4,24 +4,24 @@
 use serde::Serialize;
 
 #[derive(Serialize)]
-pub struct CurveTypeToml {
+pub struct CurveType {
     #[serde(skip_serializing_if = "Option::is_none")]
     points: Option<Vec<u16>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     gamma: Option<f64>,
 }
 
-impl From<&super::CurveType> for CurveTypeToml {
-    fn from(curve: &super::CurveType) -> Self {
+impl From<&super::CurveData> for CurveType {
+    fn from(curve: &super::CurveData) -> Self {
         let data = curve.data();
         if data.len() == 1 {
             let value = data[0] as f64 / 256.0;
-            CurveTypeToml {
+            CurveType {
                 points: None,
                 gamma: Some(crate::round_to_precision(value, 4)),
             }
         } else {
-            CurveTypeToml {
+            CurveType {
                 points: Some(curve.data()),
                 gamma: None,
             }
@@ -29,7 +29,7 @@ impl From<&super::CurveType> for CurveTypeToml {
     }
 }
 
-impl super::CurveType {
+impl super::CurveData {
     /// Parses the raw big-endian bytes into a `Vec<u16>`.
     pub fn data(&self) -> Vec<u16> {
         //let count = u32::from_be_bytes(self.0[8..=11].try_into().unwrap());

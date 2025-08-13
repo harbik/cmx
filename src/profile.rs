@@ -41,7 +41,7 @@ mod delegate;
 //pub use tag_setter::TagSetter;
 
 mod checksum;
-use crate::{header::IccHeaderToml, tag::TagToml};
+use crate::{header::IccHeaderToml, tag::TagType};
 
 pub use {checksum::md5checksum, checksum::set_profile_id};
 
@@ -89,7 +89,7 @@ impl Profile {
 ///   original tag order for readability and compatibility.
 ///
 /// TagData representation:
-/// - Every tag type implements its own `TagTypeToml`.
+/// - Every tag type implements its own `TagDataToml`.
 /// - `TagToml` is an enum that encapsulates all tag-type-specific TOML representations, allowing the
 ///   `tags` map to hold heterogeneous tag values while remaining serializable/deserializable.
 ///
@@ -99,7 +99,7 @@ impl Profile {
 pub struct ProfileToml {
     pub header: IccHeaderToml,
     #[serde(flatten)]
-    pub tags: IndexMap<String, TagToml>,
+    pub tags: IndexMap<String, TagType>,
 }
 
 /// A display implementation for `RawProfile` that serializes the profile to a TOML string.
@@ -110,11 +110,11 @@ impl fmt::Display for Profile {
         let header = IccHeaderToml::from(self.as_raw_profile());
 
         // Convert tags to a flattened IndexMap<String, TagToml>, using the tag signature as the
-        // key, and converting each TagTable's tag to a TagToml using its From<TagType>
-        // implementation, which needs to be implemented by each TagType individually.
+        // key, and converting each TagTable's tag to a TagToml using its From<TagData>
+        // implementation, which needs to be implemented by each TagData individually.
         // TagTable is a struct that contains the offset, size, and the "TagData" enum,
         // which encapsulates the tag data.
-        let tags: IndexMap<String, TagToml> = self
+        let tags: IndexMap<String, TagType> = self
             .as_raw_profile()
             .tags
             .iter()

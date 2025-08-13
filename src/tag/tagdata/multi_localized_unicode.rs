@@ -5,7 +5,7 @@ use isocountry::CountryCode;
 use isolang::Language;
 use zerocopy::{BigEndian, Immutable, IntoBytes, KnownLayout, TryFromBytes, Unaligned, U16, U32};
 
-use crate::tag::tagdata::MultiLocalizedUnicodeType;
+use crate::tag::tagdata::MultiLocalizedUnicodeData;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -38,9 +38,9 @@ struct MultiLocalizedUnicodeRecordsTableLayout {
     records: [MultiLocalizedUnicodeRecord],
 }
 
-//pub struct MultiLocalizedUnicodeType(pub Vec<u8>);
+//pub struct MultiLocalizedUnicodeData(pub Vec<u8>);
 
-impl MultiLocalizedUnicodeType {
+impl MultiLocalizedUnicodeData {
     pub fn entries(&self) -> Vec<MultiLocalizedUnicodeEntry> {
         let header = MultiLocalizedUnicodeHeaderLayout::try_ref_from_bytes(&self.0[..16]).unwrap();
         let n = header.number_of_records.get() as usize;
@@ -86,13 +86,13 @@ impl MultiLocalizedUnicodeType {
 use std::collections::BTreeMap;
 
 #[derive(Serialize)]
-pub struct MultiLocalizedUnicodeTypeToml {
+pub struct MultiLocalizedUnicodeType {
     #[serde(flatten)]
     entries: BTreeMap<String, String>,
 }
 
-impl From<&super::MultiLocalizedUnicodeType> for MultiLocalizedUnicodeTypeToml {
-    fn from(mluc: &super::MultiLocalizedUnicodeType) -> Self {
+impl From<&super::MultiLocalizedUnicodeData> for MultiLocalizedUnicodeType {
+    fn from(mluc: &super::MultiLocalizedUnicodeData) -> Self {
         let entries = mluc
             .entries()
             .into_iter()

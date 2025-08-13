@@ -118,7 +118,7 @@ impl RawProfile {
                 TagTable {
                     offset: *offset,
                     size: *size,
-                    // this needs to be e.g. Tag(Tagvalue(TagType::Raw(data)))
+                    // this needs to be e.g. Tag(Tagvalue(TagData::Raw(data)))
                     tag: Tag::parse(*signature, data),
                 },
             );

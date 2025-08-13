@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
-//! This module provides a fully parsed representation of an ICC `textDescriptionType` tag.
+//! This module provides a fully parsed representation of an ICC `textDescriptionData` tag.
 //! It includes methods to parse the tag from bytes and retrieve the ASCII and Unicode descriptions.
 //!
 //! # Notes
-//! - The use of this type is deprecated in favor of the `multiLocalizedUnicodeType`.
+//! - The use of this type is deprecated in favor of the `multiLocalizedUnicodeData`.
 //! - Only
 
 use serde::Serialize;
@@ -13,9 +13,9 @@ use serde::Serialize;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::str;
 
-/// A fully parsed representation of an ICC `textDescriptionType` tag.
+/// A fully parsed representation of an ICC `textDescriptionData` tag.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-pub struct TextDescriptionTypeToml {
+pub struct TextDescriptionType {
     /// The 7-bit ASCII description.
     #[serde(skip_serializing_if = "String::is_empty")]
     pub ascii: String,
@@ -33,15 +33,15 @@ pub struct TextDescriptionTypeToml {
     pub mac_script_name: String,
 }
 
-impl From<&super::TextDescriptionType> for TextDescriptionTypeToml {
-    fn from(text_desc: &super::TextDescriptionType) -> Self {
+impl From<&super::TextDescriptionData> for TextDescriptionType {
+    fn from(text_desc: &super::TextDescriptionData) -> Self {
         // Convert the raw bytes into a TextDescriptionToml
-        TextDescriptionTypeToml::from_bytes(text_desc.0.as_slice())
-            .expect("Failed to parse textDescriptionType")
+        TextDescriptionType::from_bytes(text_desc.0.as_slice())
+            .expect("Failed to parse textDescriptionData")
     }
 }
 
-impl TextDescriptionTypeToml {
+impl TextDescriptionType {
     /// Creates a new `TextDescription` with default values for non-provided fields.
     #[allow(unused)]
     fn new(description: &str) -> Self {
@@ -54,7 +54,7 @@ impl TextDescriptionTypeToml {
         }
     }
 
-    /// Attempts to parse a `textDescriptionType` tag from a byte buffer.
+    /// Attempts to parse a `textDescriptionData` tag from a byte buffer.
     fn from_bytes(buf: &[u8]) -> Result<Self, String> {
         let mut cursor = Cursor::new(buf);
 
@@ -128,7 +128,7 @@ impl TextDescriptionTypeToml {
         if mac_script_name == ascii {
             mac_script_name.clear(); // If the mac script name is the same as ASCII, clear it
         }
-        Ok(TextDescriptionTypeToml {
+        Ok(TextDescriptionType {
             ascii,
             unicode,
             unicode_language_code,
