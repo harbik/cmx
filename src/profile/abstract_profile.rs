@@ -21,3 +21,20 @@ impl TryFrom<Profile> for AbstractProfile {
         }
     }
 }
+
+impl AbstractProfile {
+    /// Creates a new, empty, `InputProfile` with
+    ///
+    /// - the default `RawProfile` with
+    ///   - the ICC profile signature
+    ///   - version set to 4.3
+    ///   - the current date
+    /// - `DeviceClass` set to `Abstract`
+    pub fn new() -> Self {
+        Self(
+            Self(RawProfile::default())
+                .0
+                .with_device_class(crate::signatures::DeviceClass::Abstract),
+        )
+    }
+}

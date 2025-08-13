@@ -29,7 +29,6 @@ pub trait TagTraits {
     }
     fn pad(&mut self, size: usize);
     fn type_signature(&self) -> TypeSignature {
-        // Default implementation to return a slice of the bytes.
         let array: [u8; 4] = self.as_slice()[0..4].try_into().unwrap();
         array.into()
     }

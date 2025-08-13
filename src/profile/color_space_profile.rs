@@ -21,3 +21,19 @@ impl TryFrom<Profile> for ColorSpaceProfile {
         }
     }
 }
+impl ColorSpaceProfile {
+    /// Creates a new, empty, `InputProfile` with
+    ///
+    /// - the default `RawProfile` with
+    ///   - the ICC profile signature
+    ///   - version set to 4.3
+    ///   - the current date
+    /// - `DeviceClass` set to `ColorSpace`
+    pub fn new() -> Self {
+        Self(
+            Self(RawProfile::default())
+                .0
+                .with_device_class(crate::signatures::DeviceClass::ColorSpace),
+        )
+    }
+}

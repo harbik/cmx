@@ -21,3 +21,20 @@ impl TryFrom<Profile> for SpectralProfile {
         }
     }
 }
+
+impl SpectralProfile {
+    /// Creates a new, empty, `InputProfile` with
+    ///
+    /// - the default `RawProfile` with
+    ///   - the ICC profile signature
+    ///   - version set to 4.3
+    ///   - the current date
+    /// - `DeviceClass` set to `Spectral`
+    pub fn new() -> Self {
+        Self(
+            Self(RawProfile::default())
+                .0
+                .with_device_class(crate::signatures::DeviceClass::Spectral),
+        )
+    }
+}

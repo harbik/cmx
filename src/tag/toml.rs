@@ -5,11 +5,7 @@ use serde::Serialize;
 
 use crate::tag::{
     tag_value::{
-        chromaticity::ChromaticityTypeToml, curve::CurveTypeToml, lut8::Lut8TypeToml,
-        multi_localized_unicode::MultiLocalizedUnicodeTypeToml,
-        parametric_curve::ParametricCurveTypeToml, raw::RawTypeToml,
-        s15fixed16array::S15Fixed16ArrayTypeToml, text::TextTypeToml,
-        text_description::TextDescriptionTypeToml, xyz::XYZArrayTypeToml,
+        chromaticity::Chromaticity, curve::CurveTypeToml, lut8::Lut8TypeToml, measurement::Measurement, multi_localized_unicode::MultiLocalizedUnicodeTypeToml, parametric_curve::ParametricCurveTypeToml, raw::RawTypeToml, s15fixed16array::S15Fixed16ArrayTypeToml, text::TextTypeToml, text_description::TextDescriptionTypeToml, xyz::XYZArrayTypeToml
     },
     TagTraits, TagValue,
 };
@@ -37,9 +33,10 @@ use crate::tag::{
 #[derive(Serialize)]
 #[serde(untagged)]
 pub enum TagToml {
-    Chromaticity(ChromaticityTypeToml),
+    Chromaticity(Chromaticity),
     Curve(CurveTypeToml),
     Lut8(Lut8TypeToml),
+    Measurement(Measurement),
     MultiLocalizedUnicode(MultiLocalizedUnicodeTypeToml),
     ParametricCurve(ParametricCurveTypeToml),
     S15Fixed16Array(S15Fixed16ArrayTypeToml),
@@ -67,19 +64,18 @@ pub enum TagToml {
 impl From<&TagValue> for TagToml {
     fn from(tag: &TagValue) -> Self {
         match tag {
-            // This uses From<&XYZType> for XYZTypeToml in turn, which
-            // converts the raw bytes into a serializable format.
             TagValue::Chromaticity(chromaticity) => TagToml::Chromaticity(chromaticity.into()),
             TagValue::Curve(curve) => TagToml::Curve(curve.into()),
             TagValue::Lut8(lut8) => TagToml::Lut8(lut8.into()),
+            TagValue::Measurement(measurement) => {
+                TagToml::Measurement(measurement.into())
+            }
             TagValue::MultiLocalizedUnicode(mluc) => TagToml::MultiLocalizedUnicode(mluc.into()),
             TagValue::ParametricCurve(para) => TagToml::ParametricCurve(para.into()),
             TagValue::S15Fixed16Array(values) => TagToml::S15Fixed16Array(values.into()),
             TagValue::Text(text) => TagToml::Text(text.into()),
             TagValue::TextDescription(text_desc) => TagToml::TextDescription(text_desc.into()),
             TagValue::XYZArray(xyz) => TagToml::XYZArray(xyz.into()),
-            // Raw is used for unknown types, and which serializes the raw bytes
-            // as a hex string.
             TagValue::Raw(raw) => TagToml::Raw(raw.into()),
             // Graceful fallback: don't panic, just emit a small structured note.
             _ => {

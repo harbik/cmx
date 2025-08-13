@@ -160,14 +160,14 @@ impl Default for WriteLayout<1> {
 }
 
 #[derive(Serialize)]
-pub struct ChromaticityTypeToml {
+pub struct Chromaticity {
     #[serde(skip_serializing_if = "Option::is_none")]
     primaries: Option<StandardPrimaries>,
     #[serde(skip_serializing_if = "Option::is_none")]
     chromaticities: Option<Vec<[f64; 2]>>,
 }
 
-impl From<&ChromaticityType> for ChromaticityTypeToml {
+impl From<&ChromaticityType> for Chromaticity {
     fn from(chromaticity: &ChromaticityType) -> Self {
         let chromaticities_opt = chromaticity.get_custom_chromaticities();
         let primaries = FromPrimitive::from_u16(chromaticity.chromaticity_map().primaries.get());
@@ -183,7 +183,7 @@ impl From<&ChromaticityType> for ChromaticityTypeToml {
         let chromaticities = chromaticities_opt
             .map(|chromaticities| chromaticities.iter().map(|c| [c.x(), c.y()]).collect());
 
-        ChromaticityTypeToml {
+        Chromaticity {
             primaries,
             chromaticities,
         }
