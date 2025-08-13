@@ -259,15 +259,15 @@ impl From<DataSignature> for [u8; 4] {
 
 use paste::paste;
 
-use super::TagTraits;
+use super::TagDataTraits;
 
 /// Defines all tag-related structs and the main `TagData` enum from a single list of names.
 ///
 /// For each `Name` provided (e.g., `Curve`, `XYZ`), this macro generates:
 /// 1. A `pub struct NameData(pub Vec<u8>)` to wrap the raw tag data.
-/// 2. Implementations of `TagTraits` and `Default` for `NameData`.
+/// 2. Implementations of `TagDataTraits` and `Default` for `NameData`.
 /// 3. A `TagData` enum with a `Name(NameData)` variant for each name.
-/// 4. Implementations of `TagTraits` for the `TagData` enum.
+/// 4. Implementations of `TagDataTraits` for the `TagData` enum.
 /// 5. Helper methods on `TagData` like `.as_curve()` and `.as_curve_mut()`.
 ///
 /// # Macro-Driven Design
@@ -299,11 +299,11 @@ macro_rules! define_datatags {
                 #[derive(Debug, Serialize, Clone, PartialEq)]
                 pub struct [< $name Data >](pub Vec<u8>);
 
-                // Implement the `TagTraits` for each tag type.
+                // Implement the `TagDataTraits` for each tag type.
                 // As these are just wrappers around `Vec<u8>`, the implementation
                 // is straightforward: we can convert them to bytes, slice them,
                 // and pad them to a specific size.
-                impl TagTraits for [< $name Data >] {
+                impl TagDataTraits for [< $name Data >] {
                     fn into_bytes(self) -> Vec<u8> {
                         self.0
                     }
@@ -333,12 +333,12 @@ macro_rules! define_datatags {
                 $($name([< $name Data >])),+
             }
 
-            // The `TagTraits` trait s also be implemented for the `TagData` enum,
+            // The `TagDataTraits` trait s also be implemented for the `TagData` enum,
             // implemented by direct dispatching to the appropriate variant's
-            // implementation of `TagTraits`. This allows us to treat `TagData` as a
+            // implementation of `TagDataTraits`. This allows us to treat `TagData` as a
             // single type that can be converted to bytes, sliced, and padded,
             // regardless of which specific tag type it contains.
-            impl TagTraits for TagData {
+            impl TagDataTraits for TagData {
                 fn into_bytes(self) -> Vec<u8> {
                     match self {
                         $(Self::$name(t) => t.into_bytes()),+
@@ -405,7 +405,7 @@ macro_rules! define_datatags {
 }
 
 // This defines all the tag types, as wrappers around `Vec<u8>`, the raw data for each tag.
-// It alo implements the `TagTraits` for each tag type, allowing them to be converted to bytes,
+// It alo implements the `TagDataTraits` for each tag type, allowing them to be converted to bytes,
 // sliced, and padded as needed. The length and type signature methods are also provided through
 // the trait.
 // Change to TagDatas
@@ -465,10 +465,10 @@ define_datatags!(
 
 impl TagData {
     pub fn new(data: Vec<u8>) -> Self {
-        let type_sig_bytes = data[0..4].try_into().unwrap_or([0; 4]);
-        let type_signature = DataSignature::from(type_sig_bytes);
+        let data_sig_bytes = data[0..4].try_into().unwrap_or([0; 4]);
+        let data_signature = DataSignature::from(data_sig_bytes);
 
-        match type_signature {
+        match data_signature {
             DataSignature::CrdInfoData => Self::CrdInfo(CrdInfoData(data)),
             DataSignature::CicpData => Self::Cicp(CicpData(data)),
             DataSignature::ChromaticityData => Self::Chromaticity(ChromaticityData(data)),

@@ -41,7 +41,7 @@ mod delegate;
 //pub use tag_setter::TagSetter;
 
 mod checksum;
-use crate::{header::IccHeaderToml, tag::TagType};
+use crate::{header::Header, tag::ParsedTag};
 
 pub use {checksum::md5checksum, checksum::set_profile_id};
 
@@ -97,9 +97,9 @@ impl Profile {
 /// - On serialization, tags are emitted in their insertion order.
 #[derive(Serialize)]
 pub struct ProfileToml {
-    pub header: IccHeaderToml,
+    pub header: Header,
     #[serde(flatten)]
-    pub tags: IndexMap<String, TagType>,
+    pub tags: IndexMap<String, ParsedTag>,
 }
 
 /// A display implementation for `RawProfile` that serializes the profile to a TOML string.
@@ -107,21 +107,21 @@ impl fmt::Display for Profile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // See header::icc_header_toml.rs for the IccHeaderToml struct
         // and its conversion from RawProfile.
-        let header = IccHeaderToml::from(self.as_raw_profile());
+        let header = Header::from(self.as_raw_profile());
 
         // Convert tags to a flattened IndexMap<String, TagToml>, using the tag signature as the
         // key, and converting each TagTable's tag to a TagToml using its From<TagData>
         // implementation, which needs to be implemented by each TagData individually.
         // TagTable is a struct that contains the offset, size, and the "TagData" enum,
         // which encapsulates the tag data.
-        let tags: IndexMap<String, TagType> = self
+        let tags: IndexMap<String, ParsedTag> = self
             .as_raw_profile()
             .tags
             .iter()
             .map(|(sig, entry)| {
                 //    let name: &str = sig.as_ref();
-                //    (name.to_string(), entry.tag.as_table())
-                (sig.to_string(), entry.tag.as_table())
+                //    (name.to_string(), entry.tag.parse())
+                (sig.to_string(), entry.tag.to_parsed())
             })
             .collect();
 

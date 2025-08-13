@@ -5,9 +5,9 @@ use serde::Serialize;
 
 use crate::tag::{
     tagdata::{
-        chromaticity::ChromaticityType, curve::CurveType, lut8::Lut8Type, measurement::MeasurementType, multi_localized_unicode::MultiLocalizedUnicodeType, parametric_curve::ParametricCurveType, raw::RawType, s15fixed16array::S15Fixed16ArrayType, text::TextType, text_description::TextDescriptionType, xyz::XYZArrayDataToml
+        chromaticity::ChromaticityType, curve::CurveType, lut8::Lut8Type, measurement::MeasurementType, multi_localized_unicode::MultiLocalizedUnicodeType, parametric_curve::ParametricCurveType, raw::RawType, s15fixed16array::S15Fixed16ArrayType, text::TextType, text_description::TextDescriptionType, xyz::XYZArrayType
     },
-    TagTraits, TagData,
+    TagDataTraits, TagData,
 };
 
 /// A TOML-serializable wrapper enum that captures all supported tag variants in a single type.
@@ -32,7 +32,7 @@ use crate::tag::{
 ///
 #[derive(Serialize)]
 #[serde(untagged)]
-pub enum TagType {
+pub enum ParsedTag {
     Chromaticity(ChromaticityType),
     Curve(CurveType),
     Lut8(Lut8Type),
@@ -42,7 +42,7 @@ pub enum TagType {
     S15Fixed16Array(S15Fixed16ArrayType),
     Text(TextType),
     TextDescription(TextDescriptionType),
-    XYZArray(XYZArrayDataToml),
+    XYZArray(XYZArrayType),
 
     Raw(RawType),
     // Fallback when no dedicated TOML format is implemented for a tag variant.
@@ -61,29 +61,29 @@ pub enum TagType {
 /// This requires each TagData to implement `From<&TagData> for TagDataToml`, which
 /// converts the raw bytes into a serializable format, specific for each tag.
 ///
-impl From<&TagData> for TagType {
+impl From<&TagData> for ParsedTag {
     fn from(tag: &TagData) -> Self {
         match tag {
-            TagData::Chromaticity(chromaticity) => TagType::Chromaticity(chromaticity.into()),
-            TagData::Curve(curve) => TagType::Curve(curve.into()),
-            TagData::Lut8(lut8) => TagType::Lut8(lut8.into()),
+            TagData::Chromaticity(chromaticity) => ParsedTag::Chromaticity(chromaticity.into()),
+            TagData::Curve(curve) => ParsedTag::Curve(curve.into()),
+            TagData::Lut8(lut8) => ParsedTag::Lut8(lut8.into()),
             TagData::Measurement(measurement) => {
-                TagType::Measurement(measurement.into())
+                ParsedTag::Measurement(measurement.into())
             }
-            TagData::MultiLocalizedUnicode(mluc) => TagType::MultiLocalizedUnicode(mluc.into()),
-            TagData::ParametricCurve(para) => TagType::ParametricCurve(para.into()),
-            TagData::S15Fixed16Array(values) => TagType::S15Fixed16Array(values.into()),
-            TagData::Text(text) => TagType::Text(text.into()),
-            TagData::TextDescription(text_desc) => TagType::TextDescription(text_desc.into()),
-            TagData::XYZArray(xyz) => TagType::XYZArray(xyz.into()),
-            TagData::Raw(raw) => TagType::Raw(raw.into()),
+            TagData::MultiLocalizedUnicode(mluc) => ParsedTag::MultiLocalizedUnicode(mluc.into()),
+            TagData::ParametricCurve(para) => ParsedTag::ParametricCurve(para.into()),
+            TagData::S15Fixed16Array(values) => ParsedTag::S15Fixed16Array(values.into()),
+            TagData::Text(text) => ParsedTag::Text(text.into()),
+            TagData::TextDescription(text_desc) => ParsedTag::TextDescription(text_desc.into()),
+            TagData::XYZArray(xyz) => ParsedTag::XYZArray(xyz.into()),
+            TagData::Raw(raw) => ParsedTag::Raw(raw.into()),
             // Graceful fallback: don't panic, just emit a small structured note.
             _ => {
                 let type_signature = tag
                     .as_slice()
                     .get(0..4)
                     .map(|b| String::from_utf8_lossy(b).to_string());
-                TagType::UnsupportedTag {
+                ParsedTag::UnsupportedTag {
                     unsupported_tag: "No dedicated TOML format implemented for this tag"
                         .to_string(),
                     type_signature,
@@ -94,19 +94,19 @@ impl From<&TagData> for TagType {
 }
 impl super::TagData {
     /// Converts the tag into a serializable TOML representation.
-    pub fn to_toml(&self) -> TagType {
-        TagType::from(self)
+    pub fn to_toml(&self) -> ParsedTag {
+        ParsedTag::from(self)
     }
 }
-impl super::TagType {
+impl super::ParsedTag {
     /// Converts a vector of tags into a vector of serializable TOML representations.
-    pub fn from_tags(tags: &[super::TagData]) -> Vec<TagType> {
-        tags.iter().map(TagType::from).collect()
+    pub fn from_tags(tags: &[super::TagData]) -> Vec<ParsedTag> {
+        tags.iter().map(ParsedTag::from).collect()
     }
 }
 impl super::TagData {
     /// Converts a vector of tags into a vector of serializable TOML representations.
-    pub fn to_toml_vec(tags: &[super::TagData]) -> Vec<TagType> {
-        TagType::from_tags(tags)
+    pub fn to_toml_vec(tags: &[super::TagData]) -> Vec<ParsedTag> {
+        ParsedTag::from_tags(tags)
     }
 }

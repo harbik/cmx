@@ -2,7 +2,7 @@
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
 mod icc_header_toml;
-pub use icc_header_toml::IccHeaderToml;
+pub use icc_header_toml::Header;
 
 use chrono::{DateTime, Datelike, Timelike};
 use zerocopy::{
@@ -36,7 +36,7 @@ fn validate_version(major: u8, minor: u8) -> Result<(u8, u8), Error> {
 
 #[derive(FromBytes, IntoBytes, Unaligned, KnownLayout, Immutable, Debug, Clone, Copy)]
 #[repr(C)]
-pub struct IccHeader {
+pub struct HeaderLayout {
     pub profile_size: U32<BigEndian>,
     pub cmm: U32<BigEndian>,
     pub version: U32<BigEndian>,
@@ -70,8 +70,8 @@ impl RawProfile {
     /// - The header is a 128-byte array that contains metadata about the profile.
     /// - The byte array has already been validated to have a size of 128 bytes,
     ///   and to have a valid ICC profile signature.
-    pub fn header(&self) -> Ref<&[u8], IccHeader> {
-        Ref::<&[u8], IccHeader>::from_bytes(self.header.as_slice()).unwrap()
+    pub fn header(&self) -> Ref<&[u8], HeaderLayout> {
+        Ref::<&[u8], HeaderLayout>::from_bytes(self.header.as_slice()).unwrap()
     }
 
     /// Returns a mutual reference to the ICC profile header, from an zerocopy overlay.
@@ -80,8 +80,8 @@ impl RawProfile {
     /// - The header is a 128-byte array that contains metadata about the profile.
     /// - The byte array has already been validated to have a size of 128 bytes,
     ///   and to have a valid ICC profile signature.
-    pub fn header_mut(&mut self) -> &mut IccHeader {
-        let mut_ref = Ref::<&mut [u8], IccHeader>::from_bytes(&mut self.header).unwrap();
+    pub fn header_mut(&mut self) -> &mut HeaderLayout {
+        let mut_ref = Ref::<&mut [u8], HeaderLayout>::from_bytes(&mut self.header).unwrap();
         Ref::into_mut(mut_ref)
     }
 

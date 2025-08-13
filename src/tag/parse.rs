@@ -8,7 +8,7 @@ use paste::paste;
 
 use crate::tag::TagSignature;
 
-use super::tag_value::*;
+use super::tagdata::*;
 
 
 /// A trait for tag signatures that have only one valid data type.

@@ -4,8 +4,8 @@
 use crate::{
     profile::RawProfile,
     tag::{
-        tag_value::CurveData, 
-        tag_value::MultiLocalizedUnicodeData, tag_value::TagData, TagTable,
+        tagdata::CurveData, 
+        tagdata::MultiLocalizedUnicodeData, tagdata::TagData, TagTable,
         TagSignature,
     },
 };

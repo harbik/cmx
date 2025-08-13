@@ -4,7 +4,7 @@
 use crate::{is_zero, round_to_precision, signatures::Signature, tag::RenderingIntent};
 
 #[derive(serde::Serialize)]
-pub struct IccHeaderToml {
+pub struct Header {
     profile_size: u32,
     cmm: String,
     version: String,
@@ -31,7 +31,7 @@ pub struct IccHeaderToml {
     profile_id: String,
 }
 
-impl From<&super::RawProfile> for IccHeaderToml {
+impl From<&super::RawProfile> for Header {
     fn from(raw_profile: &super::RawProfile) -> Self {
         let header = raw_profile.header();
         let (major, minor) = raw_profile.version().unwrap();
@@ -56,7 +56,7 @@ impl From<&super::RawProfile> for IccHeaderToml {
             Signature(header.manufacturer.get()).to_string()
         };
 
-        IccHeaderToml {
+        Header {
             profile_size: raw_profile.profile_size() as u32,
             cmm: raw_profile.cmm().to_string(),
             version,

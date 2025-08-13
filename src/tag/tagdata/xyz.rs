@@ -26,13 +26,13 @@ struct XYZTagLayout {
 
 // Serializable structs for each tag type
 #[derive(Serialize)]
-pub struct XYZArrayDataToml {
+pub struct XYZArrayType {
     xyz: Vec<f64>,
 }
 
 /// Parses the raw data wrapped in XYZData into a XYZDataToml instance,
 /// as used
-impl From<&XYZArrayData> for XYZArrayDataToml {
+impl From<&XYZArrayData> for XYZArrayType {
     fn from(xyz: &XYZArrayData) -> Self {
         let layout = XYZTagLayout::ref_from_bytes(&xyz.0).unwrap();
 
