@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
-use crate::{is_zero, tag::tag_value::ParametricCurveType};
+use crate::{is_zero, tag::tagdata::ParametricCurveType};
 use serde::Serialize;
 use zerocopy::{BigEndian, FromBytes, Immutable, KnownLayout, Unaligned, I32, U16};
 

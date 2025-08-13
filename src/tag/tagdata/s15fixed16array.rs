@@ -4,7 +4,7 @@
 use serde::Serialize;
 use zerocopy::{BigEndian, FromBytes, Immutable, KnownLayout, Unaligned, I32};
 
-use crate::tag::tag_value::S15Fixed16ArrayType;
+use crate::tag::tagdata::S15Fixed16ArrayType;
 
 /// Represents the raw memory layout of an ICC `XYZType` tag.
 ///

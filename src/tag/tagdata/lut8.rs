@@ -5,7 +5,7 @@ use serde::Serialize;
 use zerocopy::I32;
 use zerocopy::{BigEndian, Immutable, KnownLayout, TryFromBytes, Unaligned};
 
-use crate::tag::tag_value::Lut8Type;
+use crate::tag::tagdata::Lut8Type;
 
 #[derive(TryFromBytes, KnownLayout, Unaligned, Immutable)]
 #[repr(C, packed)]

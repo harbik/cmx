@@ -4,7 +4,7 @@
 use serde::Serialize;
 use zerocopy::{FromBytes, Immutable, KnownLayout, Unaligned};
 
-use crate::tag::tag_value::RawType;
+use crate::tag::tagdata::RawType;
 
 #[derive(Serialize)]
 pub struct RawTypeToml {

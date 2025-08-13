@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
-pub mod tag_value;
+pub mod tagdata;
 /*
 mod parse;
 pub use parse::{UnambiguousTag, IsCurveTag, IsParametricCurveTag, IsTextDescriptionTag, IsMultiLocalizedUnicodeTag, IsLut8TypeTag, IsLut16TypeTag, IsLutAtoBTypeTag, IsLutBtoATypeTag};
@@ -12,8 +12,8 @@ pub use toml::TagToml;
 mod header_tags;
 pub use header_tags::{GamutCheck, Interpolate, Quality, RenderingIntent, S15Fixed16};
 
-use tag_value::TagValue;
-use tag_value::TypeSignature;
+use tagdata::TagValue;
+use tagdata::TypeSignature;
 
 use serde::Serialize;
 

@@ -4,7 +4,7 @@
 use serde::Serialize;
 
 use crate::tag::{
-    tag_value::{
+    tagdata::{
         chromaticity::Chromaticity, curve::CurveTypeToml, lut8::Lut8TypeToml, measurement::Measurement, multi_localized_unicode::MultiLocalizedUnicodeTypeToml, parametric_curve::ParametricCurveTypeToml, raw::RawTypeToml, s15fixed16array::S15Fixed16ArrayTypeToml, text::TextTypeToml, text_description::TextDescriptionTypeToml, xyz::XYZArrayTypeToml
     },
     TagTraits, TagValue,

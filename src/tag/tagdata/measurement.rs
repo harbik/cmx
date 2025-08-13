@@ -6,7 +6,7 @@ use num_derive::{FromPrimitive, ToPrimitive};
 use serde::Serialize;
 use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, I32, U32};
 
-use crate::tag::tag_value::MeasurementType;
+use crate::tag::tagdata::MeasurementType;
 
 #[derive(Serialize, Debug, Clone, PartialEq, FromPrimitive, ToPrimitive)]
 #[repr(u32)]

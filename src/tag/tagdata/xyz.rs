@@ -4,7 +4,7 @@
 use serde::Serialize;
 use zerocopy::{BigEndian, FromBytes, Immutable, KnownLayout, Unaligned, I32};
 
-use crate::tag::tag_value::XYZArrayType;
+use crate::tag::tagdata::XYZArrayType;
 
 /// The fixed-point denominator for an s15Fixed16Number (2^16).
 const S15_FIXED_16_DIVISOR: f64 = 65536.0;

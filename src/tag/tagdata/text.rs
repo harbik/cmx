@@ -4,7 +4,7 @@
 use serde::Serialize;
 use zerocopy::{FromBytes, Immutable, KnownLayout, Unaligned};
 
-use crate::tag::tag_value::TextType;
+use crate::tag::tagdata::TextType;
 
 /// Represents the raw memory layout of an ICC `TextType` tag.
 #[repr(C)]
