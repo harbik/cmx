@@ -194,9 +194,8 @@ g = 2.6
 [gTRC]
 g = 2.6
 
-test test_profile_toml_display ... ok
 [1;4mProfile: "tests/profiles/ACESCG Linear.icc" ... [0m
-[header]
+test test_profile_toml_display ... [header]
 profile_size = 572
 cmm = "Apple"
 version = "4.0"
@@ -242,6 +241,7 @@ gamma = 1.0
 gamma = 1.0
 
 [1;4mProfile: "tests/profiles/Generic CMYK Profile.icc" ... [0m
+ok
 [header]
 profile_size = 55280
 cmm = "Apple"
@@ -2920,5 +2920,5 @@ g = 2.4
 
 test toml_all_profiles ... ok
 
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
 

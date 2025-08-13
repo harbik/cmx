@@ -88,7 +88,7 @@ impl Profile {
 ///   TOML key next to the `header` table). `IndexMap` preserves insertion order to retain the
 ///   original tag order for readability and compatibility.
 ///
-/// TagValue representation:
+/// TagData representation:
 /// - Every tag type implements its own `TagTypeToml`.
 /// - `TagToml` is an enum that encapsulates all tag-type-specific TOML representations, allowing the
 ///   `tags` map to hold heterogeneous tag values while remaining serializable/deserializable.
@@ -112,7 +112,7 @@ impl fmt::Display for Profile {
         // Convert tags to a flattened IndexMap<String, TagToml>, using the tag signature as the
         // key, and converting each TagTable's tag to a TagToml using its From<TagType>
         // implementation, which needs to be implemented by each TagType individually.
-        // TagTable is a struct that contains the offset, size, and the "TagValue" enum,
+        // TagTable is a struct that contains the offset, size, and the "TagData" enum,
         // which encapsulates the tag data.
         let tags: IndexMap<String, TagToml> = self
             .as_raw_profile()

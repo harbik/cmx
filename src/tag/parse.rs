@@ -16,8 +16,8 @@ pub trait UnambiguousTag {
     /// The single data type associated with this tag signature.
     type TagType: Default;
 
-    /// A function to create the correct `TagValue` enum variant from the TagValue block data.
-    fn new_tag(tag_type_instance: Self::TagType) -> TagValue;
+    /// A function to create the correct `TagData` enum variant from the TagData block data.
+    fn new_tag(tag_type_instance: Self::TagType) -> TagData;
 }
 
 /// A helper macro to reduce boilerplate when implementing `UnambiguousTag`.
@@ -29,8 +29,8 @@ macro_rules! impl_unambiguous_tag {
             // This also uses the correct ZST pattern (implementing on the type, not a reference).
             impl UnambiguousTag for crate::signatures::tag_signature::$tag_type_name {
                 type TagType = [< $tag_variant Type >];
-                fn new_tag(tag_type_instance: Self::TagType) -> TagValue {
-                    TagValue::$tag_variant(tag_type_instance)
+                fn new_tag(tag_type_instance: Self::TagType) -> TagData {
+                    TagData::$tag_variant(tag_type_instance)
                 }
             }
         }
@@ -100,55 +100,55 @@ fn inner_sig(bytes: &[u8]) -> Option<&[u8; 4]> {
 }
 
 #[inline]
-fn parse_trc_family<S: IsCurveTag + IsParametricCurveTag>(data: Vec<u8>) -> TagValue {
+fn parse_trc_family<S: IsCurveTag + IsParametricCurveTag>(data: Vec<u8>) -> TagData {
     match inner_sig(&data) {
-        Some(b"curv") => TagValue::Curve(CurveType(data)),
-        Some(b"para") => TagValue::ParametricCurve(ParametricCurveType(data)),
-        _ => TagValue::Raw(RawType(data)),
+        Some(b"curv") => TagData::Curve(CurveType(data)),
+        Some(b"para") => TagData::ParametricCurve(ParametricCurveType(data)),
+        _ => TagData::Raw(RawType(data)),
     }
 }
 
 #[inline]
-fn parse_desc_family<S: IsTextDescriptionTag + IsMultiLocalizedUnicodeTag>(data: Vec<u8>) -> TagValue {
+fn parse_desc_family<S: IsTextDescriptionTag + IsMultiLocalizedUnicodeTag>(data: Vec<u8>) -> TagData {
     match inner_sig(&data) {
-        Some(b"desc") => TagValue::TextDescription(TextDescriptionType(data)),
-        Some(b"mluc") => TagValue::MultiLocalizedUnicode(MultiLocalizedUnicodeType(data)),
-        _ => TagValue::Raw(RawType(data)),
+        Some(b"desc") => TagData::TextDescription(TextDescriptionType(data)),
+        Some(b"mluc") => TagData::MultiLocalizedUnicode(MultiLocalizedUnicodeType(data)),
+        _ => TagData::Raw(RawType(data)),
     }
 }
 
 #[inline]
-fn parse_preview_family<S: IsLut8TypeTag + IsLut16TypeTag>(data: Vec<u8>) -> TagValue {
+fn parse_preview_family<S: IsLut8TypeTag + IsLut16TypeTag>(data: Vec<u8>) -> TagData {
     match inner_sig(&data) {
-        Some(b"mft1") => TagValue::Lut8(Lut8Type(data)),
-        Some(b"mft2") => TagValue::Lut16(Lut16Type(data)),
-        _ => TagValue::Raw(RawType(data)),
+        Some(b"mft1") => TagData::Lut8(Lut8Type(data)),
+        Some(b"mft2") => TagData::Lut16(Lut16Type(data)),
+        _ => TagData::Raw(RawType(data)),
     }
 }
 
 #[inline]
-fn parse_atob_family<S: IsLutAtoBTypeTag>(data: Vec<u8>) -> TagValue {
+fn parse_atob_family<S: IsLutAtoBTypeTag>(data: Vec<u8>) -> TagData {
     match inner_sig(&data) {
-        Some(b"mAB ") => TagValue::LutAToB(LutAToBType(data)),
-        _ => TagValue::Raw(RawType(data)),
+        Some(b"mAB ") => TagData::LutAToB(LutAToBType(data)),
+        _ => TagData::Raw(RawType(data)),
     }
 }
 
 #[inline]
-fn parse_btoa_family<S: IsLutBtoATypeTag>(data: Vec<u8>) -> TagValue {
+fn parse_btoa_family<S: IsLutBtoATypeTag>(data: Vec<u8>) -> TagData {
     match inner_sig(&data) {
-        Some(b"mBA ") => TagValue::LutBToA(LutBToAType(data)),
-        _ => TagValue::Raw(RawType(data)),
+        Some(b"mBA ") => TagData::LutBToA(LutBToAType(data)),
+        _ => TagData::Raw(RawType(data)),
     }
 }
 
 #[inline]
-fn parse_gamut_family<S: IsLut8TypeTag + IsLut16TypeTag + IsLutBtoATypeTag>(data: Vec<u8>) -> TagValue {
+fn parse_gamut_family<S: IsLut8TypeTag + IsLut16TypeTag + IsLutBtoATypeTag>(data: Vec<u8>) -> TagData {
     match inner_sig(&data) {
-        Some(b"mft1") => TagValue::Lut8(Lut8Type(data)),
-        Some(b"mft2") => TagValue::Lut16(Lut16Type(data)),
-        Some(b"mBA ") => TagValue::LutBToA(LutBToAType(data)),
-        _ => TagValue::Raw(RawType(data)),
+        Some(b"mft1") => TagData::Lut8(Lut8Type(data)),
+        Some(b"mft2") => TagData::Lut16(Lut16Type(data)),
+        Some(b"mBA ") => TagData::LutBToA(LutBToAType(data)),
+        _ => TagData::Raw(RawType(data)),
     }
 }
 
@@ -194,7 +194,7 @@ impl IsLutBtoATypeTag for GamutTag {}
 
 
 // Use the family helpers inside the single factory.
-impl TagValue {
+impl TagData {
     pub fn parse(signature: TagSignature, data: Vec<u8>) -> Self {
         match signature {
             // Ambiguous families (marker-constrained)

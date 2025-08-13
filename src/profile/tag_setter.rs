@@ -5,7 +5,7 @@ use crate::{
     profile::RawProfile,
     tag::{
         tag_value::CurveType, 
-        tag_value::MultiLocalizedUnicodeType, tag_value::TagValue, TagTable,
+        tag_value::MultiLocalizedUnicodeType, tag_value::TagData, TagTable,
         TagSignature,
     },
 };
@@ -91,7 +91,7 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
     {
         let mut curve = CurveType::default();
         configure(&mut curve);
-        let curve_tag = TagValue::Curve(curve);
+        let curve_tag = TagData::Curve(curve);
         self.profile
             .tags
             .insert(self.signature.into(), TagTable::new(0, 0, curve_tag));
@@ -105,7 +105,7 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
     {
         let mut mlu = MultiLocalizedUnicodeType::default();
         configure(&mut mlu);
-        let mlu_tag = TagValue::MultiLocalizedUnicode(mlu);
+        let mlu_tag = TagData::MultiLocalizedUnicode(mlu);
         self.profile
             .tags
             .insert(self.signature.into(), TagTable::new(0, 0, mlu_tag));

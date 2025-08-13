@@ -261,14 +261,14 @@ use paste::paste;
 
 use super::TagTraits;
 
-/// Defines all tag-related structs and the main `TagValue` enum from a single list of names.
+/// Defines all tag-related structs and the main `TagData` enum from a single list of names.
 ///
 /// For each `Name` provided (e.g., `Curve`, `XYZ`), this macro generates:
 /// 1. A `pub struct NameType(pub Vec<u8>)` to wrap the raw tag data.
 /// 2. Implementations of `TagTraits` and `Default` for `NameType`.
-/// 3. A `TagValue` enum with a `Name(NameType)` variant for each name.
-/// 4. Implementations of `TagTraits` for the `TagValue` enum.
-/// 5. Helper methods on `TagValue` like `.as_curve()` and `.as_curve_mut()`.
+/// 3. A `TagData` enum with a `Name(NameType)` variant for each name.
+/// 4. Implementations of `TagTraits` for the `TagData` enum.
+/// 5. Helper methods on `TagData` like `.as_curve()` and `.as_curve_mut()`.
 ///
 /// # Macro-Driven Design
 ///
@@ -279,7 +279,7 @@ use super::TagTraits;
 /// The core benefit is maintainability. To add a new tag type to the system, one only
 /// needs to add its name to the list in the `define_tags_and_types!` invocation. The
 /// macro then automatically generates the corresponding `...Type` struct, adds the
-/// new variant to the `TagValue` enum, and implements all necessary traits and helper
+/// new variant to the `TagData` enum, and implements all necessary traits and helper
 /// functions. This prevents common errors that arise from manually keeping multiple
 /// lists and implementations in sync.
 ///
@@ -287,12 +287,12 @@ use super::TagTraits;
 /// the input `Curve` into the struct name `CurveType` and the helper method name
 /// `as_curve`. The generated helper methods (`as_...` and `as_..._mut`) are particularly important,
 /// as they provide a safe, ergonomic, and idiomatic Rust API for accessing the data
-/// within a `TagValue` enum variant.
+/// within a `TagData` enum variant.
 macro_rules! define_tags_and_types {
     ($($name:ident),+ $(,)?) => {
         paste! {
             $(
-                // Define the `TagValue` types, which are, at this point, just wrappers
+                // Define the `TagData` types, which are, at this point, just wrappers
                 // around `Vec<u8>`, the raw data for each tag, and the core of the
                 // internal representation in this libray.
                 // Examples of these are `CurveType`, `XYZType`, etc.
@@ -324,21 +324,21 @@ macro_rules! define_tags_and_types {
                 }
             )+
 
-            // All the tag types are now defined, we can create the main `TagValue` enum
+            // All the tag types are now defined, we can create the main `TagData` enum
             // which will encapsulate all the tag types defined above.
             // This enum will have a variant for each tag type, allowing us to
             // represent any tag in the ICC profile as a single type.
             #[derive(Debug, Serialize, Clone, PartialEq)]
-            pub enum TagValue {
+            pub enum TagData {
                 $($name([< $name Type >])),+
             }
 
-            // The `TagTraits` trait s also be implemented for the `TagValue` enum,
+            // The `TagTraits` trait s also be implemented for the `TagData` enum,
             // implemented by direct dispatching to the appropriate variant's
-            // implementation of `TagTraits`. This allows us to treat `TagValue` as a
+            // implementation of `TagTraits`. This allows us to treat `TagData` as a
             // single type that can be converted to bytes, sliced, and padded,
             // regardless of which specific tag type it contains.
-            impl TagTraits for TagValue {
+            impl TagTraits for TagData {
                 fn into_bytes(self) -> Vec<u8> {
                     match self {
                         $(Self::$name(t) => t.into_bytes()),+
@@ -356,14 +356,14 @@ macro_rules! define_tags_and_types {
                 }
             }
 
-            impl TagValue {
+            impl TagData {
                 $(
                     // Returns a reference to the inner struct if the variant matches.
                     //
                     // Example:
                     // ```
                     // // Construct a Curve tag and query it with the generated helper.
-                    // let tag = crate::tags::TagValue::Curve(crate::tags::CurveType(vec![]));
+                    // let tag = crate::tags::TagData::Curve(crate::tags::CurveType(vec![]));
                     // assert!(tag.as_curve().is_some());
                     // // Querying for a different variant returns None.
                     // assert!(tag.as_xyz().is_none());
@@ -381,7 +381,7 @@ macro_rules! define_tags_and_types {
                     // Example (for mutable access):
                     // ```
                     // // Construct a Curve tag.
-                    // let mut tag = crate::tags::TagValue::Curve(crate::tags::CurveType(vec![1, 2, 3]));
+                    // let mut tag = crate::tags::TagData::Curve(crate::tags::CurveType(vec![1, 2, 3]));
                     //
                     // // Get a mutable reference and modify the data.
                     // if let Some(curve) = tag.as_curve_mut() {
@@ -463,7 +463,7 @@ define_tags_and_types!(
     EmbeddedProfile,
 );
 
-impl TagValue {
+impl TagData {
     pub fn new(data: Vec<u8>) -> Self {
         let type_sig_bytes = data[0..4].try_into().unwrap_or([0; 4]);
         let type_signature = TypeSignature::from(type_sig_bytes);

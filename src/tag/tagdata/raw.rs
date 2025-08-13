@@ -18,7 +18,7 @@ pub struct RawTypeToml {
 #[repr(C)]
 #[derive(FromBytes, KnownLayout, Unaligned, Immutable)]
 pub struct RawTagTypeLayout {
-    /// TagValue signature, must be `b"raw "`.
+    /// TagData signature, must be `b"raw "`.
     signature: [u8; 4],
     /// Reserved, must be 0.
     _reserved: [u8; 4],

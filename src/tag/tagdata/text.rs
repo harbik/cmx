@@ -10,7 +10,7 @@ use crate::tag::tagdata::TextType;
 #[repr(C)]
 #[derive(FromBytes, KnownLayout, Unaligned, Immutable)]
 struct TextTypeLayout {
-    /// TagValue signature, must be `b"XYZ "`.
+    /// TagData signature, must be `b"XYZ "`.
     signature: [u8; 4],
     /// Reserved, must be 0.
     _reserved: [u8; 4],

@@ -30,7 +30,7 @@ impl RawProfile {
 use crate::profile::Profile;
 use crate::signatures::{tag, TagSignature};
 use crate::tags::{
-    CurveType, MultiLocalizedUnicodeType, TagValue, TextDescriptionType,
+    CurveType, MultiLocalizedUnicodeType, TagData, TextDescriptionType,
     // ... import other tag data types as you need them ...
 };
 
@@ -60,25 +60,25 @@ pub trait UnambiguousTag {
     /// The single data type associated with this tag signature.
     type DataType: Default;
 
-    /// A function to create the correct `TagValue` enum variant from the data.
-    fn new_tag(data: Self::DataType) -> TagValue;
+    /// A function to create the correct `TagData` enum variant from the data.
+    fn new_tag(data: Self::DataType) -> TagData;
 }
 
 /// A helper macro to reduce boilerplate when implementing `UnambiguousTag`.
 macro_rules! impl_unambiguous_tag {
-    // Takes the tag constant, its data type, and the corresponding TagValue enum variant.
+    // Takes the tag constant, its data type, and the corresponding TagData enum variant.
     ($tag_const:path, $data_type:ty, $tag_variant:ident) => {
         impl UnambiguousTag for $tag_const {
             type DataType = $data_type;
-            fn new_tag(data: Self::DataType) -> TagValue {
-                TagValue::$tag_variant(data)
+            fn new_tag(data: Self::DataType) -> TagData {
+                TagData::$tag_variant(data)
             }
         }
     };
 }
 
 // --------------------------------------------------------------------------------
-// STEP 3: Implement the Traits for Known TagValue Signatures
+// STEP 3: Implement the Traits for Known TagData Signatures
 // This is where you encode the ICC specification rules into the type system.
 // --------------------------------------------------------------------------------
 
@@ -135,7 +135,7 @@ mod tests {
     fn test_builder_api() {
         // let mut profile = Profile::new();
 
-        // --- Example 1: Unambiguous TagValue ---
+        // --- Example 1: Unambiguous TagData ---
         // The compiler knows `tag::RedTRC` is an `UnambiguousTag` whose `DataType`
         // is `CurveType`. The `.with_data()` method is available, and the closure
         // argument `curve` is correctly inferred as `&mut CurveType`.
@@ -144,7 +144,7 @@ mod tests {
         //     curve.set_gamma(1.8);
         // });
 
-        // --- Example 2: Ambiguous TagValue ---
+        // --- Example 2: Ambiguous TagData ---
         // The compiler knows `tag::Desc` does NOT implement `UnambiguousTag`, so
         // a call to `.with_data()` would be a compile error.
         //

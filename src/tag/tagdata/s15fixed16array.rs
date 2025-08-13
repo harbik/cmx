@@ -13,7 +13,7 @@ use crate::tag::tagdata::S15Fixed16ArrayType;
 #[repr(C)]
 #[derive(FromBytes, KnownLayout, Unaligned, Immutable)]
 struct Layout {
-    /// TagValue signature, must be `b"XYZ "`.
+    /// TagData signature, must be `b"XYZ "`.
     signature: [u8; 4],
     /// Reserved, must be 0.
     _1: [u8; 4],

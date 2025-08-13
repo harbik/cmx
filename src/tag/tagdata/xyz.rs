@@ -16,7 +16,7 @@ const S15_FIXED_16_DIVISOR: f64 = 65536.0;
 #[repr(C)]
 #[derive(FromBytes, KnownLayout, Unaligned, Immutable)]
 struct XYZTagLayout {
-    /// TagValue signature, must be `b"XYZ "`.
+    /// TagData signature, must be `b"XYZ "`.
     signature: [u8; 4],
     /// Reserved, must be 0.
     _reserved: [u8; 4],
