@@ -97,6 +97,7 @@ impl Profile {
 /// - On serialization, tags are emitted in their insertion order.
 #[derive(Serialize)]
 pub struct ProfileToml {
+    #[serde(flatten)]
     pub header: Header,
     #[serde(flatten)]
     pub tags: IndexMap<String, ParsedTag>,
@@ -119,8 +120,6 @@ impl fmt::Display for Profile {
             .tags
             .iter()
             .map(|(sig, entry)| {
-                //    let name: &str = sig.as_ref();
-                //    (name.to_string(), entry.tag.parse())
                 (sig.to_string(), entry.tag.to_parsed())
             })
             .collect();

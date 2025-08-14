@@ -5,9 +5,9 @@ use serde::Serialize;
 
 use crate::tag::{
     tagdata::{
-        chromaticity::ChromaticityType, curve::CurveType, lut8::Lut8Type, measurement::MeasurementType, multi_localized_unicode::MultiLocalizedUnicodeType, parametric_curve::ParametricCurveType, raw::RawType, s15fixed16array::S15Fixed16ArrayType, text::TextType, text_description::TextDescriptionType, xyz::XYZArrayType
+        chromaticity::ChromaticityType, curve::CurveType, lut8::Lut8Type, measurement::MeasurementType, multi_localized_unicode::MultiLocalizedUnicodeType, parametric_curve::ParametricCurveType, raw::UnparsedType, s15fixed16array::S15Fixed16ArrayType, text::TextType, text_description::TextDescriptionType, xyz::XYZArrayType
     },
-    TagDataTraits, TagData,
+    TagData,
 };
 
 /// A TOML-serializable wrapper enum that captures all supported tag variants in a single type.
@@ -44,14 +44,8 @@ pub enum ParsedTag {
     TextDescription(TextDescriptionType),
     XYZArray(XYZArrayType),
 
-    Raw(RawType),
-    // Fallback when no dedicated TOML format is implemented for a tag variant.
-    // Kept minimal and unambiguous for untagged serialization.
-    UnsupportedTag {
-        unsupported_tag: String,
-        type_signature: Option<String>,
-    },
-    // ... add a variant for every tag type you want to serialize
+    // Graceful fallback for unrecognized or unsupported tags
+    Unparsed(UnparsedType),
 }
 
 /// Converts a `TagData`, which is enum collection of encapsulated TagDatas,
@@ -76,37 +70,9 @@ impl From<&TagData> for ParsedTag {
             TagData::Text(text) => ParsedTag::Text(text.into()),
             TagData::TextDescription(text_desc) => ParsedTag::TextDescription(text_desc.into()),
             TagData::XYZArray(xyz) => ParsedTag::XYZArray(xyz.into()),
-            TagData::Raw(raw) => ParsedTag::Raw(raw.into()),
-            // Graceful fallback: don't panic, just emit a small structured note.
-            _ => {
-                let type_signature = tag
-                    .as_slice()
-                    .get(0..4)
-                    .map(|b| String::from_utf8_lossy(b).to_string());
-                ParsedTag::UnsupportedTag {
-                    unsupported_tag: "No dedicated TOML format implemented for this tag"
-                        .to_string(),
-                    type_signature,
-                }
-            } // Add more matches for other tag types as needed
+            
+            // Graceful fallback: don't panic, just emit the unparsed data
+            _ => ParsedTag::Unparsed(UnparsedType::from(tag))
         }
-    }
-}
-impl super::TagData {
-    /// Converts the tag into a serializable TOML representation.
-    pub fn to_toml(&self) -> ParsedTag {
-        ParsedTag::from(self)
-    }
-}
-impl super::ParsedTag {
-    /// Converts a vector of tags into a vector of serializable TOML representations.
-    pub fn from_tags(tags: &[super::TagData]) -> Vec<ParsedTag> {
-        tags.iter().map(ParsedTag::from).collect()
-    }
-}
-impl super::TagData {
-    /// Converts a vector of tags into a vector of serializable TOML representations.
-    pub fn to_toml_vec(tags: &[super::TagData]) -> Vec<ParsedTag> {
-        ParsedTag::from_tags(tags)
     }
 }

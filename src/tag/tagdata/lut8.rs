@@ -25,7 +25,14 @@ pub struct Lut8Type {
     e_mat: [f64; 9],           // s15Fixed16Number array
     input_luts: Vec<Vec<u8>>,  // input LUT
     output_luts: Vec<Vec<u8>>, // output LUT
-    multi_lut: Vec<u8>,        // multi-dimensional LUT
+    multi_lut: Vec<Vec<u8>>,        // multi-dimensional LUT
+}
+
+
+// Organize by grid points (most intuitive)
+// [[r,g,b at point 0], [r,g,b at point 1], ...]
+fn reshape_by_grid_points(multi_lut: &[u8], m: usize) -> Vec<Vec<u8>> {
+    multi_lut.chunks(m).map(|chunk| chunk.to_vec()).collect()
 }
 
 impl From<&Lut8Data> for Lut8Type {
@@ -77,7 +84,7 @@ impl From<&Lut8Data> for Lut8Type {
             e_mat,
             input_luts,
             output_luts,
-            multi_lut,
+            multi_lut: reshape_by_grid_points(&multi_lut, m),
         }
     }
 }

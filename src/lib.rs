@@ -73,6 +73,23 @@ fn is_zero<T: Zero>(n: &T) -> bool {
     n.is_zero()
 }
 
+// Add this function at module level
+fn is_empty_or_none(s: &String) -> bool {
+    s.is_empty() || s == "none"
+}
+
+
 fn from_s15fixed16(v: i32) -> f64 {
     round_to_precision(v as f64 / 65536.0, 6)
+}
+
+fn format_hex_with_spaces(data: &[u8]) -> String {
+    let hex = hex::encode(data);
+    
+    // Split into chunks of 8 characters and join with spaces
+    hex.as_bytes()
+        .chunks(8)
+        .map(|chunk| std::str::from_utf8(chunk).unwrap())
+        .collect::<Vec<&str>>()
+        .join(" ")
 }
