@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
-mod icc_header_toml;
-pub use icc_header_toml::Header;
+mod parsed_header;
+pub use parsed_header::Header;
 
 use chrono::{DateTime, Datelike, Timelike};
 use zerocopy::{

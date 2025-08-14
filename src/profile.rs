@@ -96,7 +96,7 @@ impl Profile {
 /// Round-tripping notes:
 /// - On serialization, tags are emitted in their insertion order.
 #[derive(Serialize)]
-pub struct ProfileToml {
+pub struct ParsedProfile {
     #[serde(flatten)]
     pub header: Header,
     #[serde(flatten)]
@@ -110,9 +110,9 @@ impl fmt::Display for Profile {
         // and its conversion from RawProfile.
         let header = Header::from(self.as_raw_profile());
 
-        // Convert tags to a flattened IndexMap<String, TagToml>, using the tag signature as the
-        // key, and converting each TagTable's tag to a TagToml using its From<TagData>
-        // implementation, which needs to be implemented by each TagData individually.
+        // Convert tags to a flattened IndexMap<String, ParsedTag>, using the tag signature as the
+        // key, and converting each TagTable's tag to a ParsdTag using its From<TagData>
+        // implementation, which needs to be implemented by each TagType individually.
         // TagTable is a struct that contains the offset, size, and the "TagData" enum,
         // which encapsulates the tag data.
         let tags: IndexMap<String, ParsedTag> = self
@@ -124,10 +124,10 @@ impl fmt::Display for Profile {
             })
             .collect();
 
-        let profile_toml = ProfileToml { header, tags };
+        let parsed_profile = ParsedProfile { header, tags };
 
-        match toml::to_string(&profile_toml) {
-            //  match toml::to_string_pretty(&profile_toml) {
+        // serialize the ParsedProfile to a TOML string.
+        match toml::to_string(&parsed_profile) {
             Ok(s) => write!(f, "{s}"),
             Err(_) => Err(fmt::Error),
         }
