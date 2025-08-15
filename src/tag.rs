@@ -36,16 +36,25 @@ pub trait TagDataTraits {
 }
 
 /// Represents a single tag entry in an ICC profile,
-/// containing an offset, size, and it's raw tag data.
+/// containing an offset, size, and it's raw tag bytes,
+/// and is the main interface for accessing tag data through
+/// the IndexMap in the `RawProfile`.
+/// These are the offset and size used to import the tag data from
+/// the raw bytes of the ICC profile, and are also used to write the
+/// tag data back to the raw bytes when exporting the profile.
+/// When writing the data the size of all the tags is checked to see
+/// if any tag data has changed in size, and if so all the tags are
+/// re-arranged to fit the new size.
 #[derive(Debug, Serialize, Clone, PartialEq)]
-pub struct RawTag {
+pub struct ProfileTagRecord {
     pub offset: u32,
     pub size: u32,
     pub tag: Tag,
 }
 
-impl RawTag {
-    /// Creates a new `TagTableEntry` with the given offset, size, and tag.
+impl ProfileTagRecord {
+    /// Creates a new `ProfileTagRecord` with the given offset, size, and tag.
+    /// It is used to represent a tag as present in a ICC profile, with its offset and size.
     pub fn new(offset: u32, size: u32, tag: Tag) -> Self {
         Self { offset, size, tag }
     }
@@ -53,11 +62,6 @@ impl RawTag {
     /// Returns the raw bytes of the tag.
     pub fn as_slice(&self) -> &[u8] {
         self.tag.as_slice()
-    }
-
-    /// Converts the tag into a byte vector.
-    pub fn into_bytes(self) -> Vec<u8> {
-        self.tag.into_bytes()
     }
 }
 

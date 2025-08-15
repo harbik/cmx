@@ -36,9 +36,11 @@ pub use spectral_profile::SpectralProfile;
 mod delegate;
 
 // TODO
-// mod with_tag;
-//mod tag_setter;
-//pub use tag_setter::TagSetter;
+ /*
+ mod with_tag;
+mod tag_setter;
+pub use tag_setter::TagSetter;
+  */
 
 mod checksum;
 use crate::{header::Header, tag::ParsedTag};
@@ -111,9 +113,9 @@ impl fmt::Display for Profile {
         let header = Header::from(self.as_raw_profile());
 
         // Convert tags to a flattened IndexMap<String, ParsedTag>, using the tag signature as the
-        // key, and converting each TagTable's tag to a ParsdTag using its From<TagData>
+        // key, and converting each RawTag's tag to a ParsdTag using its From<TagData>
         // implementation, which needs to be implemented by each TagType individually.
-        // TagTable is a struct that contains the offset, size, and the "TagData" enum,
+        // RawTag is a struct that contains the offset, size, and the "TagData" enum,
         // which encapsulates the tag data.
         let tags: IndexMap<String, ParsedTag> = self
             .as_raw_profile()

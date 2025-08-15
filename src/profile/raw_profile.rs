@@ -12,7 +12,7 @@ use std::str::FromStr;
 use crate::profile::Profile;
 use crate::signatures::DeviceClass;
 use crate::tag::tagdata::TagData;
-use crate::tag::RawTag;
+use crate::tag::ProfileTagRecord;
 use crate::tag::{Tag, TagSignature};
 
 /// An ICC profile, deconstructed in:
@@ -36,7 +36,7 @@ use crate::tag::{Tag, TagSignature};
 pub struct RawProfile {
     #[serde(with = "serde_arrays")]
     pub header: [u8; 128], // 128 bytes
-    pub tags: IndexMap<TagSignature, RawTag>, // preserves insertion order
+    pub tags: IndexMap<TagSignature, ProfileTagRecord>, // preserves insertion order
     pub padding: usize,                         // number of padding bytes found in a profile read
 }
 
@@ -116,7 +116,7 @@ impl RawProfile {
 
             tags.insert(
                 *signature,
-                RawTag {
+                ProfileTagRecord {
                     offset: *offset,
                     size: *size,
                     // this needs to be e.g. Tag(Tagvalue(TagData::Raw(data)))

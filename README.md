@@ -10,6 +10,7 @@ to TOML format using the cmx command line tool:
 ```bash
 cmx profile.icc -o profile.toml
  ```
+
 Every ICC profile tag is converted to a key in the TOML file, with the tag's
 values serialized to key-value pairs.
 The values are all given as single line output, so that the TOML file is

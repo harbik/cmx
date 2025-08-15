@@ -4,14 +4,17 @@
 use crate::{
     profile::RawProfile,
     tag::{
-        tagdata::CurveData, 
-        tagdata::MultiLocalizedUnicodeData, tagdata::TagData, TagTable,
-        TagSignature,
+        tagdata::CurveData, tagdata::MultiLocalizedUnicodeData, tagdata::TagData, TagSignature,
     },
+    tag::RawTag,
 };
 
 // Marker traits (families of allowed inner types)
-pub trait UnambiguousTag {}
+pub trait UnambiguousTagData {
+    type TagData: Default;
+    fn new_tag(data: Self::TagData) -> TagData;
+}
+pub trait UnambiguousTag: UnambiguousTagData {}
 pub trait IsTextDescriptionTag {}
 pub trait IsMultiLocalizedUnicodeTag {}
 pub trait IsCurveTag {}
@@ -62,23 +65,22 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
         Self { profile, signature }
     }
 
-    /// Configures the tag's data directly using a closure.
-    ///
-    /// This ergonomic method is only available for tag signatures that have a single,
-    /// unambiguous data type. The closure receives a mutable reference to the
     /// correct data type automatically.
     pub fn with_data<F>(self, configure: F) -> &'a mut RawProfile
     where
         S: UnambiguousTag, // This method is only available for unambiguous tags!
-        F: FnOnce(&mut S::TagData),
+        F: FnOnce(&mut <S as UnambiguousTagData>::TagData),
     {
-        let mut data = S::TagData::default();
+        let mut data = <S as UnambiguousTagData>::TagData::default();
+        configure(&mut data);
+        let tag = S::new_tag(data);
+        // as this is a new tag, it did not get assigned an offset and length yet.
         configure(&mut data);
         let tag = S::new_tag(data);
         // as this is a new tag, it did not get assigned an offset and length yet.
         self.profile
             .tags
-            .insert(self.signature.into(), TagTable::new(0, 0, tag));
+            .insert(self.signature.into(), RawTag::new(0, 0, tag));
         self.profile
     }
 
@@ -94,7 +96,7 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
         let curve_tag = TagData::Curve(curve);
         self.profile
             .tags
-            .insert(self.signature.into(), TagTable::new(0, 0, curve_tag));
+            .insert(self.signature.into(), RawTag::new(0, 0, curve_tag));
         self.profile
     }
 
@@ -108,7 +110,7 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
         let mlu_tag = TagData::MultiLocalizedUnicode(mlu);
         self.profile
             .tags
-            .insert(self.signature.into(), TagTable::new(0, 0, mlu_tag));
+            .insert(self.signature.into(), RawTag::new(0, 0, mlu_tag));
         self.profile // Return a mutable reference to the profile itself
     }
 }

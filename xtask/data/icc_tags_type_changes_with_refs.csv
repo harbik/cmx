@@ -1,0 +1,13 @@
+Tag Signature,v2.x Type(s),v4.x Type(s),v5.0 (iccMAX) Type(s),Notes,Spec References
+cprt,textType,multiLocalizedUnicodeType,multiLocalizedUnicodeType,Changed to mluc in v4 to allow localization; textType deprecated.,ICC.1:2022 Clause 9.2.34; ICC v2 spec Table 31
+desc,textDescriptionType,multiLocalizedUnicodeType,multiLocalizedUnicodeType,Changed to mluc in v4 to allow localization.,ICC.1:2022 Clause 9.2.17; ICC v2 spec Table 23
+dmnd,textType,multiLocalizedUnicodeType,multiLocalizedUnicodeType,Device model description; changed to mluc in v4.,ICC.1:2022 Clause 9.2.19; ICC v2 spec Table 25
+dmdd,textType,multiLocalizedUnicodeType,multiLocalizedUnicodeType,Device manufacturer description; changed to mluc in v4.,ICC.1:2022 Clause 9.2.18; ICC v2 spec Table 24
+vued,viewingCondDescType,multiLocalizedUnicodeType,— (deprecated),Changed to mluc in v4; removed in v5.,ICC.1:2022 Clause 9.2.62; ICC v2 spec Table 66
+ncol,namedColorType,— (deprecated),— (absent),Replaced by ncl2 in v4.,ICC.1:2022 Annex G (deprecated tags); ICC v2 spec Table 46
+pseq,— (absent),profileSequenceDescType,profileSequenceDescType,Introduced in v4.,ICC.1:2022 Clause 9.2.46 (introduced in v4)
+psid,— (absent),profileSequenceIdentifierType,profileSequenceIdentifierType,Introduced in v4.,ICC.1:2022 Clause 9.2.47 (introduced in v4)
+bkpt,XYZType,— (deprecated),— (absent),mediaBlackPoint removed in v4.,ICC v2 spec Table 18; ICC.1:2022 Annex G (deprecated tags)
+pre0,"lut8Type, lut16Type","lut8Type, lut16Type, lutAToBType, lutBToAType","lut8Type, lut16Type, lutAToBType, lutBToAType",Preview tags expanded to allow AToB/BToA types in v4.,ICC.1:2022 Clause 9.2.44; ICC v2 spec Table 44
+pre1,"lut8Type, lut16Type","lut8Type, lut16Type, lutAToBType, lutBToAType","lut8Type, lut16Type, lutAToBType, lutBToAType",Preview tags expanded to allow AToB/BToA types in v4.,ICC.1:2022 Clause 9.2.45; ICC v2 spec Table 45
+pre2,"lut8Type, lut16Type","lut8Type, lut16Type, lutAToBType, lutBToAType","lut8Type, lut16Type, lutAToBType, lutBToAType",Preview tags expanded to allow AToB/BToA types in v4.,ICC.1:2022 Clause 9.2.46; ICC v2 spec Table 46
