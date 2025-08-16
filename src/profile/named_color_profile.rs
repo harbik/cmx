@@ -38,3 +38,9 @@ impl NamedColorProfile {
         )
     }
 }
+
+impl Default for NamedColorProfile {
+    fn default() -> Self {
+        Self::new()
+    }
+}

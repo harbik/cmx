@@ -29,7 +29,7 @@ macro_rules! impl_header_methods {
                 ) -> Result<Self, crate::Error> {
                     Ok(Self(self.0.with_version(major, minor)?))
                 }
-                
+
                 pub fn with_creation_date(
                     self,
                     date: Option<chrono::DateTime<chrono::Utc>>,
@@ -43,7 +43,7 @@ macro_rules! impl_header_methods {
                 ) -> super::TagSetter<'a, S> {
                     self.0.with_tag(signature)
                 }
-            
+
 
             }
         )*

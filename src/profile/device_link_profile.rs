@@ -38,3 +38,9 @@ impl DeviceLinkProfile {
         )
     }
 }
+
+impl Default for DeviceLinkProfile {
+    fn default() -> Self {
+        Self::new()
+    }
+}

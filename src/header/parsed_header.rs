@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
-use crate::{is_zero, is_empty_or_none, round_to_precision, signatures::Signature, tag::RenderingIntent};
+use crate::{
+    is_empty_or_none, is_zero, round_to_precision, signatures::Signature, tag::RenderingIntent,
+};
 
 #[derive(serde::Serialize)]
 pub struct Header {

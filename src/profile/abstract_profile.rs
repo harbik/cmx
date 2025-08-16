@@ -38,3 +38,9 @@ impl AbstractProfile {
         )
     }
 }
+
+impl Default for AbstractProfile {
+    fn default() -> Self {
+        Self::new()
+    }
+}

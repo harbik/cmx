@@ -25,9 +25,8 @@ pub struct Lut8Type {
     e_mat: [f64; 9],           // s15Fixed16Number array
     input_luts: Vec<Vec<u8>>,  // input LUT
     output_luts: Vec<Vec<u8>>, // output LUT
-    multi_lut: Vec<Vec<u8>>,        // multi-dimensional LUT
+    multi_lut: Vec<Vec<u8>>,   // multi-dimensional LUT
 }
-
 
 // Organize by grid points (most intuitive)
 // [[r,g,b at point 0], [r,g,b at point 1], ...]

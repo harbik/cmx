@@ -38,3 +38,9 @@ impl DisplayProfile {
         )
     }
 }
+
+impl Default for DisplayProfile {
+    fn default() -> Self {
+        Self::new()
+    }
+}

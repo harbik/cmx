@@ -4,7 +4,10 @@
 use serde::Serialize;
 use zerocopy::{FromBytes, Immutable, KnownLayout, Unaligned};
 
-use crate::{format_hex_with_spaces, tag::{tagdata::TagData, TagDataTraits}};
+use crate::{
+    format_hex_with_spaces,
+    tag::{tagdata::TagData, TagDataTraits},
+};
 
 #[derive(Serialize)]
 pub struct UnparsedType {
@@ -29,8 +32,7 @@ pub struct Layout {
 
 impl From<&TagData> for UnparsedType {
     fn from(tagdata: &TagData) -> Self {
-        let layout = Layout::ref_from_bytes(&tagdata.as_slice()).unwrap();
-
+        let layout = Layout::ref_from_bytes(tagdata.as_slice()).unwrap();
 
         Self {
             type_signature: format!("{}", String::from_utf8_lossy(&layout.signature)),

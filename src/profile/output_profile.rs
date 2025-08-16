@@ -38,3 +38,9 @@ impl OutputProfile {
         )
     }
 }
+
+impl Default for OutputProfile {
+    fn default() -> Self {
+        Self::new()
+    }
+}

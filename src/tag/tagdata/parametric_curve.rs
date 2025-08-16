@@ -3,7 +3,7 @@
 
 use crate::{
     is_zero,
-    tag::{tagdata::{DataSignature, ParametricCurveData}},
+    tag::tagdata::{DataSignature, ParametricCurveData},
 };
 use serde::Serialize;
 use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, Unaligned, I32, U16};
@@ -47,7 +47,7 @@ impl<const N: usize> WriteLayout<N> {
             _ => panic!("Unsupported number of parameters: {N}"),
         };
 
-        let mut parameters: [I32<BigEndian>;N] = [0.into(); N];
+        let mut parameters: [I32<BigEndian>; N] = [0.into(); N];
         for (i, &value) in params.iter().enumerate() {
             if i < N {
                 // Convert f64 to s15Fixed16Number
@@ -85,10 +85,9 @@ pub struct ParametricCurveType {
 }
 
 impl ParametricCurveData {
-    pub fn set_parameters<const N:usize>(&mut self, parameters: [f64;N]) {
+    pub fn set_parameters<const N: usize>(&mut self, parameters: [f64; N]) {
         self.0 = WriteLayout::new(parameters).as_bytes().to_vec();
     }
-
 }
 
 /// Parses the raw data wrapped in XYZData into a XYZDataToml instance,

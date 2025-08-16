@@ -5,7 +5,11 @@ use serde::Serialize;
 
 use crate::tag::{
     tagdata::{
-        chromaticity::ChromaticityType, curve::CurveType, lut8::Lut8Type, measurement::MeasurementType, multi_localized_unicode::MultiLocalizedUnicodeType, parametric_curve::ParametricCurveType, raw::UnparsedType, s15fixed16array::S15Fixed16ArrayType, text::TextType, text_description::TextDescriptionType, xyz::XYZArrayType
+        chromaticity::ChromaticityType, curve::CurveType, lut8::Lut8Type,
+        measurement::MeasurementType, multi_localized_unicode::MultiLocalizedUnicodeType,
+        parametric_curve::ParametricCurveType, raw::UnparsedType,
+        s15fixed16array::S15Fixed16ArrayType, text::TextType,
+        text_description::TextDescriptionType, xyz::XYZArrayType,
     },
     TagData,
 };
@@ -61,18 +65,16 @@ impl From<&TagData> for ParsedTag {
             TagData::Chromaticity(chromaticity) => ParsedTag::Chromaticity(chromaticity.into()),
             TagData::Curve(curve) => ParsedTag::Curve(curve.into()),
             TagData::Lut8(lut8) => ParsedTag::Lut8(lut8.into()),
-            TagData::Measurement(measurement) => {
-                ParsedTag::Measurement(measurement.into())
-            }
+            TagData::Measurement(measurement) => ParsedTag::Measurement(measurement.into()),
             TagData::MultiLocalizedUnicode(mluc) => ParsedTag::MultiLocalizedUnicode(mluc.into()),
             TagData::ParametricCurve(para) => ParsedTag::ParametricCurve(para.into()),
             TagData::S15Fixed16Array(values) => ParsedTag::S15Fixed16Array(values.into()),
             TagData::Text(text) => ParsedTag::Text(text.into()),
             TagData::TextDescription(text_desc) => ParsedTag::TextDescription(text_desc.into()),
             TagData::XYZArray(xyz) => ParsedTag::XYZArray(xyz.into()),
-            
+
             // Graceful fallback: don't panic, just emit the unparsed data
-            _ => ParsedTag::Unparsed(UnparsedType::from(tag))
+            _ => ParsedTag::Unparsed(UnparsedType::from(tag)),
         }
     }
 }

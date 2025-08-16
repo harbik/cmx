@@ -21,9 +21,8 @@ pub enum Observer {
 pub enum Geometry {
     Unknown = 0x00000000,
     FourtyFiveZero = 0x00000001, // 0/45, 45/0
-    Diffuse = 0x00000002,       // 0/d or d/0
+    Diffuse = 0x00000002,        // 0/d or d/0
 }
-
 
 #[derive(Serialize, Debug, Clone, PartialEq, FromPrimitive, ToPrimitive)]
 #[repr(u32)]
@@ -60,12 +59,11 @@ struct Layout {
     singature: [u8; 4],
     _reserved: [u8; 4],
     standard_observer: U32<BigEndian>,
-    xyz: [I32<BigEndian>;3],
+    xyz: [I32<BigEndian>; 3],
     geometry: U32<BigEndian>,
     flare: U32<BigEndian>,
     illuminant: U32<BigEndian>,
 }
-
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct MeasurementType {
@@ -79,15 +77,16 @@ pub struct MeasurementType {
 impl From<&MeasurementData> for MeasurementType {
     fn from(measurement: &MeasurementData) -> Self {
         let layout = Layout::ref_from_bytes(&measurement.0).unwrap();
-        let xyz = if layout.xyz[0].get() == 0 && layout.xyz[1].get() == 0 && layout.xyz[2].get() == 0 {
-            None
-        } else {
-            Some([
-                layout.xyz[0].get() as f64 / 65536.0,
-                layout.xyz[1].get() as f64 / 65536.0,
-                layout.xyz[2].get() as f64 / 65536.0,
-            ])
-        };
+        let xyz =
+            if layout.xyz[0].get() == 0 && layout.xyz[1].get() == 0 && layout.xyz[2].get() == 0 {
+                None
+            } else {
+                Some([
+                    layout.xyz[0].get() as f64 / 65536.0,
+                    layout.xyz[1].get() as f64 / 65536.0,
+                    layout.xyz[2].get() as f64 / 65536.0,
+                ])
+            };
         let geometry = if layout.geometry.get() == 0 {
             None
         } else {
@@ -96,11 +95,13 @@ impl From<&MeasurementData> for MeasurementType {
         };
 
         MeasurementType {
-            observer: FromPrimitive::from_u32(layout.standard_observer.get()).unwrap_or(Observer::Unknown),
+            observer: FromPrimitive::from_u32(layout.standard_observer.get())
+                .unwrap_or(Observer::Unknown),
             xyz,
             geometry,
-            flare_pct: crate::round_to_precision(layout.flare.get() as f64 * 100.0/ 65536.0, 2),
-            illuminant: FromPrimitive::from_u32(layout.illuminant.get()).unwrap_or(Illuminant::Unknown),
+            flare_pct: crate::round_to_precision(layout.flare.get() as f64 * 100.0 / 65536.0, 2),
+            illuminant: FromPrimitive::from_u32(layout.illuminant.get())
+                .unwrap_or(Illuminant::Unknown),
         }
     }
 }

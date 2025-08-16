@@ -2,7 +2,7 @@
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
 use serde::Serialize;
-use zerocopy::{BigEndian, Immutable, IntoBytes, Unaligned, U32, U16};
+use zerocopy::{BigEndian, Immutable, IntoBytes, Unaligned, U16, U32};
 
 use super::CurveData;
 
@@ -47,42 +47,31 @@ struct WriteLayout<const N: usize> {
     data: [U16<BigEndian>; N],
 }
 
-impl<const N:usize>  WriteLayout<N> {
+impl<const N: usize> WriteLayout<N> {
     /// Creates a new `WriteLayout` with the signature 'curv' and initializes
     /// the count and data fields.
     pub fn new(data: [u16; N]) -> Self {
-        let data: [U16<BigEndian>; N] = data.map(|x| U16::<BigEndian>::new(x));
+        let data: [U16<BigEndian>; N] = data.map(U16::<BigEndian>::new);
         Self {
             signature: super::DataSignature::CurveData.into(),
             reserved: [0; 4],
             count: U32::<BigEndian>::new(data.len() as u32),
-            data
+            data,
         }
     }
 }
 
 impl CurveData {
-    /// Parses the raw big-endian bytes into a `Vec<u16>`.
-    /*
-    pub fn data(&self) -> Vec<u16> {
-        //let count = u32::from_be_bytes(self.0[8..=11].try_into().unwrap());
-        self.0[12..]
-            .chunks_exact(2)
-            .map(|chunk| u16::from_be_bytes(chunk.try_into().unwrap()))
-            .collect()
-    }
-     */
-
     /// Converts a `Vec<u16>` into raw big-endian bytes and sets it as the tag's data.
     pub fn set_data<const N: usize>(&mut self, data: [u16; N]) {
-        let data_bytes= WriteLayout::new(data);
+        let data_bytes = WriteLayout::new(data);
         self.0 = data_bytes.as_bytes().to_vec();
     }
 
     /// Sets the gamma value for the curve.
     /// This will convert the gamma value to a single point curve.
     /// If the curve already has points, it will replace them with a single point.
-    /// 
+    ///
     pub fn set_gamma(&mut self, gamma: f64) {
         let value = (gamma * 256.0).round() as u16;
         self.set_data([value]);

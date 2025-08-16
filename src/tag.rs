@@ -7,14 +7,14 @@ mod parse;
 pub use parse::{UnambiguousTag, IsCurveTag, IsParametricCurveTag, IsTextDescriptionTag, IsMultiLocalizedUnicodeTag, IsLut8DataTag, IsLut16DataTag, IsLutAtoBDataTag, IsLutBtoADataTag};
  */
 
-mod tagtype;
-pub use tagtype::ParsedTag;
+mod parsed_tag;
+pub use parsed_tag::ParsedTag;
 
 mod header_tags;
 pub use header_tags::{GamutCheck, Interpolate, Quality, RenderingIntent, S15Fixed16};
 
-use tagdata::TagData;
 use tagdata::DataSignature;
+use tagdata::TagData;
 
 use serde::Serialize;
 
@@ -68,45 +68,35 @@ impl ProfileTagRecord {
 // Macro to which dispatches methods for each Tag variant to the corresponding TagData methods.
 macro_rules! impl_tag_dispatch {
     (
-        // This macro accepts a comma-separated list of Tag identifiers.
-        $( $variant:ident ),+
-        $(,)? // Allows an optional trailing comma
+        $( $(#[$meta:meta])? $variant:ident ),+
+        $(,)?
     ) => {
-        // It generates the implementation block for the Tag enum.
         impl Tag {
-            /// Returns the raw bytes of the tag.
             pub fn as_slice(&self) -> &[u8] {
                 match self {
-                    // It creates a match arm for every variant provided.
                     $(
-                        Self::$variant(tagdata) => tagdata.as_slice(),
+                        $(#[$meta])? Self::$variant(tagdata) => tagdata.as_slice(),
                     )+
                     Self::Unknown(_, tagdata) => tagdata.as_slice(),
                 }
             }
 
-            /// Converts the tag into a byte vector.
             pub fn into_bytes(self) -> Vec<u8> {
                 match self {
                     $(
-                        Self::$variant(tagdata) => tagdata.into_bytes(),
+                        $(#[$meta])? Self::$variant(tagdata) => tagdata.into_bytes(),
                     )+
                     Self::Unknown(_, tagdata) => tagdata.into_bytes(),
                 }
             }
 
-            pub fn len(&self) -> usize {
-                self.as_slice().len()
-            }
-
-            pub fn is_empty(&self) -> bool {
-                self.as_slice().is_empty()
-            }
+            pub fn len(&self) -> usize { self.as_slice().len() }
+            pub fn is_empty(&self) -> bool { self.as_slice().is_empty() }
 
             pub fn pad(&mut self, size: usize) {
                 match self {
                     $(
-                        Self::$variant(tagdata) => tagdata.pad(size),
+                        $(#[$meta])? Self::$variant(tagdata) => tagdata.pad(size),
                     )+
                     Self::Unknown(_, tagdata) => tagdata.pad(size),
                 }
@@ -115,51 +105,52 @@ macro_rules! impl_tag_dispatch {
             pub fn to_parsed(&self) -> ParsedTag {
                 match self {
                     $(
-                        // Self::$variant(tagdata) => tagdata.to_toml(),
-                        Self::$variant(tagdata) => ParsedTag::from(tagdata),
+                        $(#[$meta])? Self::$variant(tagdata) => ParsedTag::from(tagdata),
                     )+
-                   // Self::Unknown(_, tagdata) => tagdata.to_toml(),
                     Self::Unknown(_, tagdata) => ParsedTag::from(tagdata),
                 }
             }
 
-            /// Returns a shared reference to the inner TagData.
             pub fn data(&self) -> &TagData {
                 match self {
                     $(
-                        Self::$variant(tagdata) => tagdata,
+                        $(#[$meta])? Self::$variant(tagdata) => tagdata,
                     )+
                     Self::Unknown(_, tagdata) => tagdata,
                 }
             }
 
-            /// Returns a mutable reference to the inner TagData.
             pub fn data_mut(&mut self) -> &mut TagData {
                 match self {
                     $(
-                        Self::$variant(tagdata) => tagdata,
+                        $(#[$meta])? Self::$variant(tagdata) => tagdata,
                     )+
                     Self::Unknown(_, tagdata) => tagdata,
                 }
             }
         }
-
     };
 }
 
 // KEEP define_tag_signatures! as-is; we will reuse it from define_tags!.
 macro_rules! define_tag_signatures {
-    ($(($variant:ident, $tag:expr)),* $(,)?) => {
+    ($( $(#[$meta:meta])? ($variant:ident, $tag:expr) ),* $(,)?) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, strum::AsRefStr)]
         pub enum TagSignature {
-            $($variant,)*
+            $(
+                $(#[$meta])?
+                $variant,
+            )*
             Unknown(u32),
         }
 
         impl From<u32> for TagSignature {
             fn from(tag: u32) -> Self {
                 match tag {
-                    $($tag => Self::$variant,)*
+                    $(
+                        $(#[$meta])?
+                        $tag => Self::$variant,
+                    )*
                     other => Self::Unknown(other),
                 }
             }
@@ -168,17 +159,17 @@ macro_rules! define_tag_signatures {
         impl TagSignature {
             pub fn to_u32(&self) -> u32 {
                 match self {
-                    $(Self::$variant => $tag,)*
+                    $(
+                        $(#[$meta])?
+                        Self::$variant => $tag,
+                    )*
                     Self::Unknown(value) => *value,
                 }
             }
-            
-            /// Creates a new `TagSignature` from a u32 value.
-            pub fn new(tag: u32) -> Self {
-                Self::from(tag)
-            }
+
+            pub fn new(tag: u32) -> Self { Self::from(tag) }
         }
-        
+
         impl std::fmt::Display for TagSignature {
             fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 let value = self.to_u32();
@@ -196,36 +187,43 @@ macro_rules! define_tag_signatures {
 
 // New macro: single source of truth to define TagSignature + Tag + Tag::new + dispatch.
 macro_rules! define_tags {
-    ($(($variant:ident, $sig_variant:ident, $tag:expr)),* $(,)?) => {
-        // Generate TagSignature using the existing macro.
-        define_tag_signatures!($(($sig_variant, $tag)),*);
+    ($( $(#[$meta:meta])? ($variant:ident, $tag_zst:ident, $sig_variant:ident, $tag:expr) ),* $(,)?) => {
+        define_tag_signatures!($( $(#[$meta])? ($sig_variant, $tag) ),*);
 
         #[derive(Debug, Serialize, Clone, PartialEq)]
         pub enum Tag {
-            $($variant(TagData),)*
+            $(
+                $(#[$meta])?
+                $variant(TagData),
+            )*
             Unknown(u32, TagData),
         }
 
         impl Tag {
             pub fn new(tag_sig_u32: u32, tagdata: TagData) -> Self {
                 match tag_sig_u32 {
-                    $($tag => Self::$variant(tagdata),)*
+                    $(
+                        $(#[$meta])?
+                        $tag => Self::$variant(tagdata),
+                    )*
                     _ => Self::Unknown(tag_sig_u32, tagdata),
                 }
             }
         }
 
-        // Generate as_slice/into_bytes/len/is_empty/pad/to_parsed
-        impl_tag_dispatch!($($variant),*);
+        impl_tag_dispatch!($(
+            $(#[$meta])? $variant
+        ),*);
 
-        // Also expose unit structs for ergonomic type-level signatures used by TagSetter.
         pub mod tags {
             use super::TagSignature;
             $(
+                $(#[$meta])?
                 #[derive(Debug, Clone, Copy, Default)]
-                pub struct $variant;
-                impl From<$variant> for TagSignature {
-                    fn from(_: $variant) -> TagSignature {
+                pub struct $tag_zst;
+                $(#[$meta])?
+                impl From<$tag_zst> for TagSignature {
+                    fn from(_: $tag_zst) -> TagSignature {
                         TagSignature::$sig_variant
                     }
                 }
@@ -234,137 +232,443 @@ macro_rules! define_tags {
     }
 }
 
-// Use the new macro to define everything once.
-// Note: list mirrors your current one; keep entries unchanged, just add the Tag variant name up front.
 define_tags!(
-    (AToB0, AToB0TagSignature, 0x41324230),
-    (AToB1, AToB1TagSignature, 0x41324231),
-    (AToB2, AToB2TagSignature, 0x41324232),
-    (AToB3, AToB3TagSignature, 0x41324233),
-    (AToM0, AToM0TagSignature, 0x41324D30),
-    (BlueMatrixColumn, BlueMatrixColumnTagSignature, 0x6258595A),
-    (BlueTRC, BlueTRCTagSignature, 0x62545243),
-    (BrdfColorimetricParameter0, BrdfColorimetricParameter0TagSignature, 0x62637030),
-    (BrdfColorimetricParameter1, BrdfColorimetricParameter1TagSignature, 0x62637031),
-    (BrdfColorimetricParameter2, BrdfColorimetricParameter2TagSignature, 0x62637032),
-    (BrdfColorimetricParameter3, BrdfColorimetricParameter3TagSignature, 0x62637033),
-    (BrdfSpectralParameter0, BrdfSpectralParameter0TagSignature, 0x62737030),
-    (BrdfSpectralParameter1, BrdfSpectralParameter1TagSignature, 0x62737031),
-    (BrdfSpectralParameter2, BrdfSpectralParameter2TagSignature, 0x62737032),
-    (BrdfSpectralParameter3, BrdfSpectralParameter3TagSignature, 0x62737033),
-    (BRDFAToB0, BRDFAToB0TagSignature, 0x62414230),
-    (BRDFAToB1, BRDFAToB1TagSignature, 0x62414231),
-    (BRDFAToB2, BRDFAToB2TagSignature, 0x62414232),
-    (BRDFAToB3, BRDFAToB3TagSignature, 0x62414233),
-    (BRDFDToB0, BRDFDToB0TagSignature, 0x62444230),
-    (BRDFDToB1, BRDFDToB1TagSignature, 0x62444231),
-    (BRDFDToB2, BRDFDToB2TagSignature, 0x62444232),
-    (BRDFDToB3, BRDFDToB3TagSignature, 0x62444233),
-    (BRDFMToB0, BRDFMToB0TagSignature, 0x624D4230),
-    (BRDFMToB1, BRDFMToB1TagSignature, 0x624D4231),
-    (BRDFMToB2, BRDFMToB2TagSignature, 0x624D4232),
-    (BRDFMToB3, BRDFMToB3TagSignature, 0x624D4233),
-    (BRDFMToS0, BRDFMToS0TagSignature, 0x624D5330),
-    (BRDFMToS1, BRDFMToS1TagSignature, 0x624D5331),
-    (BRDFMToS2, BRDFMToS2TagSignature, 0x624D5332),
-    (BRDFMToS3, BRDFMToS3TagSignature, 0x624D5333),
-    (BToA0, BToA0TagSignature, 0x42324130),
-    (BToA1, BToA1TagSignature, 0x42324131),
-    (BToA2, BToA2TagSignature, 0x42324132),
-    (BToA3, BToA3TagSignature, 0x42324133),
-    (CalibrationDateTime, CalibrationDateTimeTagSignature, 0x63616C74),
-    (CharTarget, CharTargetTagSignature, 0x74617267),
-    (ChromaticAdaptation, ChromaticAdaptationTagSignature, 0x63686164),
-    (Chromaticity, ChromaticityTagSignature, 0x6368726D),
-    (ColorEncodingParams, ColorEncodingParamsTagSignature, 0x63657074),
-    (ColorSpaceName, ColorSpaceNameTagSignature, 0x63736E6D),
-    (ColorantInfo, ColorantInfoTagSignature, 0x636C696E),
-    (ColorantInfoOut, ColorantInfoOutTagSignature, 0x636C696F),
-    (ColorantOrder, ColorantOrderTagSignature, 0x636C726F),
-    (ColorantOrderOut, ColorantOrderOutTagSignature, 0x636C6F6F),
-    (ColorantTable, ColorantTableTagSignature, 0x636C7274),
-    (ColorantTableOut, ColorantTableOutTagSignature, 0x636C6F74),
-    (ColorimetricIntentImageState, ColorimetricIntentImageStateTagSignature, 0x63696973),
-    (Copyright, CopyrightTagSignature, 0x63707274),
-    (CrdInfo, CrdInfoTagSignature, 0x63726469),
-    (CustomToStandardPcc, CustomToStandardPccTagSignature, 0x63327370),
-    (CxF, CxFTagSignature, 0x43784620),
-    (Data, DataTagSignature, 0x64617461),
-    (DateTime, DateTimeTagSignature, 0x6474696D),
-    (DeviceMediaWhitePoint, DeviceMediaWhitePointTagSignature, 0x646D7770),
-    (DeviceMfgDesc, DeviceMfgDescTagSignature, 0x646D6E64),
-    (DeviceModelDesc, DeviceModelDescTagSignature, 0x646D6464),
-    (DeviceSettings, DeviceSettingsTagSignature, 0x64657673),
-    (DToB0, DToB0TagSignature, 0x44324230),
-    (DToB1, DToB1TagSignature, 0x44324231),
-    (DToB2, DToB2TagSignature, 0x44324232),
-    (DToB3, DToB3TagSignature, 0x44324233),
-    (BToD0, BToD0TagSignature, 0x42324430),
-    (BToD1, BToD1TagSignature, 0x42324431),
-    (BToD2, BToD2TagSignature, 0x42324432),
-    (BToD3, BToD3TagSignature, 0x42324433),
-    (Gamut, GamutTagSignature, 0x67616D74),
-    (GamutBoundaryDescription0, GamutBoundaryDescription0TagSignature, 0x67626430),
-    (GamutBoundaryDescription1, GamutBoundaryDescription1TagSignature, 0x67626431),
-    (GamutBoundaryDescription2, GamutBoundaryDescription2TagSignature, 0x67626432),
-    (GamutBoundaryDescription3, GamutBoundaryDescription3TagSignature, 0x67626433),
-    (GrayTRC, GrayTRCTagSignature, 0x6B545243),
-    (GreenMatrixColumn, GreenMatrixColumnTagSignature, 0x6758595A),
-    (GreenTRC, GreenTRCTagSignature, 0x67545243),
-    (Luminance, LuminanceTagSignature, 0x6C756D69),
-    (MaterialDefaultValues, MaterialDefaultValuesTagSignature, 0x6D647620),
-    (MaterialDataArray, MaterialDataArrayTagSignature, 0x6D637461),
-    (MToA0, MToA0TagSignature, 0x4D324130),
-    (MToB0, MToB0TagSignature, 0x4D324230),
-    (MToB1, MToB1TagSignature, 0x4D324231),
-    (MToB2, MToB2TagSignature, 0x4D324232),
-    (MToB3, MToB3TagSignature, 0x4D324233),
-    (MToS0, MToS0TagSignature, 0x4D325330),
-    (MToS1, MToS1TagSignature, 0x4D325331),
-    (MToS2, MToS2TagSignature, 0x4D325332),
-    (MToS3, MToS3TagSignature, 0x4D325333),
-    (Measurement, MeasurementTagSignature, 0x6D656173),
-    (MediaBlackPoint, MediaBlackPointTagSignature, 0x626B7074),
-    (MediaWhitePoint, MediaWhitePointTagSignature, 0x77747074),
-    (MetaData, MetaDataTagSignature, 0x6D657461),
-    (NamedColor, NamedColorTagSignature, 0x6E636F6C),
-    (NamedColorV5, NamedColorV5TagSignature, 0x6E6D636C),
-    (NamedColor2, NamedColor2TagSignature, 0x6E636C32),
-    (OutputResponse, OutputResponseTagSignature, 0x72657370),
-    (PerceptualRenderingIntentGamut, PerceptualRenderingIntentGamutTagSignature, 0x72696730),
-    (Preview0, Preview0TagSignature, 0x70726530),
-    (Preview1, Preview1TagSignature, 0x70726531),
-    (Preview2, Preview2TagSignature, 0x70726532),
-    (PrintCondition, PrintConditionTagSignature, 0x7074636E),
-    (ProfileDescription, ProfileDescriptionTagSignature, 0x64657363),
-    (ProfileSequenceDesc, ProfileSequenceDescTagSignature, 0x70736571),
-    (ProfileSequceId, ProfileSequceIdTagSignature, 0x70736964),
-    (Ps2CRD0, Ps2CRD0TagSignature, 0x70736430),
-    (Ps2CRD1, Ps2CRD1TagSignature, 0x70736431),
-    (Ps2CRD2, Ps2CRD2TagSignature, 0x70736432),
-    (Ps2CRD3, Ps2CRD3TagSignature, 0x70736433),
-    (Ps2CSA, Ps2CSATagSignature, 0x70733273),
-    (Ps2RenderingIntent, Ps2RenderingIntentTagSignature, 0x70733269),
-    (RedMatrixColumn, RedMatrixColumnTagSignature, 0x7258595A),
-    (RedTRC, RedTRCTagSignature, 0x72545243),
-    (ReferenceName, ReferenceNameTagSignature, 0x72666E6D),
-    (SaturationRenderingIntentGamut, SaturationRenderingIntentGamutTagSignature, 0x72696732),
-    (ScreeningDesc, ScreeningDescTagSignature, 0x73637264),
-    (Screening, ScreeningTagSignature, 0x7363726E),
-    (SpectralDataInfo, SpectralDataInfoTagSignature, 0x7364696E),
-    (SpectralWhitePoint, SpectralWhitePointTagSignature, 0x73777074),
-    (SpectralViewingConditions, SpectralViewingConditionsTagSignature, 0x7376636E),
-    (StandardToCustomPcc, StandardToCustomPccTagSignature, 0x73326370),
-    (SurfaceMap, SurfaceMapTagSignature, 0x736D6170),
-    (Technology, TechnologyTagSignature, 0x74656368),
-    (UcrBg, UcrBgTagSignature, 0x62666420),
-    (ViewingCondDesc, ViewingCondDescTagSignature, 0x76756564),
-    (ViewingConditions, ViewingConditionsTagSignature, 0x76696577),
-    (EmbeddedV5Profile, EmbeddedV5ProfileTagSignature, 0x49434335),
-    (MakeAndModel, MakeAndModelTagSignature, 0x6D6D6F64),
-    (MultilocalizedDescriptionString, MultilocalizedDescriptionStringTagSignature, 0x6473636D),
-    (NativeDisplayInfo, NativeDisplayInfoTagSignature, 0x6E64696E),
-    (Vcgt, VcgtTagSignature, 0x76636774),
-    (Vcgp, VcgpTagSignature, 0x76636770),
-    (AbsToRelTransSpace, AbsToRelTransSpaceTagSignature, 0x61727473),
+    (AToB0, AToB0Tag, AToB0, 0x41324230),
+    (AToB1, AToB1Tag, AToB1, 0x41324231),
+    (AToB2, AToB2Tag, AToB2, 0x41324232),
+    (
+        BlueMatrixColumn,
+        BlueMatrixColumnTag,
+        BlueMatrixColumn,
+        0x6258595A
+    ),
+    (BlueTRC, BlueTRCTag, BlueTRC, 0x62545243),
+    (BToA0, BToA0Tag, BToA0, 0x42324130),
+    (BToA1, BToA1Tag, BToA1, 0x42324131),
+    (BToA2, BToA2Tag, BToA2, 0x42324132),
+    (BToD0, BToD0Tag, BToD0, 0x42324430),
+    (BToD1, BToD1Tag, BToD1, 0x42324431),
+    (BToD2, BToD2Tag, BToD2, 0x42324432),
+    (BToD3, BToD3Tag, BToD3, 0x42324433),
+    (
+        CalibrationDateTime,
+        CalibrationDateTimeTag,
+        CalibrationDateTime,
+        0x63616C74
+    ),
+    (CharTarget, CharTargetTag, CharTarget, 0x74617267),
+    (
+        ChromaticAdaptation,
+        ChromaticAdaptationTag,
+        ChromaticAdaptation,
+        0x63686164
+    ),
+    (Chromaticity, ChromaticityTag, Chromaticity, 0x6368726D),
+    (Cicp, CicpTag, Cicp, 0x63696370), // v4.0 to enable HDR metadata
+    (ColorantOrder, ColorantOrderTag, ColorantOrder, 0x636C726F),
+    (ColorantTable, ColorantTableTag, ColorantTable, 0x636C7274),
+    (
+        ColorantTableOut,
+        ColorantTableOutTag,
+        ColorantTableOut,
+        0x636C6F74
+    ),
+    (
+        ColorimetricIntentImageState,
+        ColorimetricIntentImageStateTag,
+        ColorimetricIntentImageState,
+        0x63696973
+    ),
+    (Copyright, CopyrightTag, Copyright, 0x63707274),
+    (DeviceMfgDesc, DeviceMfgDescTag, DeviceMfgDesc, 0x646D6E64),
+    (
+        DeviceModelDesc,
+        DeviceModelDescTag,
+        DeviceModelDesc,
+        0x646D6464
+    ),
+    (DToB0, DToB0Tag, DToB0, 0x44324230),
+    (DToB1, DToB1Tag, DToB1, 0x44324231),
+    (DToB2, DToB2Tag, DToB2, 0x44324232),
+    (DToB3, DToB3Tag, DToB3, 0x44324233),
+    (Gamut, GamutTag, Gamut, 0x67616D74),
+    (GrayTRC, GrayTRCTag, GrayTRC, 0x6B545243),
+    (
+        GreenMatrixColumn,
+        GreenMatrixColumnTag,
+        GreenMatrixColumn,
+        0x6758595A
+    ),
+    (GreenTRC, GreenTRCTag, GreenTRC, 0x67545243),
+    (Luminance, LuminanceTag, Luminance, 0x6C756D69),
+    (Measurement, MeasurementTag, Measurement, 0x6D656173),
+    (Metadata, MetadataTag, Metadata, 0x6D657461), // v4.4
+    (
+        MediaBlackPoint,
+        MediaBlackPointTag,
+        MediaBlackPoint,
+        0x626B7074
+    ),
+    (
+        MediaWhitePoint,
+        MediaWhitePointTag,
+        MediaWhitePoint,
+        0x77747074
+    ),
+    (NamedColor, NamedColorTag, NamedColor, 0x6E636F6C),
+    (NamedColor2, NamedColor2Tag, NamedColor2, 0x6E636C32),
+    (
+        OutputResponse,
+        OutputResponseTag,
+        OutputResponse,
+        0x72657370
+    ),
+    (
+        PerceptualRenderingIntentGamut,
+        PerceptualRenderingIntentGamutTag,
+        PerceptualRenderingIntentGamut,
+        0x72696730
+    ),
+    (Preview0, Preview0Tag, Preview0, 0x70726530),
+    (Preview1, Preview1Tag, Preview1, 0x70726531),
+    (Preview2, Preview2Tag, Preview2, 0x70726532),
+    (
+        ProfileDescription,
+        ProfileDescriptionTag,
+        ProfileDescription,
+        0x64657363
+    ),
+    (
+        ProfileSequenceDesc,
+        ProfileSequenceDescTag,
+        ProfileSequenceDesc,
+        0x70736571
+    ),
+    (
+        ProfileSeqeunceIdentifier,
+        ProfileSeqeunceIdendtifierTag,
+        ProfileSequenceIdendtifier,
+        0x70736964
+    ),
+    (
+        RedMatrixColumn,
+        RedMatrixColumnTag,
+        RedMatrixColumn,
+        0x7258595A
+    ),
+    (RedTRC, RedTRCTag, RedTRC, 0x72545243),
+    (ReferenceName, ReferenceNameTag, ReferenceName, 0x72666E6D),
+    (Technology, TechnologyTag, Technology, 0x74656368),
+    (
+        ViewingCondDesc,
+        ViewingCondDescTag,
+        ViewingCondDesc,
+        0x76756564
+    ),
+    (
+        ViewingConditions,
+        ViewingConditionsTag,
+        ViewingConditions,
+        0x76696577
+    ),
+    (
+        NativeDisplayInfo,
+        NativeDisplayInfoTag,
+        NativeDisplayInfo,
+        0x6E64696E
+    ),
+    (Vcgt, VcgtTag, Vcgt, 0x76636774),
+    (Vcgp, VcgpTag, Vcgp, 0x76636770),
+    // V5-only tags
+    #[cfg(feature = "v5")]
+    (AToB3, AToB3Tag, AToB3, 0x41324233),
+    #[cfg(feature = "v5")]
+    (AToM0, AToM0Tag, AToM0, 0x41324D30),
+    #[cfg(feature = "v5")]
+    (
+        BrdfColorimetricParameter0,
+        BrdfColorimetricParameter0Tag,
+        BrdfColorimetricParameter0,
+        0x62637030
+    ),
+    #[cfg(feature = "v5")]
+    (
+        BrdfColorimetricParameter1,
+        BrdfColorimetricParameter1Tag,
+        BrdfColorimetricParameter1,
+        0x62637031
+    ),
+    #[cfg(feature = "v5")]
+    (
+        BrdfColorimetricParameter2,
+        BrdfColorimetricParameter2Tag,
+        BrdfColorimetricParameter2,
+        0x62637032
+    ),
+    #[cfg(feature = "v5")]
+    (
+        BrdfColorimetricParameter3,
+        BrdfColorimetricParameter3Tag,
+        BrdfColorimetricParameter3,
+        0x62637033
+    ),
+    #[cfg(feature = "v5")]
+    (
+        BrdfSpectralParameter0,
+        BrdfSpectralParameter0Tag,
+        BrdfSpectralParameter0,
+        0x62737030
+    ),
+    #[cfg(feature = "v5")]
+    (
+        BrdfSpectralParameter1,
+        BrdfSpectralParameter1Tag,
+        BrdfSpectralParameter1,
+        0x62737031
+    ),
+    #[cfg(feature = "v5")]
+    (
+        BrdfSpectralParameter2,
+        BrdfSpectralParameter2Tag,
+        BrdfSpectralParameter2,
+        0x62737032
+    ),
+    #[cfg(feature = "v5")]
+    (
+        BrdfSpectralParameter3,
+        BrdfSpectralParameter3Tag,
+        BrdfSpectralParameter3,
+        0x62737033
+    ),
+    #[cfg(feature = "v5")]
+    (BRDFAToB0, BRDFAToB0Tag, BRDFAToB0, 0x62414230),
+    #[cfg(feature = "v5")]
+    (BRDFAToB1, BRDFAToB1Tag, BRDFAToB1, 0x62414231),
+    #[cfg(feature = "v5")]
+    (BRDFAToB2, BRDFAToB2Tag, BRDFAToB2, 0x62414232),
+    #[cfg(feature = "v5")]
+    (BRDFAToB3, BRDFAToB3Tag, BRDFAToB3, 0x62414233),
+    #[cfg(feature = "v5")]
+    (BRDFDToB0, BRDFDToB0Tag, BRDFDToB0, 0x62444230),
+    #[cfg(feature = "v5")]
+    (BRDFDToB1, BRDFDToB1Tag, BRDFDToB1, 0x62444231),
+    #[cfg(feature = "v5")]
+    (BRDFDToB2, BRDFDToB2Tag, BRDFDToB2, 0x62444232),
+    #[cfg(feature = "v5")]
+    (BRDFDToB3, BRDFDToB3Tag, BRDFDToB3, 0x62444233),
+    #[cfg(feature = "v5")]
+    (BRDFMToB0, BRDFMToB0Tag, BRDFMToB0, 0x624D4230),
+    #[cfg(feature = "v5")]
+    (BRDFMToB1, BRDFMToB1Tag, BRDFMToB1, 0x624D4231),
+    #[cfg(feature = "v5")]
+    (BRDFMToB2, BRDFMToB2Tag, BRDFMToB2, 0x624D4232),
+    #[cfg(feature = "v5")]
+    (BRDFMToB3, BRDFMToB3Tag, BRDFMToB3, 0x624D4233),
+    #[cfg(feature = "v5")]
+    (BRDFMToS0, BRDFMToS0Tag, BRDFMToS0, 0x624D5330),
+    #[cfg(feature = "v5")]
+    (BRDFMToS1, BRDFMToS1Tag, BRDFMToS1, 0x624D5331),
+    #[cfg(feature = "v5")]
+    (BRDFMToS2, BRDFMToS2Tag, BRDFMToS2, 0x624D5332),
+    #[cfg(feature = "v5")]
+    (BRDFMToS3, BRDFMToS3Tag, BRDFMToS3, 0x624D5333),
+    #[cfg(feature = "v5")]
+    (BToA3, BToA3Tag, BToA3, 0x42324133),
+    #[cfg(feature = "v5")]
+    (
+        ColorEncodingParams,
+        ColorEncodingParamsTag,
+        ColorEncodingParams,
+        0x63657074
+    ),
+    #[cfg(feature = "v5")]
+    (
+        ColorSpaceName,
+        ColorSpaceNameTag,
+        ColorSpaceName,
+        0x63736E6D
+    ),
+    #[cfg(feature = "v5")]
+    (ColorantInfo, ColorantInfoTag, ColorantInfo, 0x636C696E),
+    #[cfg(feature = "v5")]
+    (
+        ColorantInfoOut,
+        ColorantInfoOutTag,
+        ColorantInfoOut,
+        0x636C696F
+    ),
+    #[cfg(feature = "v5")]
+    (
+        ColorantOrderOut,
+        ColorantOrderOutTag,
+        ColorantOrderOut,
+        0x636C6F6F
+    ),
+    #[cfg(feature = "v5")]
+    (CrdInfo, CrdInfoTag, CrdInfo, 0x63726469),
+    #[cfg(feature = "v5")]
+    (
+        CustomToStandardPcc,
+        CustomToStandardPccTag,
+        CustomToStandardPcc,
+        0x63327370
+    ),
+    #[cfg(feature = "v5")]
+    (CxF, CxFTag, CxF, 0x43784620),
+    #[cfg(feature = "v5")]
+    (Data, DataTag, Data, 0x64617461),
+    #[cfg(feature = "v5")]
+    (DateTime, DateTimeTag, DateTime, 0x6474696D),
+    #[cfg(feature = "v5")]
+    (
+        DeviceMediaWhitePoint,
+        DeviceMediaWhitePointTag,
+        DeviceMediaWhitePoint,
+        0x646D7770
+    ),
+    #[cfg(feature = "v5")]
+    (
+        DeviceSettings,
+        DeviceSettingsTag,
+        DeviceSettings,
+        0x64657673
+    ),
+    #[cfg(feature = "v5")]
+    (
+        GamutBoundaryDescription0,
+        GamutBoundaryDescription0Tag,
+        GamutBoundaryDescription0,
+        0x67626430
+    ),
+    #[cfg(feature = "v5")]
+    (
+        GamutBoundaryDescription1,
+        GamutBoundaryDescription1Tag,
+        GamutBoundaryDescription1,
+        0x67626431
+    ),
+    #[cfg(feature = "v5")]
+    (
+        GamutBoundaryDescription2,
+        GamutBoundaryDescription2Tag,
+        GamutBoundaryDescription2,
+        0x67626432
+    ),
+    #[cfg(feature = "v5")]
+    (
+        GamutBoundaryDescription3,
+        GamutBoundaryDescription3Tag,
+        GamutBoundaryDescription3,
+        0x67626433
+    ),
+    #[cfg(feature = "v5")]
+    (
+        MaterialDefaultValues,
+        MaterialDefaultValuesTag,
+        MaterialDefaultValues,
+        0x6D647620
+    ),
+    #[cfg(feature = "v5")]
+    (
+        MaterialDataArray,
+        MaterialDataArrayTag,
+        MaterialDataArray,
+        0x6D637461
+    ),
+    #[cfg(feature = "v5")]
+    (MToA0, MToA0Tag, MToA0, 0x4D324130),
+    #[cfg(feature = "v5")]
+    (MToB0, MToB0Tag, MToB0, 0x4D324230),
+    #[cfg(feature = "v5")]
+    (MToB1, MToB1Tag, MToB1, 0x4D324231),
+    #[cfg(feature = "v5")]
+    (MToB2, MToB2Tag, MToB2, 0x4D324232),
+    #[cfg(feature = "v5")]
+    (MToB3, MToB3Tag, MToB3, 0x4D324233),
+    #[cfg(feature = "v5")]
+    (MToS0, MToS0Tag, MToS0, 0x4D325330),
+    #[cfg(feature = "v5")]
+    (MToS1, MToS1Tag, MToS1, 0x4D325331),
+    #[cfg(feature = "v5")]
+    (MToS2, MToS2Tag, MToS2, 0x4D325332),
+    #[cfg(feature = "v5")]
+    (MToS3, MToS3Tag, MToS3, 0x4D325333),
+    #[cfg(feature = "v5")]
+    (NamedColorV5, NamedColorV5Tag, NamedColorV5, 0x6E6D636C),
+    #[cfg(feature = "v5")]
+    (
+        PrintCondition,
+        PrintConditionTag,
+        PrintCondition,
+        0x7074636E
+    ),
+    #[cfg(feature = "v5")]
+    (Ps2CRD0, Ps2CRD0Tag, Ps2CRD0, 0x70736430),
+    #[cfg(feature = "v5")]
+    (Ps2CRD1, Ps2CRD1Tag, Ps2CRD1, 0x70736431),
+    #[cfg(feature = "v5")]
+    (Ps2CRD2, Ps2CRD2Tag, Ps2CRD2, 0x70736432),
+    #[cfg(feature = "v5")]
+    (Ps2CRD3, Ps2CRD3Tag, Ps2CRD3, 0x70736433),
+    #[cfg(feature = "v5")]
+    (Ps2CSA, Ps2CSATag, Ps2CSA, 0x70733273),
+    #[cfg(feature = "v5")]
+    (
+        Ps2RenderingIntent,
+        Ps2RenderingIntentTag,
+        Ps2RenderingIntent,
+        0x70733269
+    ),
+    #[cfg(feature = "v5")]
+    (
+        SaturationRenderingIntentGamut,
+        SaturationRenderingIntentGamutTag,
+        SaturationRenderingIntentGamut,
+        0x72696732
+    ),
+    #[cfg(feature = "v5")]
+    (ScreeningDesc, ScreeningDescTag, ScreeningDesc, 0x73637264),
+    #[cfg(feature = "v5")]
+    (Screening, ScreeningTag, Screening, 0x7363726E),
+    #[cfg(feature = "v5")]
+    (
+        SpectralDataInfo,
+        SpectralDataInfoTag,
+        SpectralDataInfo,
+        0x7364696E
+    ),
+    #[cfg(feature = "v5")]
+    (
+        SpectralWhitePoint,
+        SpectralWhitePointTag,
+        SpectralWhitePoint,
+        0x73777074
+    ),
+    #[cfg(feature = "v5")]
+    (
+        SpectralViewingConditions,
+        SpectralViewingConditionsTag,
+        SpectralViewingConditions,
+        0x7376636E
+    ),
+    #[cfg(feature = "v5")]
+    (
+        StandardToCustomPcc,
+        StandardToCustomPccTag,
+        StandardToCustomPcc,
+        0x73326370
+    ),
+    #[cfg(feature = "v5")]
+    (SurfaceMap, SurfaceMapTag, SurfaceMap, 0x736D6170),
+    #[cfg(feature = "v5")]
+    (UcrBg, UcrBgTag, UcrBg, 0x62666420),
+    #[cfg(feature = "v5")]
+    (MakeAndModel, MakeAndModelTag, MakeAndModel, 0x6D6D6F64),
+    #[cfg(feature = "v5")]
+    (
+        EmbeddedV5Profile,
+        EmbeddedV5ProfileTag,
+        EmbeddedV5Profile,
+        0x49434335
+    ),
 );

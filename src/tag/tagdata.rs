@@ -33,62 +33,71 @@ use crate::error::ParseError;
 #[repr(u32)]
 pub enum DataSignature {
     UndefinedData = 0x00000000,
-    ChromaticityData = 0x6368726D,              /* 'chrm' */
-    CicpData = 0x63696370,                      /* 'cicp' */
-    ColorantOrderData = 0x636C726F,             /* 'clro' */
-    ColorantTableData = 0x636C7274,             /* 'clrt' */
-    CrdInfoData = 0x63726469,                   /* 'crdi' Removed in V4 */
-    CurveData = 0x63757276,                     /* 'curv' */
-    DataData = 0x64617461,                      /* 'data' */
-    DictData = 0x64696374,                      /* 'dict' */
-    DateTimeData = 0x6474696D,                  /* 'dtim' */
-    DeviceSettingsData = 0x64657673,            /* 'devs' Removed in V4 */
-    EmbeddedHeightImageData = 0x6568696D,       /* 'ehim' */
-    EmbeddedNormalImageData = 0x656e696d,       /* 'enim' */
-    Float16ArrayData = 0x666c3136,              /* 'fl16' */
-    Float32ArrayData = 0x666c3332,              /* 'fl32' */
-    Float64ArrayData = 0x666c3634,              /* 'fl64' */
-    GamutBoundaryDescData = 0x67626420,         /* 'gbd ' */
-    Lut16Data = 0x6d667432,                     /* 'mft2' */
-    Lut8Data = 0x6d667431,                      /* 'mft1' */
-    LutAtoBData = 0x6d414220,                   /* 'mAB ' */
-    LutBtoAData = 0x6d424120,                   /* 'mBA ' */
-    MeasurementData = 0x6D656173,               /* 'meas' */
-    MakeAndModelData = 0x6d6d6f64,              /* 'mmod' Apple Make and Model */
-    MultiLocalizedUnicodeData = 0x6D6C7563,     /* 'mluc' */
-    MultiProcessElementData = 0x6D706574,       /* 'mpet' */
-    NamedColor2Data = 0x6E636C32,               /* 'ncl2' use v2-v4*/
-    NativeDisplayInfoData = 0x6e64696e,         /* 'ndin' Apple Private Signature*/
-    ParametricCurveData = 0x70617261,           /* 'para' */
-    ProfileSequenceDescData = 0x70736571,       /* 'pseq' */
-    ProfileSequceIdData = 0x70736964,           /* 'psid' */
-    ResponseCurveSet16Data = 0x72637332,        /* 'rcs2' */
-    S15Fixed16ArrayData = 0x73663332,           /* 'sf32' */
-    ScreeningData = 0x7363726E,                 /* 'scrn' Removed in V4 */
-    SegmentedCurveData = 0x63757266,            /* 'curf' */
-    SignatureData = 0x73696720,                 /* 'sig ' */
-    SparseMatrixArrayData = 0x736D6174,         /* 'smat' */
+    ChromaticityData = 0x6368726D,   /* 'chrm' */
+    CicpData = 0x63696370,           /* 'cicp' */
+    ColorantOrderData = 0x636C726F,  /* 'clro' */
+    ColorantTableData = 0x636C7274,  /* 'clrt' */
+    CrdInfoData = 0x63726469,        /* 'crdi' Removed in V4 */
+    CurveData = 0x63757276,          /* 'curv' */
+    DataData = 0x64617461,           /* 'data' */
+    DictData = 0x64696374,           /* 'dict' */
+    DateTimeData = 0x6474696D,       /* 'dtim' */
+    DeviceSettingsData = 0x64657673, /* 'devs' Removed in V4 */
+    #[cfg(feature = "v5")]
+    EmbeddedHeightImageData = 0x6568696D, /* 'ehim' */
+    #[cfg(feature = "v5")]
+    EmbeddedNormalImageData = 0x656e696d, /* 'enim' */
+    Float16ArrayData = 0x666c3136,   /* 'fl16' */
+    Float32ArrayData = 0x666c3332,   /* 'fl32' */
+    Float64ArrayData = 0x666c3634,   /* 'fl64' */
+    #[cfg(feature = "v5")]
+    GamutBoundaryDescData = 0x67626420, /* 'gbd ' */
+    Lut16Data = 0x6d667432,          /* 'mft2' */
+    Lut8Data = 0x6d667431,           /* 'mft1' */
+    LutAtoBData = 0x6d414220,        /* 'mAB ' */
+    LutBtoAData = 0x6d424120,        /* 'mBA ' */
+    MeasurementData = 0x6D656173,    /* 'meas' */
+    MakeAndModelData = 0x6d6d6f64,   /* 'mmod' Apple Make and Model */
+    MultiLocalizedUnicodeData = 0x6D6C7563, /* 'mluc' */
+    MultiProcessElementData = 0x6D706574, /* 'mpet' */
+    NamedColor2Data = 0x6E636C32,    /* 'ncl2' use v2-v4*/
+    NativeDisplayInfoData = 0x6e64696e, /* 'ndin' Apple Private Signature*/
+    ParametricCurveData = 0x70617261, /* 'para' */
+    ProfileSequenceDescData = 0x70736571, /* 'pseq' */
+    ProfileSequceIdData = 0x70736964, /* 'psid' */
+    ResponseCurveSet16Data = 0x72637332, /* 'rcs2' */
+    S15Fixed16ArrayData = 0x73663332, /* 'sf32' */
+    ScreeningData = 0x7363726E,      /* 'scrn' Removed in V4 */
+    SegmentedCurveData = 0x63757266, /* 'curf' */
+    SignatureData = 0x73696720,      /* 'sig ' */
+    #[cfg(feature = "v5")]
+    SparseMatrixArrayData = 0x736D6174, /* 'smat' */
+    #[cfg(feature = "v5")]
     SpectralViewingConditionsData = 0x7376636e, /* 'svcn' */
-    SpectralDataInfoData = 0x7364696e,          /* 'sdin' */
-    TagArrayData = 0x74617279,                  /* 'tary' */
-    TagStructData = 0x74737472,                 /* 'tstr' */
-    TextData = 0x74657874,                      /* 'text' */
-    TextDescriptionData = 0x64657363,           /* 'desc' Removed in V4 */
-    U16Fixed16ArrayData = 0x75663332,           /* 'uf32' */
-    UcrBgData = 0x62666420,                     /* 'bfd ' Removed in V4 */
-    UInt16ArrayData = 0x75693136,               /* 'ui16' */
-    UInt32ArrayData = 0x75693332,               /* 'ui32' */
-    UInt64ArrayData = 0x75693634,               /* 'ui64' */
-    UInt8ArrayData = 0x75693038,                /* 'ui08' */
-    ViewingConditionsData = 0x76696577,         /* 'view' */
-    VcgpData = 0x76636770, /* 'vcgp' not icc, defacto standard, used for tag and type */
-    VcgtData = 0x76636774, /* 'vcgt' not icc, defacto standard, used for tag and type */
-    Utf8TextData = 0x75746638, /* 'utf8' */
-    Utf16TextData = 0x75743136, /* 'ut16' */
+    #[cfg(feature = "v5")]
+    SpectralDataInfoData = 0x7364696e, /* 'sdin' */
+    #[cfg(feature = "v5")]
+    TagArrayData = 0x74617279, /* 'tary' */
+    #[cfg(feature = "v5")]
+    TagStructData = 0x74737472, /* 'tstr' */
+    TextData = 0x74657874,           /* 'text' */
+    TextDescriptionData = 0x64657363, /* 'desc' Removed in V4 */
+    U16Fixed16ArrayData = 0x75663332, /* 'uf32' */
+    UcrBgData = 0x62666420,          /* 'bfd ' Removed in V4 */
+    UInt16ArrayData = 0x75693136,    /* 'ui16' */
+    UInt32ArrayData = 0x75693332,    /* 'ui32' */
+    UInt64ArrayData = 0x75693634,    /* 'ui64' */
+    UInt8ArrayData = 0x75693038,     /* 'ui08' */
+    ViewingConditionsData = 0x76696577, /* 'view' */
+    VcgpData = 0x76636770,           /* 'vcgp' not icc, defacto standard, used for tag and type */
+    VcgtData = 0x76636774,           /* 'vcgt' not icc, defacto standard, used for tag and type */
+    Utf8TextData = 0x75746638,       /* 'utf8' */
+    Utf16TextData = 0x75743136,      /* 'ut16' */
     /* XYZData                      = 0x58595A20, // 'XYZ ' Name changed to XYZArrayData */
-    XYZArrayData = 0x58595A20,        /* 'XYZ ' */
-    ZipUtf8TextData = 0x7a757438,     /* 'zut8' */
-    ZipXmlData = 0x5a584d4c,          /* 'ZXML' */
+    XYZArrayData = 0x58595A20,    /* 'XYZ ' */
+    ZipUtf8TextData = 0x7a757438, /* 'zut8' */
+    ZipXmlData = 0x5a584d4c,      /* 'ZXML' */
+    #[cfg(feature = "v5")]
     EmbeddedProfileData = 0x49434370, /* 'ICCp' */
     Unknown(u32),
 }
@@ -106,11 +115,14 @@ impl DataSignature {
             0x64696374 => Self::DictData,
             0x6474696D => Self::DateTimeData,
             0x64657673 => Self::DeviceSettingsData,
+            #[cfg(feature = "v5")]
             0x6568696D => Self::EmbeddedHeightImageData,
+            #[cfg(feature = "v5")]
             0x656E696D => Self::EmbeddedNormalImageData,
             0x666C3136 => Self::Float16ArrayData,
             0x666C3332 => Self::Float32ArrayData,
             0x666C3634 => Self::Float64ArrayData,
+            #[cfg(feature = "v5")]
             0x67626420 => Self::GamutBoundaryDescData,
             0x6D667432 => Self::Lut16Data,
             0x6D667431 => Self::Lut8Data,
@@ -130,10 +142,15 @@ impl DataSignature {
             0x7363726E => Self::ScreeningData,
             0x63757266 => Self::SegmentedCurveData,
             0x73696720 => Self::SignatureData,
+            #[cfg(feature = "v5")]
             0x736D6174 => Self::SparseMatrixArrayData,
+            #[cfg(feature = "v5")]
             0x7376636E => Self::SpectralViewingConditionsData,
+            #[cfg(feature = "v5")]
             0x7364696E => Self::SpectralDataInfoData,
+            #[cfg(feature = "v5")]
             0x74617279 => Self::TagArrayData,
+            #[cfg(feature = "v5")]
             0x74737472 => Self::TagStructData,
             0x74657874 => Self::TextData,
             0x64657363 => Self::TextDescriptionData,
@@ -151,6 +168,7 @@ impl DataSignature {
             0x58595A20 => Self::XYZArrayData,
             0x7A757438 => Self::ZipUtf8TextData,
             0x5A584D4C => Self::ZipXmlData,
+            #[cfg(feature = "v5")]
             0x49434370 => Self::EmbeddedProfileData,
             _ => Self::Unknown(value),
         }
@@ -169,11 +187,14 @@ impl DataSignature {
             DataSignature::DictData => 0x64696374,
             DataSignature::DateTimeData => 0x6474696D,
             DataSignature::DeviceSettingsData => 0x64657673,
+            #[cfg(feature = "v5")]
             DataSignature::EmbeddedHeightImageData => 0x6568696D,
+            #[cfg(feature = "v5")]
             DataSignature::EmbeddedNormalImageData => 0x656e696d,
             DataSignature::Float16ArrayData => 0x666c3136,
             DataSignature::Float32ArrayData => 0x666c3332,
             DataSignature::Float64ArrayData => 0x666c3634,
+            #[cfg(feature = "v5")]
             DataSignature::GamutBoundaryDescData => 0x67626420,
             DataSignature::Lut16Data => 0x6d667432,
             DataSignature::Lut8Data => 0x6d667431,
@@ -193,10 +214,15 @@ impl DataSignature {
             DataSignature::ScreeningData => 0x7363726E,
             DataSignature::SegmentedCurveData => 0x63757266,
             DataSignature::SignatureData => 0x73696720,
+            #[cfg(feature = "v5")]
             DataSignature::SparseMatrixArrayData => 0x736D6174,
+            #[cfg(feature = "v5")]
             DataSignature::SpectralViewingConditionsData => 0x7376636e,
+            #[cfg(feature = "v5")]
             DataSignature::SpectralDataInfoData => 0x7364696e,
+            #[cfg(feature = "v5")]
             DataSignature::TagArrayData => 0x74617279,
+            #[cfg(feature = "v5")]
             DataSignature::TagStructData => 0x74737472,
             DataSignature::TextData => 0x74657874,
             DataSignature::TextDescriptionData => 0x64657363,
@@ -214,6 +240,7 @@ impl DataSignature {
             DataSignature::XYZArrayData => 0x58595A20,
             DataSignature::ZipUtf8TextData => 0x7a757438,
             DataSignature::ZipXmlData => 0x5a584d4c,
+            #[cfg(feature = "v5")]
             DataSignature::EmbeddedProfileData => 0x49434370,
             DataSignature::Unknown(v) => v,
         }
@@ -289,114 +316,73 @@ use super::TagDataTraits;
 /// as they provide a safe, ergonomic, and idiomatic Rust API for accessing the data
 /// within a `TagData` enum variant.
 macro_rules! define_datatags {
-    ($($name:ident),+ $(,)?) => {
+    ( $( $(#[$meta:meta])? $name:ident ),+ $(,)? ) => {
         paste! {
             $(
-                // Define the `TagData` types, which are, at this point, just wrappers
-                // around `Vec<u8>`, the raw data for each tag, and the core of the
-                // internal representation in this libray.
-                // Examples of these are `CurveData`, `XYZData`, etc.
+                $(#[$meta])?
                 #[derive(Debug, Serialize, Clone, PartialEq)]
                 pub struct [< $name Data >](pub Vec<u8>);
 
-                // Implement the `TagDataTraits` for each tag type.
-                // As these are just wrappers around `Vec<u8>`, the implementation
-                // is straightforward: we can convert them to bytes, slice them,
-                // and pad them to a specific size.
+                $(#[$meta])?
                 impl TagDataTraits for [< $name Data >] {
-                    fn into_bytes(self) -> Vec<u8> {
-                        self.0
-                    }
-                    fn as_slice(&self) -> &[u8] {
-                        &self.0
-                    }
+                    fn into_bytes(self) -> Vec<u8> { self.0 }
+                    fn as_slice(&self) -> &[u8] { &self.0 }
                     fn pad(&mut self, size: usize) {
-                        if self.0.len() < size {
-                            self.0.resize(size, 0);
-                        }
+                        if self.0.len() < size { self.0.resize(size, 0); }
                     }
                 }
 
+                $(#[$meta])?
                 impl Default for [< $name Data >] {
-                    fn default() -> Self {
-                       Self(Vec::new())
-                    }
+                    fn default() -> Self { Self(Vec::new()) }
                 }
             )+
 
-            // All the tag types are now defined, we can create the main `TagData` enum
-            // which will encapsulate all the tag types defined above.
-            // This enum will have a variant for each tag type, allowing us to
-            // represent any tag in the ICC profile as a single type.
             #[derive(Debug, Serialize, Clone, PartialEq)]
             pub enum TagData {
-                $($name([< $name Data >])),+
+                $(
+                    $(#[$meta])?
+                    $name([< $name Data >])
+                ),+
             }
 
-            // The `TagDataTraits` trait s also be implemented for the `TagData` enum,
-            // implemented by direct dispatching to the appropriate variant's
-            // implementation of `TagDataTraits`. This allows us to treat `TagData` as a
-            // single type that can be converted to bytes, sliced, and padded,
-            // regardless of which specific tag type it contains.
             impl TagDataTraits for TagData {
                 fn into_bytes(self) -> Vec<u8> {
                     match self {
-                        $(Self::$name(t) => t.into_bytes()),+
+                        $(
+                            $(#[$meta])?
+                            Self::$name(t) => t.into_bytes()
+                        ),+
                     }
                 }
                 fn as_slice(&self) -> &[u8] {
                     match self {
-                        $(Self::$name(t) => t.as_slice()),+
+                        $(
+                            $(#[$meta])?
+                            Self::$name(t) => t.as_slice()
+                        ),+
                     }
                 }
                 fn pad(&mut self, size: usize) {
                     match self {
-                        $(Self::$name(t) => t.pad(size)),+
+                        $(
+                            $(#[$meta])?
+                            Self::$name(t) => t.pad(size)
+                        ),+
                     }
                 }
             }
 
             impl TagData {
                 $(
-                    // Returns a reference to the inner struct if the variant matches.
-                    //
-                    // Example:
-                    // ```
-                    // // Construct a Curve tag and query it with the generated helper.
-                    // let tag = crate::tags::TagData::Curve(crate::tags::CurveData(vec![]));
-                    // assert!(tag.as_curve().is_some());
-                    // // Querying for a different variant returns None.
-                    // assert!(tag.as_xyz().is_none());
-                    // ```
+                    $(#[$meta])?
                     pub fn [< as_ $name:snake >](&self) -> Option<&[< $name Data >]> {
-                        if let Self::$name(v) = self {
-                            Some(v)
-                        } else {
-                            None
-                        }
+                        if let Self::$name(v) = self { Some(v) } else { None }
                     }
 
-                    // Returns a mutable reference to the inner struct if the variant matches.
-                    //
-                    // Example (for mutable access):
-                    // ```
-                    // // Construct a Curve tag.
-                    // let mut tag = crate::tags::TagData::Curve(crate::tags::CurveData(vec![1, 2, 3]));
-                    //
-                    // // Get a mutable reference and modify the data.
-                    // if let Some(curve) = tag.as_curve_mut() {
-                    //     curve.0.push(4);
-                    // }
-                    //
-                    // // Verify the change.
-                    // assert_eq!(tag.as_slice(), &[1, 2, 3, 4]);
-                    // ```
+                    $(#[$meta])?
                     pub fn [< as_ $name:snake _mut >](&mut self) -> Option<&mut [< $name Data >]> {
-                        if let Self::$name(v) = self {
-                            Some(v)
-                        } else {
-                            None
-                        }
+                        if let Self::$name(v) = self { Some(v) } else { None }
                     }
                 )+
             }
@@ -411,40 +397,29 @@ macro_rules! define_datatags {
 // Change to TagDatas
 define_datatags!(
     Raw,
-    CrdInfo,
-    Cicp,
     Chromaticity,
+    Cicp,
     ColorantOrder,
     ColorantTable,
     Curve,
     Data,
     DateTime,
     Dict,
-    EmbeddedHeigthImage,
-    EmbeddedNormalImage,
-    Float16Array,
-    Float32Array,
-    Float64Array,
-    GamutBoundaryDescription,
     Lut8,
     Lut16,
     LutAToB,
     LutBToA,
     Measurement,
-    MakeAndModel,
     MultiLocalizedUnicode,
     MultiProcessElements,
-    NativeDisplayInfo,
+    NativeDisplayInfo, // proprietary Apple tag
     NamedColor2,
     ParametricCurve,
     ProfileSequenceDesc,
-    ProfileSequenceId,
+    ProfileSequenceIdentifier,
+    // ResponseCurveSet16, // deprecated in V4
     S15Fixed16Array,
     Signature,
-    SparseMatrixArray,
-    SpectralViewingConditions,
-    TagStruct,
-    //   Technology,
     Text,
     TextDescription,
     U16Fixed16Array,
@@ -453,14 +428,40 @@ define_datatags!(
     UInt32Array,
     UInt64Array,
     Utf8Text,
-    Utf16Text,
-    ZipUtf8Text,
-    ZipXmlData,
+    Utf16Text,   // V2
+    ZipUtf8Text, // V2
     Vcgt,
     Vcgp,
     ViewingConditions,
     XYZArray,
+    // v5-only TagData
+    #[cfg(feature = "v5")]
     EmbeddedProfile,
+    #[cfg(feature = "v5")]
+    EmbeddedHeigthImage,
+    #[cfg(feature = "v5")]
+    EmbeddedNormalImage,
+    #[cfg(feature = "v5")]
+    Float16Array,
+    #[cfg(feature = "v5")]
+    Float32Array,
+    #[cfg(feature = "v5")]
+    Float64Array,
+    #[cfg(feature = "v5")]
+    GamutBoundaryDescription,
+    #[cfg(feature = "v5")]
+    SparseMatrixArray,
+    #[cfg(feature = "v5")]
+    SpectralViewingConditions,
+    #[cfg(feature = "v5")]
+    SpectralDataInfo,
+    #[cfg(feature = "v5")]
+    TagArray,
+    #[cfg(feature = "v5")]
+    TagStruct,
+    #[cfg(feature = "v5")]
+    ZipXmlData,
+    MakeAndModel,
 );
 
 impl TagData {
@@ -469,7 +470,7 @@ impl TagData {
         let data_signature = DataSignature::from(data_sig_bytes);
 
         match data_signature {
-            DataSignature::CrdInfoData => Self::CrdInfo(CrdInfoData(data)),
+            //  DataSignature::CrdInfoData => Self::CrdInfo(CrdInfoData(data)),
             DataSignature::CicpData => Self::Cicp(CicpData(data)),
             DataSignature::ChromaticityData => Self::Chromaticity(ChromaticityData(data)),
             DataSignature::ColorantOrderData => Self::ColorantOrder(ColorantOrderData(data)),
@@ -478,15 +479,21 @@ impl TagData {
             DataSignature::DataData => Self::Data(DataData(data)),
             DataSignature::DateTimeData => Self::DateTime(DateTimeData(data)),
             DataSignature::DictData => Self::Dict(DictData(data)),
+            #[cfg(feature = "v5")]
             DataSignature::EmbeddedHeightImageData => {
                 Self::EmbeddedHeigthImage(EmbeddedHeigthImageData(data))
             }
+            #[cfg(feature = "v5")]
             DataSignature::EmbeddedNormalImageData => {
                 Self::EmbeddedNormalImage(EmbeddedNormalImageData(data))
             }
+            #[cfg(feature = "v5")]
             DataSignature::Float16ArrayData => Self::Float16Array(Float16ArrayData(data)),
+            #[cfg(feature = "v5")]
             DataSignature::Float32ArrayData => Self::Float32Array(Float32ArrayData(data)),
+            #[cfg(feature = "v5")]
             DataSignature::Float64ArrayData => Self::Float64Array(Float64ArrayData(data)),
+            #[cfg(feature = "v5")]
             DataSignature::GamutBoundaryDescData => {
                 Self::GamutBoundaryDescription(GamutBoundaryDescriptionData(data))
             }
@@ -508,16 +515,25 @@ impl TagData {
                 Self::ProfileSequenceDesc(ProfileSequenceDescData(data))
             }
             DataSignature::ProfileSequceIdData => {
-                Self::ProfileSequenceId(ProfileSequenceIdData(data))
+                Self::ProfileSequenceIdentifier(ProfileSequenceIdentifierData(data))
             }
             DataSignature::S15Fixed16ArrayData => Self::S15Fixed16Array(S15Fixed16ArrayData(data)),
             DataSignature::SignatureData => Self::Signature(SignatureData(data)),
+            #[cfg(feature = "v5")]
             DataSignature::SparseMatrixArrayData => {
                 Self::SparseMatrixArray(SparseMatrixArrayData(data))
             }
+            #[cfg(feature = "v5")]
             DataSignature::SpectralViewingConditionsData => {
                 Self::SpectralViewingConditions(SpectralViewingConditionsData(data))
             }
+            #[cfg(feature = "v5")]
+            DataSignature::SpectralDataInfoData => {
+                Self::SpectralDataInfo(SpectralDataInfoData(data))
+            }
+            #[cfg(feature = "v5")]
+            DataSignature::TagArrayData => Self::TagArray(TagArrayData(data)),
+            #[cfg(feature = "v5")]
             DataSignature::TagStructData => Self::TagStruct(TagStructData(data)),
             DataSignature::TextData => Self::Text(TextData(data)),
             DataSignature::TextDescriptionData => Self::TextDescription(TextDescriptionData(data)),
@@ -535,6 +551,8 @@ impl TagData {
                 Self::ViewingConditions(ViewingConditionsData(data))
             }
             DataSignature::XYZArrayData => Self::XYZArray(XYZArrayData(data)),
+            #[cfg(feature = "v5")]
+            DataSignature::EmbeddedProfileData => Self::EmbeddedProfile(EmbeddedProfileData(data)),
             // If the type signature is not recognized, we return a Raw tag.
             _ => Self::Raw(RawData(data)),
         }

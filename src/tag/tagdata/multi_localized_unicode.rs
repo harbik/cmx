@@ -46,9 +46,7 @@ impl MultiLocalizedUnicodeData {
         let n = header.number_of_records.get() as usize;
         let record_size = header.record_size.get() as usize;
         let table_end = 16 + n * record_size;
-        let table =
-            RecordsLayout::try_ref_from_bytes(&self.0[16..table_end])
-                .unwrap();
+        let table = RecordsLayout::try_ref_from_bytes(&self.0[16..table_end]).unwrap();
         let mut entries = Vec::with_capacity(n);
         for r in &table.records {
             let lang_code_bytes = r.language.get().to_be_bytes();

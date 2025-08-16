@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
-#! [allow(unused)]
+#![allow(unused)]
 
 use crate::{
     profile::RawProfile,
@@ -14,22 +14,21 @@ pub trait IsTextDescriptionTag {}
 pub trait IsMultiLocalizedUnicodeTag {}
 
 pub trait IsCurveTag {}
-impl IsCurveTag for crate::tag::tags::BlueTRC {}
-impl IsCurveTag for crate::tag::tags::GreenTRC {}
-impl IsCurveTag for crate::tag::tags::RedTRC {}
-impl IsCurveTag for crate::tag::tags::GrayTRC {}
+impl IsCurveTag for crate::tag::tags::BlueTRCTag {}
+impl IsCurveTag for crate::tag::tags::GreenTRCTag {}
+impl IsCurveTag for crate::tag::tags::RedTRCTag {}
+impl IsCurveTag for crate::tag::tags::GrayTRCTag {}
 
 pub trait IsParametricCurveTag {}
-impl IsParametricCurveTag for crate::tag::tags::BlueTRC {}
-impl IsParametricCurveTag for crate::tag::tags::GreenTRC {}
-impl IsParametricCurveTag for crate::tag::tags::RedTRC {}
-impl IsParametricCurveTag for crate::tag::tags::GrayTRC {}
+impl IsParametricCurveTag for crate::tag::tags::BlueTRCTag {}
+impl IsParametricCurveTag for crate::tag::tags::GreenTRCTag {}
+impl IsParametricCurveTag for crate::tag::tags::RedTRCTag {}
+impl IsParametricCurveTag for crate::tag::tags::GrayTRCTag {}
 
 pub trait IsLut8DataTag {}
 pub trait IsLut16DataTag {}
 pub trait IsLutAtoBDataTag {}
 pub trait IsLutBtoADataTag {}
-
 
 /*
 Allows for a ergonomic way to set tag data in a `RawProfile`.
@@ -63,12 +62,12 @@ let mut profile = RawProfile::new()
 /// It is generic over the signature type `S` to enable compile-time checks.
 pub struct TagSetter<'a, S: 'a> {
     profile: &'a mut RawProfile,
-    signature: S,
+    tag: S,
 }
 
 impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
-    pub fn new(profile: &'a mut RawProfile, signature: S) -> Self {
-        Self { profile, signature }
+    pub fn new(profile: &'a mut RawProfile, tag: S) -> Self {
+        Self { profile, tag }
     }
 
     /// Sets the tag's data as a `CurveData`.
@@ -78,7 +77,7 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
         S: IsCurveTag,
         F: FnOnce(&mut CurveData),
     {
-        let curve = self.profile.ensure_curve_mut(self.signature.into());
+        let curve = self.profile.ensure_curve_mut(self.tag.into());
         configure(curve);
         self.profile
     }
@@ -88,7 +87,7 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
         S: IsParametricCurveTag,
         F: FnOnce(&mut ParametricCurveData),
     {
-        let para_curve = self.profile.ensure_parametric_curve_mut(self.signature.into());
+        let para_curve = self.profile.ensure_parametric_curve_mut(self.tag.into());
         configure(para_curve);
         self.profile
     }
@@ -131,7 +130,6 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
 
  */
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -142,19 +140,19 @@ mod tests {
         let mut profile = InputProfile::new();
 
         profile
-            .with_tag(RedTRC)
+            .with_tag(RedTRCTag)
             .as_curve(|curve| {
                 curve.set_gamma(2.2);
             })
-            .with_tag(GreenTRC)
+            .with_tag(GreenTRCTag)
             .as_curve(|curve| {
                 curve.set_gamma(2.2);
             })
-            .with_tag(BlueTRC)
+            .with_tag(BlueTRCTag)
             .as_curve(|curve| {
                 curve.set_gamma(2.2);
             })
-            .with_tag(GrayTRC)
+            .with_tag(GrayTRCTag)
             .as_parametric_curve(|para_curve| {
                 para_curve.set_parameters([0.5]);
             });
@@ -163,5 +161,3 @@ mod tests {
         // Further assertions can be added to verify the profile state.
     }
 }
-
-

@@ -38,3 +38,9 @@ impl SpectralProfile {
         )
     }
 }
+
+impl Default for SpectralProfile {
+    fn default() -> Self {
+        Self::new()
+    }
+}

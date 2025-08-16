@@ -37,3 +37,9 @@ impl ColorSpaceProfile {
         )
     }
 }
+
+impl Default for ColorSpaceProfile {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -37,7 +37,7 @@ pub struct RawProfile {
     #[serde(with = "serde_arrays")]
     pub header: [u8; 128], // 128 bytes
     pub tags: IndexMap<TagSignature, ProfileTagRecord>, // preserves insertion order
-    pub padding: usize,                         // number of padding bytes found in a profile read
+    pub padding: usize, // number of padding bytes found in a profile read
 }
 
 impl Default for RawProfile {
@@ -120,7 +120,7 @@ impl RawProfile {
                     offset: *offset,
                     size: *size,
                     // this needs to be e.g. Tag(Tagvalue(TagData::Raw(data)))
-                  //  tag: Tag::parse(*signature, data),
+                    //  tag: Tag::parse(*signature, data),
                     tag: Tag::new(signature.to_u32(), TagData::new(data)),
                 },
             );
