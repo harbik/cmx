@@ -3,13 +3,53 @@
 
 //! This module provides a type-safe builder API for constructing ICC profiles.
 //!
-//! The core of the API is the `Profile::` method, which returns a `TagSetter`.
+//! The core of the API is the `Profile::with_tag` method, which returns a `TagSetter`.
 //! This `TagSetter` uses a system of "capability traits" to ensure that only valid
 //! data types can be associated with a given `TagSignature` at compile time.
 
 use crate::{
     profile::{RawProfile, TagSetter}, tag::TagSignature,
 };
+
+// Kind markers and trait to unify ensure/get/get_mut for TagData variants
+pub trait TagDataKind {
+    type Data: Default;
+    fn as_ref(td: &crate::tag::tagdata::TagData) -> Option<&Self::Data>;
+    fn as_mut(td: &mut crate::tag::tagdata::TagData) -> Option<&mut Self::Data>;
+    fn wrap(data: Self::Data) -> crate::tag::tagdata::TagData;
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct CurveKind;
+
+impl TagDataKind for CurveKind {
+    type Data = crate::tag::tagdata::CurveData;
+    fn as_ref(td: &crate::tag::tagdata::TagData) -> Option<&Self::Data> {
+        if let crate::tag::tagdata::TagData::Curve(c) = td { Some(c) } else { None }
+    }
+    fn as_mut(td: &mut crate::tag::tagdata::TagData) -> Option<&mut Self::Data> {
+        if let crate::tag::tagdata::TagData::Curve(c) = td { Some(c) } else { None }
+    }
+    fn wrap(data: Self::Data) -> crate::tag::tagdata::TagData {
+        crate::tag::tagdata::TagData::Curve(data)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ParametricCurveKind;
+
+impl TagDataKind for ParametricCurveKind {
+    type Data = crate::tag::tagdata::ParametricCurveData;
+    fn as_ref(td: &crate::tag::tagdata::TagData) -> Option<&Self::Data> {
+        if let crate::tag::tagdata::TagData::ParametricCurve(c) = td { Some(c) } else { None }
+    }
+    fn as_mut(td: &mut crate::tag::tagdata::TagData) -> Option<&mut Self::Data> {
+        if let crate::tag::tagdata::TagData::ParametricCurve(c) = td { Some(c) } else { None }
+    }
+    fn wrap(data: Self::Data) -> crate::tag::tagdata::TagData {
+        crate::tag::tagdata::TagData::ParametricCurve(data)
+    }
+}
 
 impl RawProfile {
     pub fn with_tag<S: Into<TagSignature> + Copy>(
@@ -18,153 +58,82 @@ impl RawProfile {
     ) -> TagSetter<'_, S> {
         TagSetter::new(self, signature) 
     }
-}
 
-/*
-//! This module provides a type-safe builder API for constructing ICC profiles.
-//!
-//! The core of the API is the `Profile::with_tag` method, which returns a `TagSetter`.
-//! This `TagSetter` uses a system of "capability traits" to ensure that only valid
-//! data types can be associated with a given `TagSignature` at compile time.
+    /// Get a shared reference to the TagData for a signature.
+    pub fn tag_data<S: Into<TagSignature>>(&self, signature: S) -> Option<&crate::tag::tagdata::TagData> {
+        let sig = signature.into();
+        self.tags.get(&sig).map(|rec| rec.tag.data())
+    }
 
-use crate::profile::Profile;
-use crate::signatures::{tag, TagSignature};
-use crate::tags::{
-    CurveData, MultiLocalizedUnicodeData, TagData, TextDescriptionData,
-    // ... import other tag data types as you need them ...
-};
+    /// Get a mutable reference to the TagData for a signature.
+    pub fn tag_data_mut<S: Into<TagSignature>>(&mut self, signature: S) -> Option<&mut crate::tag::tagdata::TagData> {
+        let sig = signature.into();
+        self.tags.get_mut(&sig).map(|rec| rec.tag.data_mut())
+    }
 
-// --------------------------------------------------------------------------------
-// STEP 1: Define "Capability" Marker Traits
-// These traits identify what a TagSignature is allowed to contain.
-// --------------------------------------------------------------------------------
-
-/// A marker trait for signatures that can be a `curveData`.
-pub trait IsCurveTag {}
-
-/// A marker trait for signatures that can be a `textDescriptionData`.
-pub trait IsTextDescriptionTag {}
-
-/// A marker trait for signatures that can be a `multiLocalizedUnicodeData`.
-pub trait IsMultiLocalizedUnicodeTag {}
-
-// ... define other marker traits for each possible data type ...
-
-// --------------------------------------------------------------------------------
-// STEP 2: Define the `UnambiguousTag` Trait for Ergonomics
-// This trait is for tags that have only ONE valid data type.
-// --------------------------------------------------------------------------------
-
-/// A trait for tag signatures that have only one valid data type.
-pub trait UnambiguousTag {
-    /// The single data type associated with this tag signature.
-    type DataData: Default;
-
-    /// A function to create the correct `TagData` enum variant from the data.
-    fn new_tag(data: Self::DataData) -> TagData;
-}
-
-/// A helper macro to reduce boilerplate when implementing `UnambiguousTag`.
-macro_rules! impl_unambiguous_tag {
-    // Takes the tag constant, its data type, and the corresponding TagData enum variant.
-    ($tag_const:path, $data_type:ty, $tag_variant:ident) => {
-        impl UnambiguousTag for $tag_const {
-            type DataData = $data_type;
-            fn new_tag(data: Self::DataData) -> TagData {
-                TagData::$tag_variant(data)
+    /// Generic: get or insert a specific TagData kind and return a mutable reference.
+    pub fn ensure_tag_mut<K, S>(&mut self, signature: S) -> &mut K::Data
+    where
+        K: TagDataKind,
+        S: Into<TagSignature> + Copy,
+    {
+        let sig = signature.into();
+        let rec = match self.tags.entry(sig) {
+            indexmap::map::Entry::Occupied(o) => o.into_mut(),
+            indexmap::map::Entry::Vacant(v) => {
+                let tag = crate::tag::Tag::new(sig.to_u32(), K::wrap(Default::default()));
+                v.insert(crate::tag::ProfileTagRecord::new(0, 0, tag))
             }
+        };
+
+        if K::as_ref(rec.tag.data()).is_none() {
+            rec.tag = crate::tag::Tag::new(sig.to_u32(), K::wrap(Default::default()));
         }
-    };
-}
 
-// --------------------------------------------------------------------------------
-// STEP 3: Implement the Traits for Known TagData Signatures
-// This is where you encode the ICC specification rules into the type system.
-// --------------------------------------------------------------------------------
+        K::as_mut(rec.tag.data_mut()).expect("ensured kind must be present")
+    }
 
-// --- Implementations for Unambiguous Tags ---
-// impl_unambiguous_tag!(tag::RedTRC, CurveData, Curve);
-// impl_unambiguous_tag!(tag::GreenTRC, CurveData, Curve);
-// impl_unambiguous_tag!(tag::BlueTRC, CurveData, Curve);
-// impl_unambiguous_tag!(tag::Copyright, TextDescriptionData, TextDescription);
-// ... etc.
+    /// Convenience: get CurveData if present for this signature.
+    pub fn curve<S: Into<TagSignature>>(&self, signature: S) -> Option<&crate::tag::tagdata::CurveData> {
+        self.tag_data(signature).and_then(|td| {
+            if let crate::tag::tagdata::TagData::Curve(c) = td { Some(c) } else { None }
+        })
+    }
 
-// --- Implementations for Ambiguous Tags ---
-// The 'desc' tag can be either of these two types.
-// impl IsTextDescriptionTag for tag::Desc {}
-// impl IsMultiLocalizedUnicodeTag for tag::Desc {}
+    /// Convenience: get mutable CurveData if present for this signature.
+    pub fn curve_mut<S: Into<TagSignature>>(&mut self, signature: S) -> Option<&mut crate::tag::tagdata::CurveData> {
+        self.tag_data_mut(signature).and_then(|td| {
+            if let crate::tag::tagdata::TagData::Curve(c) = td { Some(c) } else { None }
+        })
+    }
 
-// The 'rTRC' tag can only be a curve.
-// impl IsCurveTag for tag::RedTRC {}
-// ... etc.
+    /// Get or insert a CurveData for a signature and return a mutable reference.
+    pub fn ensure_curve_mut<S: Into<TagSignature> + Copy>(
+        &mut self,
+        signature: S,
+    ) -> &mut crate::tag::tagdata::CurveData {
+        self.ensure_tag_mut::<CurveKind, _>(signature)
+    }
 
-// --------------------------------------------------------------------------------
-// STEP 4: The Generic `TagSetter` Struct
-// This struct provides the type-safe methods for setting tag data.
-// --------------------------------------------------------------------------------
+    /// Convenience: get ParametricCurveData if present for this signature.
+    pub fn parametric_curve<S: Into<TagSignature>>(&self, signature: S) -> Option<&crate::tag::tagdata::ParametricCurveData> {
+        self.tag_data(signature).and_then(|td| {
+            if let crate::tag::tagdata::TagData::ParametricCurve(c) = td { Some(c) } else { None }
+        })
+    }
 
+    /// Convenience: get mutable ParametricCurveData if present for this signature.
+    pub fn parametric_curve_mut<S: Into<TagSignature>>(&mut self, signature: S) -> Option<&mut crate::tag::tagdata::ParametricCurveData> {
+        self.tag_data_mut(signature).and_then(|td| {
+            if let crate::tag::tagdata::TagData::ParametricCurve(c) = td { Some(c) } else { None }
+        })
+    }
 
-// --------------------------------------------------------------------------------
-// STEP 5: The Entry Point in the `Profile`
-// --------------------------------------------------------------------------------
-
-impl Profile {
-    /// Begins the process of adding or replacing a tag in the profile.
-    ///
-    /// This returns a `TagSetter` helper struct, which provides type-safe methods
-    /// (e.g., `.as_curve()`, `.with_data()`) to define the tag's data.
-    pub fn with_tag<S: Into<TagSignature> + Copy>(&mut self, signature: S) -> TagSetter<'_, S> {
-        TagSetter {
-            profile: self,
-            signature,
-        }
+    /// Get or insert a ParametricCurveData for a signature and return a mutable reference.
+    pub fn ensure_parametric_curve_mut<S: Into<TagSignature> + Copy>(
+        &mut self,
+        signature: S,
+    ) -> &mut crate::tag::tagdata::ParametricCurveData {
+        self.ensure_tag_mut::<ParametricCurveKind, _>(signature)
     }
 }
-
-// --------------------------------------------------------------------------------
-// STEP 6: Usage Examples
-// --------------------------------------------------------------------------------
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-    // use crate::profile::Profile;
-    // use crate::signatures::tag;
-
-    #[test]
-    fn test_builder_api() {
-        // let mut profile = Profile::new();
-
-        // --- Example 1: Unambiguous TagData ---
-        // The compiler knows `tag::RedTRC` is an `UnambiguousTag` whose `DataData`
-        // is `CurveData`. The `.with_data()` method is available, and the closure
-        // argument `curve` is correctly inferred as `&mut CurveData`.
-        //
-        // profile.with_tag(tag::RedTRC).with_data(|curve| {
-        //     curve.set_gamma(1.8);
-        // });
-
-        // --- Example 2: Ambiguous TagData ---
-        // The compiler knows `tag::Desc` does NOT implement `UnambiguousTag`, so
-        // a call to `.with_data()` would be a compile error.
-        //
-        // Instead, the user must choose one of the valid `.as_...()` methods.
-        //
-        // profile.with_tag(tag::Desc).as_multi_localized_unicode(|mlu| {
-        //     mlu.add_text("en-US", "My Profile Description");
-        //     mlu.add_text("de-DE", "Meine Profilbeschreibung");
-        // });
-        //
-        // --- Example 3: Compile-Time Error ---
-        // This demonstrates the safety of the API. The compiler knows that
-        // `tag::RedTRC` does not implement `IsTextDescriptionTag`, so the
-        // `.as_text_description()` method is not available for it.
-        //
-        // The following line would fail to compile:
-        //
-        // profile.with_tag(tag::RedTRC).as_text_description(|text| {
-        //     text.set_ascii("This is not allowed!");
-        // });
-    }
-}
- */

@@ -1,24 +1,30 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
+#! [allow(unused)]
 
 use crate::{
     profile::RawProfile,
     tag::{
-        tagdata::CurveData, tagdata::MultiLocalizedUnicodeData, tagdata::TagData, TagSignature,
+        tagdata::{CurveData, ParametricCurveData, TagData},
+        ProfileTagRecord, Tag, TagSignature,
     },
-    tag::RawTag,
 };
 
-// Marker traits (families of allowed inner types)
-pub trait UnambiguousTagData {
-    type TagData: Default;
-    fn new_tag(data: Self::TagData) -> TagData;
-}
-pub trait UnambiguousTag: UnambiguousTagData {}
 pub trait IsTextDescriptionTag {}
 pub trait IsMultiLocalizedUnicodeTag {}
+
 pub trait IsCurveTag {}
+impl IsCurveTag for crate::tag::tags::BlueTRC {}
+impl IsCurveTag for crate::tag::tags::GreenTRC {}
+impl IsCurveTag for crate::tag::tags::RedTRC {}
+impl IsCurveTag for crate::tag::tags::GrayTRC {}
+
 pub trait IsParametricCurveTag {}
+impl IsParametricCurveTag for crate::tag::tags::BlueTRC {}
+impl IsParametricCurveTag for crate::tag::tags::GreenTRC {}
+impl IsParametricCurveTag for crate::tag::tags::RedTRC {}
+impl IsParametricCurveTag for crate::tag::tags::GrayTRC {}
+
 pub trait IsLut8DataTag {}
 pub trait IsLut16DataTag {}
 pub trait IsLutAtoBDataTag {}
@@ -65,6 +71,29 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
         Self { profile, signature }
     }
 
+    /// Sets the tag's data as a `CurveData`.
+    /// This method is only available if the signature implements `IsCurveTag`.
+    pub fn as_curve<F>(self, configure: F) -> &'a mut RawProfile
+    where
+        S: IsCurveTag,
+        F: FnOnce(&mut CurveData),
+    {
+        let curve = self.profile.ensure_curve_mut(self.signature.into());
+        configure(curve);
+        self.profile
+    }
+
+    pub fn as_parametric_curve<F>(self, configure: F) -> &'a mut RawProfile
+    where
+        S: IsParametricCurveTag,
+        F: FnOnce(&mut ParametricCurveData),
+    {
+        let para_curve = self.profile.ensure_parametric_curve_mut(self.signature.into());
+        configure(para_curve);
+        self.profile
+    }
+}
+/*
     /// correct data type automatically.
     pub fn with_data<F>(self, configure: F) -> &'a mut RawProfile
     where
@@ -84,21 +113,6 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
         self.profile
     }
 
-    /// Sets the tag's data as a `curveData`.
-    /// This method is only available if the signature implements `IsCurveTag`.
-    pub fn as_curve<F>(self, configure: F) -> &'a mut RawProfile
-    where
-        S: IsCurveTag, // The compile-time safety check!
-        F: FnOnce(&mut CurveData),
-    {
-        let mut curve = CurveData::default();
-        configure(&mut curve);
-        let curve_tag = TagData::Curve(curve);
-        self.profile
-            .tags
-            .insert(self.signature.into(), RawTag::new(0, 0, curve_tag));
-        self.profile
-    }
 
     pub fn as_multi_localized_unicode<F>(self, configure: F) -> &'a mut RawProfile
     where
@@ -114,3 +128,40 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
         self.profile // Return a mutable reference to the profile itself
     }
 }
+
+ */
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::profile::InputProfile;
+    use crate::tag::tags::*;
+    #[test]
+    fn test_tag_setter() -> Result<(), Box<dyn std::error::Error>> {
+        let mut profile = InputProfile::new();
+
+        profile
+            .with_tag(RedTRC)
+            .as_curve(|curve| {
+                curve.set_gamma(2.2);
+            })
+            .with_tag(GreenTRC)
+            .as_curve(|curve| {
+                curve.set_gamma(2.2);
+            })
+            .with_tag(BlueTRC)
+            .as_curve(|curve| {
+                curve.set_gamma(2.2);
+            })
+            .with_tag(GrayTRC)
+            .as_parametric_curve(|para_curve| {
+                para_curve.set_parameters([0.5]);
+            });
+
+        Ok(())
+        // Further assertions can be added to verify the profile state.
+    }
+}
+
+

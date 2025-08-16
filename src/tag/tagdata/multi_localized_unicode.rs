@@ -26,7 +26,7 @@ struct MultiLocalizedUnicodeRecord {
 
 #[derive(TryFromBytes, IntoBytes, KnownLayout, Immutable, Unaligned)]
 #[repr(C, packed)]
-struct MultiLocalizedUnicodeHeaderLayout {
+struct HeaderLayout {
     type_signature: U32<BigEndian>,
     reserved: [u8; 4],
     number_of_records: U32<BigEndian>,
@@ -34,7 +34,7 @@ struct MultiLocalizedUnicodeHeaderLayout {
 }
 #[derive(TryFromBytes, IntoBytes, KnownLayout, Immutable, Unaligned)]
 #[repr(C, packed)]
-struct MultiLocalizedUnicodeRecordsTableLayout {
+struct RecordsLayout {
     records: [MultiLocalizedUnicodeRecord],
 }
 
@@ -42,12 +42,12 @@ struct MultiLocalizedUnicodeRecordsTableLayout {
 
 impl MultiLocalizedUnicodeData {
     pub fn entries(&self) -> Vec<MultiLocalizedUnicodeEntry> {
-        let header = MultiLocalizedUnicodeHeaderLayout::try_ref_from_bytes(&self.0[..16]).unwrap();
+        let header = HeaderLayout::try_ref_from_bytes(&self.0[..16]).unwrap();
         let n = header.number_of_records.get() as usize;
         let record_size = header.record_size.get() as usize;
         let table_end = 16 + n * record_size;
         let table =
-            MultiLocalizedUnicodeRecordsTableLayout::try_ref_from_bytes(&self.0[16..table_end])
+            RecordsLayout::try_ref_from_bytes(&self.0[16..table_end])
                 .unwrap();
         let mut entries = Vec::with_capacity(n);
         for r in &table.records {
@@ -78,8 +78,8 @@ impl MultiLocalizedUnicodeData {
     }
 
     #[allow(dead_code)]
-    fn try_mut_from_bytes(&mut self) -> &mut MultiLocalizedUnicodeHeaderLayout {
-        MultiLocalizedUnicodeHeaderLayout::try_mut_from_bytes(&mut self.0).unwrap()
+    fn try_mut_from_bytes(&mut self) -> &mut HeaderLayout {
+        HeaderLayout::try_mut_from_bytes(&mut self.0).unwrap()
     }
 }
 

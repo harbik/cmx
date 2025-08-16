@@ -35,12 +35,9 @@ pub use spectral_profile::SpectralProfile;
 /// delegates methods from the RawProfile to all Profiles.
 mod delegate;
 
-// TODO
- /*
- mod with_tag;
+mod with_tag;
 mod tag_setter;
 pub use tag_setter::TagSetter;
-  */
 
 mod checksum;
 use crate::{header::Header, tag::ParsedTag};
@@ -75,6 +72,7 @@ impl Profile {
         }
     }
 }
+
 
 /// A serde-friendly TOML façade for an ICC profile.
 ///

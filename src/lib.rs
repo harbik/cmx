@@ -55,14 +55,7 @@ use num::Zero;
 
 /// Rounds a floating-point value to the specified precision.
 /// For example, round_to_precision(1.23456, 100.0) returns 1.23.
-///
-/// # Arguments
-/// * `value` - The value to round.
-/// * `precision` - The precision
-///
-/// # Returns
-/// The rounded value.
-fn round_to_precision(value: f64, precision: i32) -> f64 {
+pub(crate) fn round_to_precision(value: f64, precision: i32) -> f64 {
     let multiplier = 10f64.powi(precision);
     (value * multiplier).round() / multiplier
 }
