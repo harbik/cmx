@@ -11,21 +11,42 @@ fn serialize_flags_as_hex<S>(flags: &u32, serializer: S) -> Result<S::Ok, S::Err
 where
     S: serde::Serializer,
 {
-    // Skip serialization if flags is 0
-    if *flags == 0 {
-        return serializer.serialize_none();
-    }
-
-    // Format with spaces every 4 bytes (8 hex digits)
+    // skip_serializing_if handles zero; just format as "HHHH HHHH"
     let hex = format!("{flags:08X}");
-    let formatted = if hex.len() > 4 {
-        // Insert space after first 4 characters
-        format!("{} {}", &hex[..4], &hex[4..])
-    } else {
-        hex
-    };
-
+    let formatted = format!("{} {}", &hex[..4], &hex[4..]);
     serializer.serialize_str(&formatted)
+}
+
+// Helpers to keep decoding logic readable
+#[inline]
+fn decode_pcs_lab16(pcs: [U16<BigEndian>; 3]) -> [f64; 3] {
+    let mut l = pcs[0].get() as f64;
+    let mut a = pcs[1].get() as f64;
+    let mut b = pcs[2].get() as f64;
+
+    // ICC Lab16: L* in [0..100], a*/b* in [-128..127]
+    l = round_to_precision(l * 100.0 / 65535.0, 2);
+    a = round_to_precision(a * 255.0 / 65535.0 - 128.0, 2);
+    b = round_to_precision(b * 255.0 / 65535.0 - 128.0, 2);
+    [l, a, b]
+}
+
+#[inline]
+fn decode_pcs_xyz16(pcs: [U16<BigEndian>; 3]) -> [f64; 3] {
+    // ICC u1.15 fixed: [0, 1.99997]
+    [
+        crate::u1_fixed15_number(pcs[0].get()),
+        crate::u1_fixed15_number(pcs[1].get()),
+        crate::u1_fixed15_number(pcs[2].get()),
+    ]
+}
+
+#[inline]
+fn decode_device_u16(dev: &[U16<BigEndian>]) -> Vec<f64> {
+    // Normalize device coords to [0,1]
+    dev.iter()
+        .map(|d| round_to_precision(d.get() as f64 / 65535.0, 5))
+        .collect()
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq)]
@@ -66,16 +87,19 @@ impl From<&NamedColor2Data> for NamedColor2Type {
         let n = header.count.get() as usize;
         let m = header.dim.get() as usize;
         let flags = header.flags.get();
-        let lab = flags & 0x1_0000 != 0; // Check if the PCS Flag is set
+
+        // Bit 16 indicates PCS is Lab in many vendors' ncl2; keep this behavior
+        let pcs_is_lab = flags & 0x0001_0000 != 0;
+
         let prefix = String::from_utf8_lossy(&header.prefix)
             .trim_end_matches('\0')
             .to_string();
         let suffix = String::from_utf8_lossy(&header.suffix)
             .trim_end_matches('\0')
             .to_string();
+
         let mut colors = BTreeMap::new();
         for _ in 0..n {
-            // Use correct element count (m) and advance the buffer for each entry
             let (entry, rest) = EntryLayout::try_ref_from_prefix_with_elems(data, m)
                 .expect("NamedColor2 entry parse error");
             data = rest;
@@ -84,27 +108,22 @@ impl From<&NamedColor2Data> for NamedColor2Type {
                 .trim_end_matches('\0')
                 .to_string();
             let key = format!("{prefix}{root}{suffix}");
-            let pcs = if lab {
-                let mut lab = entry.pcs.map(|c| c.get() as f64);
-                lab[0] = round_to_precision(lab[0] * 100.0 / 65535.0, 2); // Scale L
-                lab[1] = round_to_precision(lab[1] / 65535.0 * 200.0 - 100.0, 2); // Scale a
-                lab[2] = round_to_precision(lab[2] / 65535.0 * 200.0 - 100.0, 2); // Scale a
-                lab
+
+            let pcs = if pcs_is_lab {
+                decode_pcs_lab16(entry.pcs)
             } else {
-                entry.pcs.map(|c| crate::u1_fixed15_number(c.get()))
+                decode_pcs_xyz16(entry.pcs)
             };
-            let device_data: Vec<f64> = if m == 0 {
+
+            let device_data = if m == 0 {
                 Vec::new()
             } else {
-                entry
-                    .device
-                    .iter()
-                    .map(|d| round_to_precision(d.get() as f64 / 65536.0, 5))
-                    .collect()
+                decode_device_u16(&entry.device)
             };
-            let value = (pcs, device_data);
-            colors.insert(key, value);
+
+            colors.insert(key, (pcs, device_data));
         }
+
         Self { flags, colors }
     }
 }

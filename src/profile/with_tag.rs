@@ -20,75 +20,68 @@ pub trait TagDataKind {
     fn wrap(data: Self::Data) -> crate::tag::tagdata::TagData;
 }
 
-#[derive(Debug, Clone, Copy, Default)]
-pub struct CurveKind;
-
-impl TagDataKind for CurveKind {
-    type Data = crate::tag::tagdata::CurveData;
-    fn as_ref(td: &crate::tag::tagdata::TagData) -> Option<&Self::Data> {
-        if let crate::tag::tagdata::TagData::Curve(c) = td {
-            Some(c)
-        } else {
-            None
+// Macro to declare a Kind marker + TagDataKind impl in one go
+macro_rules! tag_kind {
+    ($kind:ident, $variant:ident, $data:path) => {
+        #[derive(Debug, Clone, Copy, Default)]
+        pub struct $kind;
+        impl TagDataKind for $kind {
+            type Data = $data;
+            fn as_ref(td: &crate::tag::tagdata::TagData) -> Option<&Self::Data> {
+                if let crate::tag::tagdata::TagData::$variant(c) = td {
+                    Some(c)
+                } else {
+                    None
+                }
+            }
+            fn as_mut(td: &mut crate::tag::tagdata::TagData) -> Option<&mut Self::Data> {
+                if let crate::tag::tagdata::TagData::$variant(c) = td {
+                    Some(c)
+                } else {
+                    None
+                }
+            }
+            fn wrap(data: Self::Data) -> crate::tag::tagdata::TagData {
+                crate::tag::tagdata::TagData::$variant(data)
+            }
         }
-    }
-    fn as_mut(td: &mut crate::tag::tagdata::TagData) -> Option<&mut Self::Data> {
-        if let crate::tag::tagdata::TagData::Curve(c) = td {
-            Some(c)
-        } else {
-            None
-        }
-    }
-    fn wrap(data: Self::Data) -> crate::tag::tagdata::TagData {
-        crate::tag::tagdata::TagData::Curve(data)
-    }
+    };
 }
 
-#[derive(Debug, Clone, Copy, Default)]
-pub struct ParametricCurveKind;
+// Replace the manual marker structs/impls
+tag_kind!(CurveKind, Curve, crate::tag::tagdata::CurveData);
+tag_kind!(
+    ParametricCurveKind,
+    ParametricCurve,
+    crate::tag::tagdata::ParametricCurveData
+);
+tag_kind!(SignatureKind, Signature, crate::tag::tagdata::SignatureData);
 
-impl TagDataKind for ParametricCurveKind {
-    type Data = crate::tag::tagdata::ParametricCurveData;
-    fn as_ref(td: &crate::tag::tagdata::TagData) -> Option<&Self::Data> {
-        if let crate::tag::tagdata::TagData::ParametricCurve(c) = td {
-            Some(c)
-        } else {
-            None
+// Add: macro to generate {get, get_mut, ensure_mut} accessors
+macro_rules! tag_accessors {
+    ($lower:ident, $lower_mut:ident, $ensure_mut:ident, $variant:ident, $data:path, $kind:ident) => {
+        pub fn $lower<S: Into<TagSignature>>(&self, tag: S) -> Option<&$data> {
+            self.tag_data(tag).and_then(|td| {
+                if let crate::tag::tagdata::TagData::$variant(c) = td {
+                    Some(c)
+                } else {
+                    None
+                }
+            })
         }
-    }
-    fn as_mut(td: &mut crate::tag::tagdata::TagData) -> Option<&mut Self::Data> {
-        if let crate::tag::tagdata::TagData::ParametricCurve(c) = td {
-            Some(c)
-        } else {
-            None
+        pub fn $lower_mut<S: Into<TagSignature>>(&mut self, tag: S) -> Option<&mut $data> {
+            self.tag_data_mut(tag).and_then(|td| {
+                if let crate::tag::tagdata::TagData::$variant(c) = td {
+                    Some(c)
+                } else {
+                    None
+                }
+            })
         }
-    }
-    fn wrap(data: Self::Data) -> crate::tag::tagdata::TagData {
-        crate::tag::tagdata::TagData::ParametricCurve(data)
-    }
-}
-
-pub struct SignatureKind;
-
-impl TagDataKind for SignatureKind {
-    type Data = crate::tag::tagdata::SignatureData;
-    fn as_ref(td: &crate::tag::tagdata::TagData) -> Option<&Self::Data> {
-        if let crate::tag::tagdata::TagData::Signature(s) = td {
-            Some(s)
-        } else {
-            None
+        pub fn $ensure_mut<S: Into<TagSignature> + Copy>(&mut self, tag: S) -> &mut $data {
+            self.ensure_tag_mut::<$kind, _>(tag)
         }
-    }
-    fn as_mut(td: &mut crate::tag::tagdata::TagData) -> Option<&mut Self::Data> {
-        if let crate::tag::tagdata::TagData::Signature(s) = td {
-            Some(s)
-        } else {
-            None
-        }
-    }
-    fn wrap(data: Self::Data) -> crate::tag::tagdata::TagData {
-        crate::tag::tagdata::TagData::Signature(data)
-    }
+    };
 }
 
 impl RawProfile {
@@ -133,79 +126,33 @@ impl RawProfile {
         K::as_mut(rec.tag.data_mut()).expect("ensured kind must be present")
     }
 
-    /// Convenience: get CurveData if present for this signature.
-    pub fn curve<S: Into<TagSignature>>(&self, tag: S) -> Option<&crate::tag::tagdata::CurveData> {
-        self.tag_data(tag).and_then(|td| {
-            if let crate::tag::tagdata::TagData::Curve(c) = td {
-                Some(c)
-            } else {
-                None
-            }
-        })
-    }
+    // Curve
+    tag_accessors!(
+        curve,
+        curve_mut,
+        ensure_curve_mut,
+        Curve,
+        crate::tag::tagdata::CurveData,
+        CurveKind
+    );
 
-    /// Convenience: get mutable CurveData if present for this signature.
-    pub fn curve_mut<S: Into<TagSignature>>(
-        &mut self,
-        tag: S,
-    ) -> Option<&mut crate::tag::tagdata::CurveData> {
-        self.tag_data_mut(tag).and_then(|td| {
-            if let crate::tag::tagdata::TagData::Curve(c) = td {
-                Some(c)
-            } else {
-                None
-            }
-        })
-    }
+    // ParametricCurve
+    tag_accessors!(
+        parametric_curve,
+        parametric_curve_mut,
+        ensure_parametric_curve_mut,
+        ParametricCurve,
+        crate::tag::tagdata::ParametricCurveData,
+        ParametricCurveKind
+    );
 
-    /// Get or insert a CurveData for a signature and return a mutable reference.
-    pub fn ensure_curve_mut<S: Into<TagSignature> + Copy>(
-        &mut self,
-        tag: S,
-    ) -> &mut crate::tag::tagdata::CurveData {
-        self.ensure_tag_mut::<CurveKind, _>(tag)
-    }
-
-    /// Convenience: get ParametricCurveData if present for this signature.
-    pub fn parametric_curve<S: Into<TagSignature>>(
-        &self,
-        tag: S,
-    ) -> Option<&crate::tag::tagdata::ParametricCurveData> {
-        self.tag_data(tag).and_then(|td| {
-            if let crate::tag::tagdata::TagData::ParametricCurve(c) = td {
-                Some(c)
-            } else {
-                None
-            }
-        })
-    }
-
-    /// Convenience: get mutable ParametricCurveData if present for this signature.
-    pub fn parametric_curve_mut<S: Into<TagSignature>>(
-        &mut self,
-        tag: S,
-    ) -> Option<&mut crate::tag::tagdata::ParametricCurveData> {
-        self.tag_data_mut(tag).and_then(|td| {
-            if let crate::tag::tagdata::TagData::ParametricCurve(c) = td {
-                Some(c)
-            } else {
-                None
-            }
-        })
-    }
-
-    /// Get or insert a ParametricCurveData for a signature and return a mutable reference.
-    pub fn ensure_parametric_curve_mut<S: Into<TagSignature> + Copy>(
-        &mut self,
-        tag: S,
-    ) -> &mut crate::tag::tagdata::ParametricCurveData {
-        self.ensure_tag_mut::<ParametricCurveKind, _>(tag)
-    }
-
-    pub fn ensure_signature_mut<S: Into<TagSignature> + Copy>(
-        &mut self,
-        tag: S,
-    ) -> &mut crate::tag::tagdata::SignatureData {
-        self.ensure_tag_mut::<SignatureKind, _>(tag)
-    }
+    // Signature
+    tag_accessors!(
+        signature,
+        signature_mut,
+        ensure_signature_mut,
+        Signature,
+        crate::tag::tagdata::SignatureData,
+        SignatureKind
+    );
 }

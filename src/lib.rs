@@ -54,32 +54,31 @@ pub use error::Error;
 use num::Zero;
 
 /// Rounds a floating-point value to the specified precision.
-/// For example, round_to_precision(1.23456, 100.0) returns 1.23.
+/// For example, round_to_precision(1.23456, 2) returns 1.23.
 pub(crate) fn round_to_precision(value: f64, precision: i32) -> f64 {
     let multiplier = 10f64.powi(precision);
     (value * multiplier).round() / multiplier
 }
 
-// Add this helper function
-// Make the helper function generic
-fn is_zero<T: Zero>(n: &T) -> bool {
+// Make the helper function generic and visible within the crate
+pub(crate) fn is_zero<T: Zero>(n: &T) -> bool {
     n.is_zero()
 }
 
 // Add this function at module level
-fn is_empty_or_none(s: &String) -> bool {
+pub(crate) fn is_empty_or_none(s: &String) -> bool {
     s.is_empty() || s == "none"
 }
 
-fn s15fixed16(v: i32) -> f64 {
+pub(crate) fn s15fixed16(v: i32) -> f64 {
     round_to_precision(v as f64 / 65536.0, 6)
 }
-fn u1_fixed15_number(v: u16) -> f64 {
+pub(crate) fn u1_fixed15_number(v: u16) -> f64 {
     const SCALE: f64 = 0xFFFF as f64 / 0x8000 as f64;
     round_to_precision(v as f64 * SCALE, 6)
 }
 
-fn format_hex_with_spaces(data: &[u8]) -> String {
+pub(crate) fn format_hex_with_spaces(data: &[u8]) -> String {
     let hex = hex::encode(data);
 
     // Split into chunks of 8 characters and join with spaces
