@@ -5,11 +5,11 @@ use serde::Serialize;
 
 use crate::tag::{
     tagdata::{
-        chromaticity::ChromaticityType, curve::CurveType, lut8::Lut8Type,
+        chromaticity::ChromaticityType, curve::CurveType, lut16::Lut16Type, lut8::Lut8Type,
         measurement::MeasurementType, multi_localized_unicode::MultiLocalizedUnicodeType,
-        parametric_curve::ParametricCurveType, raw::UnparsedType,
-        s15fixed16array::S15Fixed16ArrayType, text::TextType,
-        text_description::TextDescriptionType, xyz::XYZArrayType,
+        named_color2::NamedColor2Type, parametric_curve::ParametricCurveType, raw::UnparsedType,
+        s15fixed16array::S15Fixed16ArrayType, signature::SignatureType, text::TextType,
+        text_description::TextDescriptionType, vcgt::VcgtType, xyz::XYZArrayType,
     },
     TagData,
 };
@@ -40,12 +40,17 @@ pub enum ParsedTag {
     Chromaticity(ChromaticityType),
     Curve(CurveType),
     Lut8(Lut8Type),
+    Lut16(Lut16Type),
     Measurement(MeasurementType),
+    NamedColor2(NamedColor2Type),
     MultiLocalizedUnicode(MultiLocalizedUnicodeType),
     ParametricCurve(ParametricCurveType),
+    Signature(SignatureType),
     S15Fixed16Array(S15Fixed16ArrayType),
     Text(TextType),
     TextDescription(TextDescriptionType),
+    Vcgt(VcgtType),
+    ViewingConditions(crate::tag::tagdata::viewing_conditions::ViewingConditionsType),
     XYZArray(XYZArrayType),
 
     // Graceful fallback for unrecognized or unsupported tags
@@ -65,12 +70,17 @@ impl From<&TagData> for ParsedTag {
             TagData::Chromaticity(chromaticity) => ParsedTag::Chromaticity(chromaticity.into()),
             TagData::Curve(curve) => ParsedTag::Curve(curve.into()),
             TagData::Lut8(lut8) => ParsedTag::Lut8(lut8.into()),
+            TagData::Lut16(lut16) => ParsedTag::Lut16(lut16.into()),
             TagData::Measurement(measurement) => ParsedTag::Measurement(measurement.into()),
             TagData::MultiLocalizedUnicode(mluc) => ParsedTag::MultiLocalizedUnicode(mluc.into()),
+            TagData::NamedColor2(named_color2) => ParsedTag::NamedColor2(named_color2.into()),
             TagData::ParametricCurve(para) => ParsedTag::ParametricCurve(para.into()),
             TagData::S15Fixed16Array(values) => ParsedTag::S15Fixed16Array(values.into()),
+            TagData::Signature(signature) => ParsedTag::Signature(signature.into()),
             TagData::Text(text) => ParsedTag::Text(text.into()),
             TagData::TextDescription(text_desc) => ParsedTag::TextDescription(text_desc.into()),
+            TagData::Vcgt(vcgt) => ParsedTag::Vcgt(vcgt.into()),
+            TagData::ViewingConditions(vc) => ParsedTag::ViewingConditions(vc.into()),
             TagData::XYZArray(xyz) => ParsedTag::XYZArray(xyz.into()),
 
             // Graceful fallback: don't panic, just emit the unparsed data

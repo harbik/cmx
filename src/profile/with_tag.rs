@@ -68,6 +68,29 @@ impl TagDataKind for ParametricCurveKind {
     }
 }
 
+pub struct SignatureKind;
+
+impl TagDataKind for SignatureKind {
+    type Data = crate::tag::tagdata::SignatureData;
+    fn as_ref(td: &crate::tag::tagdata::TagData) -> Option<&Self::Data> {
+        if let crate::tag::tagdata::TagData::Signature(s) = td {
+            Some(s)
+        } else {
+            None
+        }
+    }
+    fn as_mut(td: &mut crate::tag::tagdata::TagData) -> Option<&mut Self::Data> {
+        if let crate::tag::tagdata::TagData::Signature(s) = td {
+            Some(s)
+        } else {
+            None
+        }
+    }
+    fn wrap(data: Self::Data) -> crate::tag::tagdata::TagData {
+        crate::tag::tagdata::TagData::Signature(data)
+    }
+}
+
 impl RawProfile {
     pub fn with_tag<S: Into<TagSignature> + Copy>(&mut self, tag: S) -> TagSetter<'_, S> {
         TagSetter::new(self, tag)
@@ -177,5 +200,12 @@ impl RawProfile {
         tag: S,
     ) -> &mut crate::tag::tagdata::ParametricCurveData {
         self.ensure_tag_mut::<ParametricCurveKind, _>(tag)
+    }
+
+    pub fn ensure_signature_mut<S: Into<TagSignature> + Copy>(
+        &mut self,
+        tag: S,
+    ) -> &mut crate::tag::tagdata::SignatureData {
+        self.ensure_tag_mut::<SignatureKind, _>(tag)
     }
 }

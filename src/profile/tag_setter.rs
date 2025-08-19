@@ -25,6 +25,13 @@ impl IsParametricCurveTag for crate::tag::tags::GreenTRCTag {}
 impl IsParametricCurveTag for crate::tag::tags::RedTRCTag {}
 impl IsParametricCurveTag for crate::tag::tags::GrayTRCTag {}
 
+pub trait IsSignatureTag {}
+impl IsSignatureTag for crate::tag::tags::ColorimetricIntentImageStateTag {}
+impl IsSignatureTag for crate::tag::tags::TechnologyTag {}
+#[cfg(feature = "v5")]
+impl IsSignatureTag for crate::tag::tags::SaturationRenderingIntentGamutTag {}
+impl IsSignatureTag for crate::tag::tags::PerceptualRenderingIntentGamutTag {}
+
 pub trait IsLut8DataTag {}
 pub trait IsLut16DataTag {}
 pub trait IsLutAtoBDataTag {}
@@ -91,6 +98,16 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
         configure(para_curve);
         self.profile
     }
+
+    pub fn as_signature<F>(self, configure: F) -> &'a mut RawProfile
+    where
+        S: IsSignatureTag,
+        F: FnOnce(&mut crate::tag::tagdata::SignatureData),
+    {
+        let signature = self.profile.ensure_signature_mut(self.tag.into());
+        configure(signature);
+        self.profile
+    }
 }
 /*
     /// correct data type automatically.
@@ -153,8 +170,10 @@ mod tests {
                 curve.set_gamma(2.2);
             })
             .with_tag(GrayTRCTag)
-            .as_parametric_curve(|para_curve| {
-                para_curve.set_parameters([0.5]);
+            .as_parametric_curve(|para_curve| para_curve.set_parameters([0.5]))
+            .with_tag(TechnologyTag)
+            .as_signature(|signature| {
+                signature.set_signature("fscn");
             });
 
         Ok(())

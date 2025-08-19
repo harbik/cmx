@@ -691,10 +691,14 @@ impl RawProfile {
         self
     }
 
-    pub fn creator(&self) -> Signature {
+    pub fn creator(&self) -> Option<Signature> {
         let header = self.header();
         let c = header.creator.get();
-        Signature(c)
+        if c == 0 {
+            None
+        } else {
+            Some(Signature(c))
+        }
     }
 
     /// Returns the profile ID of the profile, which is a unique identifier for the profile.

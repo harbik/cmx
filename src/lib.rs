@@ -71,8 +71,12 @@ fn is_empty_or_none(s: &String) -> bool {
     s.is_empty() || s == "none"
 }
 
-fn from_s15fixed16(v: i32) -> f64 {
+fn s15fixed16(v: i32) -> f64 {
     round_to_precision(v as f64 / 65536.0, 6)
+}
+fn u1_fixed15_number(v: u16) -> f64 {
+    const SCALE: f64 = 0xFFFF as f64 / 0x8000 as f64;
+    round_to_precision(v as f64 * SCALE, 6)
 }
 
 fn format_hex_with_spaces(data: &[u8]) -> String {

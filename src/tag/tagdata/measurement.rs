@@ -24,35 +24,6 @@ pub enum Geometry {
     Diffuse = 0x00000002,        // 0/d or d/0
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq, FromPrimitive, ToPrimitive)]
-#[repr(u32)]
-pub enum Illuminant {
-    Unknown = 0x00000000,
-    D50 = 0x00000001,
-    D65 = 0x00000002,
-    D93 = 0x00000003,
-    F2 = 0x00000004,
-    D55 = 0x00000005,
-    A = 0x00000006,
-    EquiPowerE = 0x00000007, // Equi-Power (E)
-    F8 = 0x00000008,
-    /* The following illuminants are defined for V5 */
-    BlackBody = 0x00000009, /* defined by CCT in Spectral Viewing Conditions */
-    Daylight = 0x0000000A,  /* defiend by CCT in Spectral Viewing Conditions */
-    B = 0x0000000B,
-    C = 0x0000000C,
-    F1 = 0x0000000D,
-    F3 = 0x0000000E,
-    F4 = 0x0000000F,
-    F5 = 0x00000010,
-    F6 = 0x00000011,
-    F7 = 0x00000012,
-    F9 = 0x00000013,
-    F10 = 0x00000014,
-    F11 = 0x00000015,
-    F12 = 0x00000016,
-}
-
 #[derive(FromBytes, IntoBytes, KnownLayout, Immutable)]
 #[repr(C, packed)]
 struct Layout {
@@ -71,7 +42,7 @@ pub struct MeasurementType {
     pub xyz: Option<[f64; 3]>,
     pub geometry: Option<Geometry>,
     pub flare_pct: f64,
-    pub illuminant: Illuminant,
+    pub illuminant: super::Illuminant,
 }
 
 impl From<&MeasurementData> for MeasurementType {
@@ -101,7 +72,7 @@ impl From<&MeasurementData> for MeasurementType {
             geometry,
             flare_pct: crate::round_to_precision(layout.flare.get() as f64 * 100.0 / 65536.0, 2),
             illuminant: FromPrimitive::from_u32(layout.illuminant.get())
-                .unwrap_or(Illuminant::Unknown),
+                .unwrap_or(super::Illuminant::Unknown),
         }
     }
 }

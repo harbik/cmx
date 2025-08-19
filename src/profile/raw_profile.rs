@@ -114,13 +114,24 @@ impl RawProfile {
             let mut data = vec![0u8; *size as usize];
             cursor.read_exact(&mut data)?;
 
+            // Special handling for specific tag signatures
+            // NamedColor2 needs to know the PCS (Profile Connection Space) type, which is either XYZ or Lab.
+            // If it is Lab, we set the PCS flag in the private flag field (but 17) of the this tag.
+            if signature == &TagSignature::NamedColor2 {
+                let pcs = u32::from_be_bytes(header[20..24].try_into().unwrap()); // slice has 4 bytes
+                if pcs == 0x4C616220 {
+                    // "Lab "  {
+                    let mut flag = u32::from_be_bytes(data[8..12].try_into().unwrap()); // slice has 4 bytes
+                    flag |= 0x1_0000; // Set the PCS flag
+                    data[8..12].copy_from_slice(&flag.to_be_bytes()); // Update the flag in the data
+                }
+            }
+
             tags.insert(
                 *signature,
                 ProfileTagRecord {
                     offset: *offset,
                     size: *size,
-                    // this needs to be e.g. Tag(Tagvalue(TagData::Raw(data)))
-                    //  tag: Tag::parse(*signature, data),
                     tag: Tag::new(signature.to_u32(), TagData::new(data)),
                 },
             );

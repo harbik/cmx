@@ -37,7 +37,7 @@ impl From<&S15Fixed16ArrayData> for S15Fixed16ArrayType {
         let values: Vec<f64> = layout
             .values
             .iter()
-            .map(|v| crate::from_s15fixed16(v.get()))
+            .map(|v| crate::s15fixed16(v.get()))
             .collect();
         if values.len() == 9 {
             // If we have exactly 9 values, treat them as a matrix

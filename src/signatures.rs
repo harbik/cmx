@@ -103,3 +103,9 @@ impl From<u32> for Signature {
         Signature(value)
     }
 }
+
+impl From<Signature> for [u8; 4] {
+    fn from(sig: Signature) -> Self {
+        sig.0.to_be_bytes()
+    }
+}
