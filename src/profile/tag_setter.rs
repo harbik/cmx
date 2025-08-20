@@ -32,6 +32,15 @@ impl IsSignatureTag for crate::tag::tags::TechnologyTag {}
 impl IsSignatureTag for crate::tag::tags::SaturationRenderingIntentGamutTag {}
 impl IsSignatureTag for crate::tag::tags::PerceptualRenderingIntentGamutTag {}
 
+pub trait IsXYZArrayTag {}
+impl IsXYZArrayTag for crate::tag::tags::RedMatrixColumnTag {}
+impl IsXYZArrayTag for crate::tag::tags::GreenMatrixColumnTag {}
+impl IsXYZArrayTag for crate::tag::tags::BlueMatrixColumnTag {}
+impl IsXYZArrayTag for crate::tag::tags::LuminanceTag {}
+impl IsXYZArrayTag for crate::tag::tags::MediaWhitePointTag {}
+impl IsXYZArrayTag for crate::tag::tags::MediaBlackPointTag {}
+
+
 pub trait IsLut8DataTag {}
 pub trait IsLut16DataTag {}
 pub trait IsLutAtoBDataTag {}
@@ -108,7 +117,20 @@ impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
         configure(signature);
         self.profile
     }
+
+    pub fn as_xyz_array<F>(self, configure: F) -> &'a mut RawProfile
+    where
+        S: IsXYZArrayTag,
+        F: FnOnce(&mut crate::tag::tagdata::XYZArrayData),
+    {
+        let xyz = self.profile.ensure_xyz_array_mut(self.tag.into());
+        configure(xyz);
+        self.profile
+    }
 }
+
+
+
 /*
     /// correct data type automatically.
     pub fn with_data<F>(self, configure: F) -> &'a mut RawProfile

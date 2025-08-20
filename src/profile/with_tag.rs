@@ -12,7 +12,9 @@ use crate::{
     tag::TagSignature,
 };
 
-// Kind markers and trait to unify ensure/get/get_mut for TagData variants
+// Kind markers and trait to unify ensure/get/get_mut for TagData variants.
+// Each Kind picks one TagData enum variant and its inner data type.
+// This lets ensure_tag_mut be generic and still create/replace the right variant at runtime.
 pub trait TagDataKind {
     type Data: Default;
     fn as_ref(td: &crate::tag::tagdata::TagData) -> Option<&Self::Data>;
@@ -20,7 +22,8 @@ pub trait TagDataKind {
     fn wrap(data: Self::Data) -> crate::tag::tagdata::TagData;
 }
 
-// Macro to declare a Kind marker + TagDataKind impl in one go
+// Macro to declare a Kind marker + TagDataKind impl in one go.
+// Usage: tag_kind!(CurveKind, Curve, crate::tag::tagdata::CurveData);
 macro_rules! tag_kind {
     ($kind:ident, $variant:ident, $data:path) => {
         #[derive(Debug, Clone, Copy, Default)]
@@ -49,6 +52,7 @@ macro_rules! tag_kind {
 }
 
 // Replace the manual marker structs/impls
+// These one-liners define marker types and how to access/wrap their corresponding TagData variants.
 tag_kind!(CurveKind, Curve, crate::tag::tagdata::CurveData);
 tag_kind!(
     ParametricCurveKind,
@@ -56,10 +60,13 @@ tag_kind!(
     crate::tag::tagdata::ParametricCurveData
 );
 tag_kind!(SignatureKind, Signature, crate::tag::tagdata::SignatureData);
+tag_kind!(XYZArrayKind, XYZArray, crate::tag::tagdata::XYZArrayData);
 
-// Add: macro to generate {get, get_mut, ensure_mut} accessors
+// Add: macro to generate {get, get_mut, ensure_mut} accessors.
+// This reduces boilerplate for simple per-variant accessors on RawProfile.
 macro_rules! tag_accessors {
     ($lower:ident, $lower_mut:ident, $ensure_mut:ident, $variant:ident, $data:path, $kind:ident) => {
+        // Borrow shared reference to a specific tag variant if present
         pub fn $lower<S: Into<TagSignature>>(&self, tag: S) -> Option<&$data> {
             self.tag_data(tag).and_then(|td| {
                 if let crate::tag::tagdata::TagData::$variant(c) = td {
@@ -69,6 +76,7 @@ macro_rules! tag_accessors {
                 }
             })
         }
+        // Borrow mutable reference to a specific tag variant if present
         pub fn $lower_mut<S: Into<TagSignature>>(&mut self, tag: S) -> Option<&mut $data> {
             self.tag_data_mut(tag).and_then(|td| {
                 if let crate::tag::tagdata::TagData::$variant(c) = td {
@@ -78,6 +86,7 @@ macro_rules! tag_accessors {
                 }
             })
         }
+        // Ensure this tag exists with the right variant (creating/replacing as needed) and return &mut
         pub fn $ensure_mut<S: Into<TagSignature> + Copy>(&mut self, tag: S) -> &mut $data {
             self.ensure_tag_mut::<$kind, _>(tag)
         }
@@ -105,6 +114,9 @@ impl RawProfile {
     }
 
     /// Generic: get or insert a specific TagData kind and return a mutable reference.
+    /// - If the signature is absent, we insert a new Tag wrapping Default::default() for the kind.
+    /// - If the signature exists but wraps a different variant, we replace it with the requested kind.
+    /// - Otherwise we return a mutable reference to the existing inner data.
     pub fn ensure_tag_mut<K, S>(&mut self, tag: S) -> &mut K::Data
     where
         K: TagDataKind,
@@ -126,7 +138,7 @@ impl RawProfile {
         K::as_mut(rec.tag.data_mut()).expect("ensured kind must be present")
     }
 
-    // Curve
+    // Curve accessors
     tag_accessors!(
         curve,
         curve_mut,
@@ -136,7 +148,7 @@ impl RawProfile {
         CurveKind
     );
 
-    // ParametricCurve
+    // ParametricCurve accessors
     tag_accessors!(
         parametric_curve,
         parametric_curve_mut,
@@ -146,7 +158,7 @@ impl RawProfile {
         ParametricCurveKind
     );
 
-    // Signature
+    // Signature accessors
     tag_accessors!(
         signature,
         signature_mut,
@@ -154,5 +166,15 @@ impl RawProfile {
         Signature,
         crate::tag::tagdata::SignatureData,
         SignatureKind
+    );
+
+    // Signature accessors
+    tag_accessors!(
+        xyz_array,
+        xyz_array_mut,
+        ensure_xyz_array_mut,
+        XYZArray,
+        crate::tag::tagdata::XYZArrayData,
+        XYZArrayKind
     );
 }

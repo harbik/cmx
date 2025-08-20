@@ -477,7 +477,7 @@ impl RawProfile {
     /// # Example:
     ///  ```rust
     /// use cmx::profile::RawProfile;
-    /// use cmx::tags::{Quality, Interpolate, GamutCheck};
+    /// use cmx::tag::{Quality, Interpolate, GamutCheck};
     /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
     /// let (quality, interpolate, gamut_check) = profile.apple_flags();
     /// assert_eq!(quality, Quality::Normal);
@@ -535,7 +535,7 @@ impl RawProfile {
     ///  # Example:
     /// ```rust
     /// use cmx::profile::RawProfile;
-    /// use cmx::tags::{Quality, Interpolate, GamutCheck};
+    /// use cmx::tag::{Quality, Interpolate, GamutCheck};
     /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_apple_flags(Quality::High, Interpolate::False, GamutCheck::False);
     /// let (quality, interpolate, gamut_check) = updated_profile.apple_flags();
@@ -664,7 +664,7 @@ impl RawProfile {
     /// The rendering intent is represented as a `Signature`, such as "perceptual", "relative colorimetric", "saturation", or "absolute colorimetric".
     /// # Example:
     /// ```rust
-    /// use cmx::{profile::RawProfile, signatures::Signature, tags::RenderingIntent};
+    /// use cmx::{profile::RawProfile, signatures::Signature, tag::RenderingIntent};
     /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
     /// let rendering_intent = profile.rendering_intent();
     /// assert_eq!(rendering_intent, RenderingIntent::Perceptual); // or whatever the rendering intent is for the profile
@@ -680,7 +680,7 @@ impl RawProfile {
     /// If you pass `None`, it will set the rendering intent to a default value of `Signature(0)`.
     /// # Example:
     /// ```rust
-    /// use cmx::{profile::RawProfile, signatures::Signature, tags::RenderingIntent};
+    /// use cmx::{profile::RawProfile, signatures::Signature, tag::RenderingIntent};
     /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_rendering_intent(RenderingIntent::Perceptual);
     /// let rendering_intent = updated_profile.rendering_intent();

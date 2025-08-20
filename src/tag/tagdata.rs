@@ -285,8 +285,8 @@ impl DataSignature {
 /// # Examples
 /// ```
 /// use std::str::FromStr;
-/// use cmx::signatures::TagDataSignature;
-/// let tag = TagDataSignature::from_str("6368726D").unwrap(); // 'chrm'
+/// use cmx::tag::tagdata::DataSignature;
+/// let tag = DataSignature::from_str("6368726D").unwrap(); // 'chrm'
 /// assert_eq!(tag.to_string(), "6368726D");
 /// ```
 impl std::fmt::Display for DataSignature {

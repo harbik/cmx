@@ -3,7 +3,6 @@
 
 use indexmap::IndexMap;
 use serde::Serialize;
-use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{Cursor, Read, Result, Write};
 use std::path::Path;
@@ -68,7 +67,6 @@ impl RawProfile {
         let mut cursor = Cursor::new(bytes);
 
         // Read the header (first 128 bytes)
-        //  let mut header = vec![0u8; 128];
         let mut header = [0u8; 128];
         cursor.read_exact(&mut header)?;
 
@@ -84,7 +82,7 @@ impl RawProfile {
         // - 4 bytes for size
         let mut tag_entries = Vec::with_capacity(tag_count as usize);
 
-        let mut total_data_size = 0;
+        let mut max_end = 0usize;
         for _ in 0..tag_count {
             let mut entry = [0u8; 12];
             cursor.read_exact(&mut entry)?;
@@ -96,19 +94,31 @@ impl RawProfile {
             // Convert the offset and size from big-endian to u32
             let offset = u32::from_be_bytes([entry[4], entry[5], entry[6], entry[7]]);
             let size = u32::from_be_bytes([entry[8], entry[9], entry[10], entry[11]]);
+
+            // Track the farthest end position across all tags
+            let end = offset as usize + size as usize;
+            if end > max_end {
+                max_end = end;
+            }
+
             // Store the tag entry in the tag table
             tag_entries.push((signature, offset, size));
-            total_data_size += size as usize;
         }
 
         // Create a map to hold the tags
         let mut tags = IndexMap::with_capacity(tag_count as usize);
 
         // Read each tag's data based on the offsets and sizes from the tag table
-        // Note: The tag data is read from the original byte slice, not from the cursor.
-        // This is because the tag data blocks are not contiguous in the file,
-        // and we need to read them at their specified offsets.
         for (signature, offset, size) in &tag_entries {
+            // Bounds check to avoid out-of-bounds reads
+            let end = *offset as usize + *size as usize;
+            if end > bytes.len() {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::UnexpectedEof,
+                    "tag data offset/size exceeds input length",
+                ));
+            }
+
             // Move the cursor to the tag's offset and read its data
             cursor.set_position(*offset as u64);
             let mut data = vec![0u8; *size as usize];
@@ -116,11 +126,11 @@ impl RawProfile {
 
             // Special handling for specific tag signatures
             // NamedColor2 needs to know the PCS (Profile Connection Space) type, which is either XYZ or Lab.
-            // If it is Lab, we set the PCS flag in the private flag field (but 17) of the this tag.
+            // If it is Lab, we set the PCS flag in the private flag field (bit 17) of this tag.
             if signature == &TagSignature::NamedColor2 {
                 let pcs = u32::from_be_bytes(header[20..24].try_into().unwrap()); // slice has 4 bytes
                 if pcs == 0x4C616220 {
-                    // "Lab "  {
+                    // "Lab "
                     let mut flag = u32::from_be_bytes(data[8..12].try_into().unwrap()); // slice has 4 bytes
                     flag |= 0x1_0000; // Set the PCS flag
                     data[8..12].copy_from_slice(&flag.to_be_bytes()); // Update the flag in the data
@@ -137,20 +147,15 @@ impl RawProfile {
             );
         }
 
-        // In the ICC profile format, each tag's data block starts at the offset specified in the tag table,
-        // and the size is given in the tag table as well. The tag data block itself starts with a 4-byte type signature
-        // and a 4-byte reserved field, followed by the actual tag data.
-
-        let size = 128 + // header size
-            4 + // tag count byte size
-            tag_count as usize * 20 +
-            total_data_size;
-
-        let padding = if bytes.len() > size {
-            bytes.len() - size
+        // Compute trailing padding as any extra bytes beyond header + tag table + tag data
+        let tag_table_bytes = 4 + tag_count as usize * 12; // 4 bytes for count + 12 per entry
+        let min_profile_len = std::cmp::max(128 + tag_table_bytes, max_end);
+        let padding = if bytes.len() > min_profile_len {
+            bytes.len() - min_profile_len
         } else {
             0
         };
+
         Ok(RawProfile {
             header,
             tags,
@@ -219,7 +224,7 @@ impl RawProfile {
         Ok(buf)
     }
 
-    /// Serializes the ICC profile to a String (lossless for binary data).
+    /// Serializes the ICC profile to a String (best-effort for debugging; lossy for non-UTF-8).
     pub fn into_string(self) -> Result<String> {
         let bytes = self.into_bytes()?;
         Ok(String::from_utf8_lossy(&bytes).into_owned())
@@ -233,13 +238,19 @@ impl RawProfile {
     ///
     /// It only uses the data field
     pub fn with_updated_offsets_and_sizes(mut self) -> Self {
-        // Build a BTreeMap to sort tags by their original offset
-        let mut btree_map = BTreeMap::new();
-        for (tag_signature, tag) in &self.tags {
-            btree_map.insert(tag.offset, *tag_signature);
-        }
-        // Collect tag signatures in order of original offset
-        let tag_signatures_by_data_order: Vec<TagSignature> = btree_map.values().cloned().collect();
+        // Build a list to sort tags by their original offset while preserving duplicates
+        // and stable insertion order for equal offsets.
+        let mut entries: Vec<(usize, u32, TagSignature)> = self
+            .tags
+            .iter()
+            .enumerate()
+            .map(|(i, (tag_signature, tag))| (i, tag.offset, *tag_signature))
+            .collect();
+        entries.sort_by_key(|(_, offset, _)| *offset);
+
+        // Collect tag signatures in order of original data offset
+        let tag_signatures_by_data_order: Vec<TagSignature> =
+            entries.iter().map(|(_, _, sig)| *sig).collect();
 
         let mut changed = false;
         for tag_signature in tag_signatures_by_data_order.clone() {
