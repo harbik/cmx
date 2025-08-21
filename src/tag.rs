@@ -11,7 +11,7 @@ mod parsed_tag;
 pub use parsed_tag::ParsedTag;
 
 mod header_tags;
-pub use header_tags::{GamutCheck, Interpolate, Quality, RenderingIntent, S15Fixed16};
+pub use header_tags::{GamutCheck, Interpolate, Quality, RenderingIntent};
 
 use tagdata::DataSignature;
 use tagdata::TagData;

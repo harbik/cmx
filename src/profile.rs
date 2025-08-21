@@ -125,10 +125,7 @@ impl Profile {
         })
     }
 
-    pub fn with_creation_date(
-        self,
-        date: Option<chrono::DateTime<chrono::Utc>>,
-    ) -> Self {
+    pub fn with_creation_date(self, date: Option<chrono::DateTime<chrono::Utc>>) -> Self {
         match self {
             Profile::Input(p) => Profile::Input(p.with_creation_date(date)),
             Profile::Display(p) => Profile::Display(p.with_creation_date(date)),
@@ -142,12 +139,12 @@ impl Profile {
         }
     }
 
-    // Mutable builder entry for tags, returning TagSetter<'_>.
+    // Mutable builder entry for tags, returning TagSetter<'_> bound to this enum.
     pub fn with_tag<'a, S: Into<crate::tag::TagSignature> + Copy>(
         &'a mut self,
         signature: S,
-    ) -> TagSetter<'a, S> {
-        self.as_raw_profile_mut().with_tag(signature)
+    ) -> TagSetter<'a, Self, S> {
+        TagSetter::new(self, signature)
     }
 }
 

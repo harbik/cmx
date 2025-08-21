@@ -9,7 +9,7 @@ use crate::tag::{
         measurement::MeasurementType, multi_localized_unicode::MultiLocalizedUnicodeType,
         named_color2::NamedColor2Type, parametric_curve::ParametricCurveType, raw::UnparsedType,
         s15fixed16array::S15Fixed16ArrayType, signature::SignatureType, text::TextType,
-        text_description::TextDescriptionType, vcgt::VcgtType, xyz::XYZArrayType,
+        text_description::TextDescriptionType, vcgt::VcgtType, xyz_array::XYZArrayType,
     },
     TagData,
 };

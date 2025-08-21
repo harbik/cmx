@@ -10,6 +10,7 @@
 
 use serde::Serialize;
 
+use std::ffi::CString;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::str;
 
@@ -136,20 +137,82 @@ impl TextDescriptionType {
             mac_script_name,
         })
     }
+}
 
-    /*
-    fn get_ascii(&self) -> String {
-        self.ascii.clone()
+use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, Unaligned, U32, U16};
+
+use crate::tag::tagdata::TextDescriptionData;
+
+#[repr(C, packed)]
+#[derive(IntoBytes, Unaligned, KnownLayout, Immutable)]
+pub struct WriteAsciiLayout {
+    /// TagData signature, must be `b"desc"`.
+    pub signature: [u8; 4],
+    /// Reserved, must be 0.
+    pub reserved: [u8; 4],
+    /// ASCII description length (including null terminator).
+    pub ascii_length: U32<BigEndian>,
+} 
+
+impl WriteAsciiLayout {
+    /// Creates a new `WriteAsciiLayout` with the signature 'desc' and initializes
+    /// the ASCII description length.
+    pub fn new(ascii_length: u32) -> Self {
+        Self {
+            signature: *b"desc",
+            reserved: [0; 4],
+            ascii_length: U32::new(ascii_length),
+        }
+    }
+}
+
+#[repr(C, packed)]
+#[derive(Default, IntoBytes, Unaligned, KnownLayout, Immutable)]
+pub struct WriteUnicodeLayout {
+    /// Unicode language code (4 bytes).
+    /// Formed by a 2-byte ISO 639-1 language code
+    /// and a 2-byte ISO 3166-1 country code (e.g., b"enUS").
+    pub unicode_language_code: U32<BigEndian>,
+    /// Unicode description length in 16-bit characters.
+    pub unicode_length: U32<BigEndian>,
+    // The UTF-16 encoded string data follows this struct.
+    // The ICC specification requires this to be big-endian (UTF-16BE).
+}
+
+
+#[repr(C, packed)]
+#[derive(FromBytes, IntoBytes, Unaligned, KnownLayout, Immutable)]
+pub struct WriteMacScriptLayout {
+    /// ScriptCode code for the Macintosh script name.
+    pub scriptcode_code: U16<BigEndian>,
+    /// Macintosh script name length (up to 66 bytes).
+    pub mac_script_name_length: u8,
+    /// Macintosh script name.
+    pub mac_script_name: [u8; 67],
+}
+
+impl Default for WriteMacScriptLayout {
+    fn default() -> Self {
+        Self {
+            scriptcode_code: U16::new(0),
+            mac_script_name_length: 0,
+            mac_script_name: [0; 67],
+        }
+    }
+}
+
+impl TextDescriptionData {
+    pub fn set_ascii(&mut self, ascii: &str ) {
+        let mut buf = Vec::new();
+        let ascii_bytes = CString::new(ascii)
+            .expect("ASCII string must be valid")
+            .into_bytes_with_nul(); // Convert to bytes with null terminator
+        let ascii_len = ascii_bytes.len();
+        buf.extend_from_slice(WriteAsciiLayout::new(ascii_len as u32).as_bytes());
+        buf.extend_from_slice(ascii_bytes.as_slice());
+        buf.extend_from_slice(WriteUnicodeLayout::default().as_bytes());
+        buf.extend_from_slice(WriteMacScriptLayout::default().as_bytes());
+        self.0 = buf.to_vec();
     }
 
-    fn get_unicode(&self) -> (String, Language) {
-        (
-        self.unicode.clone(),
-        self.unicode_language_code
-            .try_into()
-            .unwrap_or_else(|_| Language::default())
-
-        )
-    }
-     */
 }

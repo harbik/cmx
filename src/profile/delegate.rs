@@ -39,8 +39,8 @@ macro_rules! delegate_raw_profile_methods {
                 pub fn with_tag<'a, S: Into<crate::tag::TagSignature> + Copy>(
                     &'a mut self,
                     signature: S,
-                ) -> super::TagSetter<'a, S> {
-                    self.0.with_tag(signature)
+                ) -> super::TagSetter<'a, Self, S> {
+                    super::TagSetter::new(self, signature)
                 }
 
             }

@@ -19,7 +19,7 @@ pub mod text_description;
 pub mod vcgp;
 pub mod vcgt;
 pub mod viewing_conditions;
-pub mod xyz;
+pub mod xyz_array;
 
 use num_derive::{FromPrimitive, ToPrimitive};
 use serde::Serialize;

@@ -35,42 +35,42 @@
 //! pcs_illuminant = [0.9642, 1.0, 0.8249]
 //! creator = "appl"
 //! profile_id = "53410ea9facdd9fb57cc74868defc33f"
-//! 
+//!
 //! [desc]
 //! ascii = "SMPTE RP 431-2-2007 DCI (P3)"
-//! 
+//!
 //! [cprt]
 //! text = "Copyright Apple Inc., 2015"
-//! 
+//!
 //! [wtpt]
 //! xyz = [0.89459228515625, 1.0, 0.9544219970703125]
-//! 
+//!
 //! [rXYZ]
 //! xyz = [0.4861602783203125, 0.2266845703125, -0.0008087158203125]
-//! 
+//!
 //! [gXYZ]
 //! xyz = [0.3238525390625, 0.7103271484375, 0.0432281494140625]
-//! 
+//!
 //! [bXYZ]
 //! xyz = [0.1541900634765625, 0.06298828125, 0.782470703125]
-//! 
+//!
 //! [chad]
 //! matrix = [
-//!     [1.073822, 0.038803, -0.036896], 
-//!     [0.055573, 0.963989, -0.014343], 
+//!     [1.073822, 0.038803, -0.036896],
+//!     [0.055573, 0.963989, -0.014343],
 //!     [-0.004272, 0.005295, 0.862778]
 //! ]
-//! 
+//!
 //! [rTRC]
 //! g = 2.6
-//! 
+//!
 //! [bTRC]
 //! g = 2.6
-//! 
+//!
 //! [gTRC]
 //! g = 2.6
-//! 
-//!  ``` 
+//!
+//!  ```
 //! </details>
 //! <details><summary><strong>Creating ICC profiles programmatically</strong></summary>
 //! You can also use the `cmx` library to create ICC profiles programmatically in Rust.
@@ -94,8 +94,8 @@
 //!             mlu.set_language("en");
 //!             mlu.set_text("This is a custom display profile");
 //!     })
-//! 
-//! 
+//!
+//!
 //!
 //! ## Installation
 //!
@@ -144,6 +144,8 @@ pub mod profile;
 pub mod signatures;
 pub mod tag;
 
+use std::fmt::Display;
+
 pub use error::Error;
 use num::Zero;
 
@@ -189,4 +191,38 @@ pub(crate) fn format_hex_with_spaces(data: &[u8]) -> String {
         .map(|chunk| std::str::from_utf8(chunk).unwrap())
         .collect::<Vec<&str>>()
         .join(" ")
+}
+
+use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, Unaligned, I32};
+#[derive(FromBytes, IntoBytes, Unaligned, KnownLayout, Immutable, Debug, Clone, Copy)]
+#[repr(C)]
+pub struct S15Fixed16(I32<BigEndian>);
+
+/// A 15.16 fixed-point number, where the first 15 bits are the integer part and the last 16 bits are the fractional part.
+/// This is used in ICC profiles to represent color values.
+/// The value is stored as a 32-bit signed integer in big-endian format.
+impl From<S15Fixed16> for f64 {
+    fn from(value: S15Fixed16) -> Self {
+        let s15 = value.0.get();
+        s15 as f64 / 65536.0
+    }
+}
+
+impl From<f64> for S15Fixed16 {
+    fn from(value: f64) -> Self {
+        let s15 = (value * 65536.0).round() as i32;
+        S15Fixed16(I32::new(s15))
+    }
+}
+
+impl From<S15Fixed16> for I32<BigEndian> {
+    fn from(value: S15Fixed16) -> Self {
+        value.0
+    }
+}
+
+impl Display for S15Fixed16 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", f64::from(*self))
+    }
 }

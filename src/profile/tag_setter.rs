@@ -10,7 +10,98 @@ use crate::{
     },
 };
 
-pub trait IsTextDescriptionTag {}
+// Provide a way to access the inner RawProfile from wrappers and Profile enum.
+pub trait HasRawProfile {
+    fn raw(&self) -> &RawProfile;
+    fn raw_mut(&mut self) -> &mut RawProfile;
+}
+
+// Implement for RawProfile itself.
+impl HasRawProfile for RawProfile {
+    fn raw(&self) -> &RawProfile {
+        self
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        self
+    }
+}
+
+// Implement for all wrapper profiles.
+impl HasRawProfile for super::InputProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+impl HasRawProfile for super::DisplayProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+impl HasRawProfile for super::OutputProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+impl HasRawProfile for super::DeviceLinkProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+impl HasRawProfile for super::AbstractProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+impl HasRawProfile for super::ColorSpaceProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+impl HasRawProfile for super::NamedColorProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+impl HasRawProfile for super::SpectralProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+
+// Implement for the enum Profile.
+impl HasRawProfile for super::Profile {
+    fn raw(&self) -> &RawProfile {
+        self.as_raw_profile()
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        super::Profile::as_raw_profile_mut(self)
+    }
+}
+
 pub trait IsMultiLocalizedUnicodeTag {}
 
 pub trait IsCurveTag {}
@@ -40,134 +131,87 @@ impl IsXYZArrayTag for crate::tag::tags::LuminanceTag {}
 impl IsXYZArrayTag for crate::tag::tags::MediaWhitePointTag {}
 impl IsXYZArrayTag for crate::tag::tags::MediaBlackPointTag {}
 
+pub trait IsTextDescriptionTag {}
+impl IsTextDescriptionTag for crate::tag::tags::ProfileDescriptionTag {}
+impl IsTextDescriptionTag for crate::tag::tags::CopyrightTag {}
 
 pub trait IsLut8DataTag {}
 pub trait IsLut16DataTag {}
 pub trait IsLutAtoBDataTag {}
 pub trait IsLutBtoADataTag {}
 
-/*
-Allows for a ergonomic way to set tag data in a `RawProfile`.
-Example usage:
-let mut profile = RawProfile::new()
-    // set profile header data
-    .with_profile_version(4, 4)
-    .with_creation_date(None)
-    .add_tag(ChromaticityTag)
-        .with_data(|data| { // all umbiguous tags can use this method
-            // use data to set the ChromaticityData
-            data.set_standard(Primaries::ITU);
-        }) // This returns &mut RawProfile, so we can chain...
-    .add_tag(ProfileDescriptionTag)
-        .as_multi_localized_unicode(|mlu| {
-            // use mlu to set the data for the MultiLocalizedUnicode tag
-        }) // This returns &mut RawProfile, so we can chain...
-    /*
-        alternatively
-        .as_text_description(|text| {
-            // use text to set the data for the TextDescription tag
-        })
-    */
-    .add_tag(RedTRCTag)
-        .as_curve(|curve| {
-            // ...
-        }); // ...and so on.
-*/
-
 /// A helper for safely setting the data for a specific tag signature.
-/// It is generic over the signature type `S` to enable compile-time checks.
-pub struct TagSetter<'a, S: 'a> {
-    profile: &'a mut RawProfile,
+/// It is generic over the signature type `S` to enable compile-time checks,
+/// and generic over the profile type `P` to return the correct &mut P for chaining.
+pub struct TagSetter<'a, P: HasRawProfile + 'a, S: 'a> {
+    profile: &'a mut P,
     tag: S,
 }
 
-impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
-    pub fn new(profile: &'a mut RawProfile, tag: S) -> Self {
+impl<'a, P, S> TagSetter<'a, P, S>
+where
+    P: HasRawProfile + 'a,
+    S: Into<TagSignature> + Copy + 'a,
+{
+    pub fn new(profile: &'a mut P, tag: S) -> Self {
         Self { profile, tag }
     }
 
     /// Sets the tag's data as a `CurveData`.
     /// This method is only available if the signature implements `IsCurveTag`.
-    pub fn as_curve<F>(self, configure: F) -> &'a mut RawProfile
+    pub fn as_curve<F>(self, configure: F) -> &'a mut P
     where
         S: IsCurveTag,
         F: FnOnce(&mut CurveData),
     {
-        let curve = self.profile.ensure_curve_mut(self.tag.into());
+        let curve = self.profile.raw_mut().ensure_curve_mut(self.tag.into());
         configure(curve);
         self.profile
     }
 
-    pub fn as_parametric_curve<F>(self, configure: F) -> &'a mut RawProfile
+    pub fn as_parametric_curve<F>(self, configure: F) -> &'a mut P
     where
         S: IsParametricCurveTag,
         F: FnOnce(&mut ParametricCurveData),
     {
-        let para_curve = self.profile.ensure_parametric_curve_mut(self.tag.into());
+        let para_curve = self
+            .profile
+            .raw_mut()
+            .ensure_parametric_curve_mut(self.tag.into());
         configure(para_curve);
         self.profile
     }
 
-    pub fn as_signature<F>(self, configure: F) -> &'a mut RawProfile
+    pub fn as_signature<F>(self, configure: F) -> &'a mut P
     where
         S: IsSignatureTag,
         F: FnOnce(&mut crate::tag::tagdata::SignatureData),
     {
-        let signature = self.profile.ensure_signature_mut(self.tag.into());
+        let signature = self.profile.raw_mut().ensure_signature_mut(self.tag.into());
         configure(signature);
         self.profile
     }
 
-    pub fn as_xyz_array<F>(self, configure: F) -> &'a mut RawProfile
+    pub fn as_xyz_array<F>(self, configure: F) -> &'a mut P
     where
         S: IsXYZArrayTag,
         F: FnOnce(&mut crate::tag::tagdata::XYZArrayData),
     {
-        let xyz = self.profile.ensure_xyz_array_mut(self.tag.into());
+        let xyz = self.profile.raw_mut().ensure_xyz_array_mut(self.tag.into());
         configure(xyz);
         self.profile
     }
-}
 
-
-
-/*
-    /// correct data type automatically.
-    pub fn with_data<F>(self, configure: F) -> &'a mut RawProfile
+    pub fn as_text_description<F>(self, configure: F) -> &'a mut P
     where
-        S: UnambiguousTag, // This method is only available for unambiguous tags!
-        F: FnOnce(&mut <S as UnambiguousTagData>::TagData),
+        S: IsTextDescriptionTag,
+        F: FnOnce(&mut crate::tag::tagdata::TextDescriptionData),
     {
-        let mut data = <S as UnambiguousTagData>::TagData::default();
-        configure(&mut data);
-        let tag = S::new_tag(data);
-        // as this is a new tag, it did not get assigned an offset and length yet.
-        configure(&mut data);
-        let tag = S::new_tag(data);
-        // as this is a new tag, it did not get assigned an offset and length yet.
-        self.profile
-            .tags
-            .insert(self.signature.into(), RawTag::new(0, 0, tag));
+        let text_description = self.profile.raw_mut().ensure_text_description_mut(self.tag.into());
+        configure(text_description);
         self.profile
     }
-
-
-    pub fn as_multi_localized_unicode<F>(self, configure: F) -> &'a mut RawProfile
-    where
-        S: IsMultiLocalizedUnicodeTag,
-        F: FnOnce(&mut MultiLocalizedUnicodeData),
-    {
-        let mut mlu = MultiLocalizedUnicodeData::default();
-        configure(&mut mlu);
-        let mlu_tag = TagData::MultiLocalizedUnicode(mlu);
-        self.profile
-            .tags
-            .insert(self.signature.into(), RawTag::new(0, 0, mlu_tag));
-        self.profile // Return a mutable reference to the profile itself
-    }
 }
-
- */
 
 #[cfg(test)]
 mod tests {
@@ -199,6 +243,5 @@ mod tests {
             });
 
         Ok(())
-        // Further assertions can be added to verify the profile state.
     }
 }
