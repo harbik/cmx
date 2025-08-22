@@ -199,58 +199,55 @@ impl RawProfile {
         Ok(())
     }
 
-    pub fn into_bytes(self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    pub fn into_bytes(mut self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         // Update offsets and sizes of tags based on their data
-        let updated_self = self.with_updated_tagrecord_offsets_and_sizes();
+        // Tag offsets and sizes are updated, with offsets increasing with position of the tag
+        // in the indexmap, and sizes being the length of the tag data.
+        // The tag table entries have the same order as the tag table, with all tages
+        // lined up in the order they were added to the profile.
+
+        self = self.with_updated_tagrecord_offsets_and_sizes();
         let mut buf = Vec::new();
         
         // Copy header
-        buf.extend_from_slice(&updated_self.header);
+        buf.extend_from_slice(&self.header);
         debug_assert!(buf.len() == 128, "Header should be exactly 128 bytes long");
          
         // Write tag count
-        let tag_count = updated_self.tags.len() as u32;
+        let tag_count = self.tags.len() as u32;
         buf.extend_from_slice(&tag_count.to_be_bytes());
         debug_assert!(buf.len() == 128 + 4, "Header + tag count should be 132 bytes long");
         
         // Write tag table (each entry is 12 bytes)
-        for (sig, tag) in &updated_self.tags {
+        for (sig, tag) in &self.tags {
             buf.extend_from_slice(&sig.to_u32().to_be_bytes());
             buf.extend_from_slice(&tag.offset.to_be_bytes());
             buf.extend_from_slice(&tag.size.to_be_bytes());
         }
-        debug_assert!(buf.len() == 128 + 4 + updated_self.tags.len() * 12,
+        debug_assert!(buf.len() == 128 + 4 + self.tags.len() * 12,
                       "Header + tag count + tag table should be {} bytes long",
-                      128 + 4 + updated_self.tags.len() * 12);
+                      128 + 4 + self.tags.len() * 12);
         
-        // Calculate where tag data starts
-        let _data_start = 128 + 4 + updated_self.tags.len() * 12;
         
         // Sort tags by offset to process them in order, so that the data with the lowest offset
         // is written first, ensuring correct order in the final buffer.
-        let mut sorted_tags_by_offset: Vec<_> = updated_self.tags.values().collect();
-        sorted_tags_by_offset.sort_by_key(|tag| tag.offset);
+        //let mut sorted_tags_by_offset: Vec<_> = updated_self.tags.values().collect();
+        //sorted_tags_by_offset.sort_by_key(|tag| tag.offset);
         
         // Write tag data directly to the buffer
-        for tag in sorted_tags_by_offset {
-            // Ensure we're at the right position
-            let current_offset = tag.offset as usize;
-            if current_offset < buf.len() {
-                // We're writing to a position we've already passed - this shouldn't happen
-                // with properly updated offsets
-                return Err("Tag offset conflict detected".into());
-            }
+        for tag in self.tags.values() {
             
-            // Add padding if needed
-            if current_offset > buf.len() {
-                buf.resize(current_offset, 0);
+            // If the current buffer length is less than the tag's offset, we need to pad it
+            // to ensure we write at the correct position.
+            if buf.len() < tag.offset as usize {
+                buf.resize(tag.offset as usize, 0);
             }
             
             // Append the tag data
             buf.extend_from_slice(tag.tag.as_slice());
         }
         
-        // Add padding if needed
+        // All Tags written to buf, add padding if needed if the last tag does not end on a 4-byte boundary.
         buf.extend(vec![0u8; crate::pad_size(buf.len())]);
         
         // Update profile size
@@ -276,6 +273,15 @@ impl RawProfile {
     // This method updates the offsets and sizes of the tags based on their data, ensuring that
     // the profile can be written back to a file with correct offsets and sizes.
     fn with_updated_tagrecord_offsets_and_sizes(mut self) -> Self {
+        
+        // TODO: TagType content sharing.
+        // Go through the tags and see which ones have the same content, and share them.
+        // This is a performance optimization to reduce the size of the profile.
+        // This is not required by the ICC specification, but it can reduce the size of the profile
+        // and improve performance when reading and writing profiles.
+        // Indicate this by making the offset a negative value, which means that the tag data is shared
+        // and the offset for next tag is not updated.
+        // - create a hashmap of tag data to offset, and use that offset if a duplication is found
         
         // Calculate start of tag data area
         let tag_count = self.tags.len();

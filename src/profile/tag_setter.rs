@@ -144,6 +144,9 @@ pub trait IsTextTag {}
 impl IsTextTag for crate::tag::tags::CopyrightTag {}
 impl IsTextTag for crate::tag::tags::CharTargetTag {}
 
+pub trait IsS15Fixed16ArrayTag {}
+impl IsS15Fixed16ArrayTag for crate::tag::tags::ChromaticAdaptationTag {}
+
 pub trait IsLut8DataTag {}
 pub trait IsLut16DataTag {}
 pub trait IsLutAtoBDataTag {}
@@ -234,6 +237,19 @@ where
             .raw_mut()
             .ensure_text_mut(self.tag.into());
         configure(text);
+        self.profile
+    }
+
+    pub fn as_sf15_fixed_16_array<F>(mut self, configure: F) -> P
+    where
+        S: IsS15Fixed16ArrayTag,
+        F: FnOnce(&mut crate::tag::tagdata::S15Fixed16ArrayData),
+    {
+        let array = self
+            .profile
+            .raw_mut()
+            .ensure_s15_fixed_16_array_mut(self.tag.into());
+        configure(array);
         self.profile
     }
 }

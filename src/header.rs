@@ -226,8 +226,8 @@ impl RawProfile {
     /// let color_space = updated_profile.data_color_space();
     /// assert_eq!(color_space, ColorSpace::XYZ);
     /// ```
-    pub fn with_data_color_space(mut self, color_space: impl Into<Signature>) -> Self {
-        self.header_mut().color_space = U32::new(color_space.into().0);
+    pub fn with_data_color_space(mut self, color_space: ColorSpace) -> Self {
+        self.header_mut().color_space = U32::new(color_space as u32);
         self
     }
 

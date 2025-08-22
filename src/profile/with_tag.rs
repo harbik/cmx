@@ -72,6 +72,12 @@ tag_kind!(
     crate::tag::tagdata::TextData
 );
 
+tag_kind!(
+    IsS15Fixed16ArrayKind,
+    S15Fixed16Array,
+    crate::tag::tagdata::S15Fixed16ArrayData
+);
+
 // Add: macro to generate {get, get_mut, ensure_mut} accessors.
 // This reduces boilerplate for simple per-variant accessors on RawProfile.
 macro_rules! tag_accessors {
@@ -209,5 +215,15 @@ impl RawProfile {
         Text,
         crate::tag::tagdata::TextData,
         TextKind
+    );
+
+    // TextDescription accessors
+    tag_accessors!(
+        s15_fixed_16_array,
+        s15_fixed_16_array_mut,
+        ensure_s15_fixed_16_array_mut,
+        S15Fixed16Array,
+        crate::tag::tagdata::S15Fixed16ArrayData,
+        IsS15Fixed16ArrayKind
     );
 }

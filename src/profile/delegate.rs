@@ -50,6 +50,20 @@ macro_rules! delegate_raw_profile_methods {
                     super::TagSetter::new(self, signature)
                 }
 
+
+                pub fn with_cmm(
+                    self, 
+                    cmm: crate::signatures::Cmm) -> Result<Self, crate::Error> {
+                        Ok(Self(self.0.with_cmm(cmm)?))
+                }
+                
+                pub fn with_data_color_space(
+                    self, 
+                    color_space: crate::signatures::ColorSpace
+                ) -> Self {
+                    Self(self.0.with_data_color_space(color_space))
+                }
+
             }
         )*
     };

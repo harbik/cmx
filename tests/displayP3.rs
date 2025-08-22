@@ -24,6 +24,8 @@ mod make_display_p3 {
         let display_p3_cmx = DisplayProfile::new()
             .with_version(4, 0)?
             .with_creation_date(None)
+        //    .with_cmm(cmx::signatures::Cmm::Apple)?
+            .with_data_color_space(cmx::signatures::ColorSpace::RGB)
             .with_tag(ProfileDescriptionTag)
                 .as_text_description(|text| {
                     text.set_ascii("Display P3");
@@ -59,6 +61,14 @@ mod make_display_p3 {
             .with_tag(BlueTRCTag)
                 .as_parametric_curve(|para| {
                     para.set_parameters([2.4, 0.9479, 0.0521, 0.0774, 0.0405]);
+                })
+            .with_tag(ChromaticAdaptationTag)
+                .as_sf15_fixed_16_array(|array| {
+                    array.set([
+                         1.047882, 0.022919, -0.050201,
+                         0.029587, 0.990479, -0.017059,
+                        -0.009232, 0.015076,  0.751678
+                    ]);
                 })
             ;
 
