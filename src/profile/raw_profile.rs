@@ -201,7 +201,7 @@ impl RawProfile {
 
     pub fn into_bytes(self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         // Update offsets and sizes of tags based on their data
-        let updated_self = self.with_updated_offsets_and_sizes();
+        let updated_self = self.with_updated_tagrecord_offsets_and_sizes();
         let mut buf = Vec::new();
         
         // Copy header
@@ -275,136 +275,25 @@ impl RawProfile {
     // or when changing the tag data.
     // This method updates the offsets and sizes of the tags based on their data, ensuring that
     // the profile can be written back to a file with correct offsets and sizes.
-    fn with_updated_offsets_and_sizes(self) -> Self {
-        let mut result = self.clone();
+    fn with_updated_tagrecord_offsets_and_sizes(mut self) -> Self {
         
         // Calculate start of tag data area
-        let tag_count = result.tags.len();
+        let tag_count = self.tags.len();
         let data_start = 128 + 4 + (tag_count * 12);
-        
-        // Collect and sort tags (optionally by some priority if needed)
-        let tags_vec: Vec<_> = result.tags.into_iter().collect();
-        
-        // Clear existing tags map
-        result.tags = IndexMap::new();
-        
+
         // Position for next tag data (aligned to 4 bytes)
-        let mut offset_for_next_tag = ((data_start + 3) / 4) * 4; // Align to 4 bytes
+        let mut offset_for_next_tag = crate::padded_size(data_start);
         
         // Process each tag
-        for (signature, mut tag_record) in tags_vec {
+        for (_signature, tag_record) in self.tags.iter_mut(){
             tag_record.offset = offset_for_next_tag as u32;
             tag_record.size = tag_record.tag.len() as u32;
-            offset_for_next_tag += tag_record.tag.len() + crate::pad_size(tag_record.tag.len());
-            result.tags.insert(signature, tag_record);
+            offset_for_next_tag += crate::padded_size(tag_record.tag.len());
         } 
-        dbg!(&result);
+        dbg!(&self);
         
-        result
-    }
-    
-    /*
-    pub fn with_updated_offsets_and_sizes(self) -> Self {
-        let mut result = self.clone();
-        
-        // Calculate where tag data starts (header + tag count + tag table)
-        let mut next_offset = 128 + 4 + (result.tags.len() * 12) as u32;
-        
-        // Ensure 4-byte alignment for the first tag data
-        if next_offset % 4 != 0 {
-            next_offset += 4 - (next_offset % 4);
-        }
-        
-        // Create a new tag map with updated offsets and sizes
-        let mut updated_tags = IndexMap::new();
-        
-        // Process tags in the order we want them in the file
-        for (sig, tag) in result.tags {
-            // Get actual size from the tag data
-            let actual_size = tag.tag.as_slice().len() as u32;
-            
-            // Create a new tag with updated offset and size
-            let updated_tag = ProfileTagRecord {
-                offset: next_offset,
-                size: actual_size,
-                tag: tag.tag,
-            };
-            
-            // Add to our new tag map
-            updated_tags.insert(sig, updated_tag);
-            
-            // Calculate next offset with 4-byte alignment
-            next_offset += actual_size;
-            if next_offset % 4 != 0 {
-                next_offset += 4 - (next_offset % 4);
-            }
-        }
-        
-        // Update the tags
-        result.tags = updated_tags;
-        
-        // Update header size
-        let mut header = result.header;
-        let profile_size = next_offset;
-        header[0..4].copy_from_slice(&profile_size.to_be_bytes());
-        result.header = header;
-        
-        result
-    }
-
-    /// Builds a tags table as a vector of an array of three u32 values:
-    ///
-    /// - The first u32 is the tag signature (as u32),
-    /// - The second u32 is the offset of the tag data in the profile,
-    /// - The third u32 is the size of the tag data.
-    ///
-    /// It only uses the data field
-    pub fn with_updated_offsets_and_sizes(mut self) -> Self {
-        // Build a list to sort tags by their original offset while preserving duplicates
-        // and stable insertion order for equal offsets.
-        let mut entries: Vec<(usize, u32, TagSignature)> = self
-            .tags
-            .iter()
-            .enumerate()
-            .map(|(i, (tag_signature, tag))| (i, tag.offset, *tag_signature))
-            .collect();
-        entries.sort_by_key(|(_, offset, _)| *offset);
-
-        // Collect tag signatures in order of original data offset
-        let tag_signatures_by_data_order: Vec<TagSignature> =
-            entries.iter().map(|(_, _, sig)| *sig).collect();
-
-        let mut changed = false;
-        for tag_signature in tag_signatures_by_data_order.clone() {
-            if let Some(tag) = self.tags.get_mut(&tag_signature) {
-                if tag.size != tag.tag.len() as u32 {
-                    changed = true;
-                    break;
-                }
-            }
-        }
-
-        // If no changes are needed, return the profile as is
-        if !changed {
-            return self;
-        }
-
-        // Calculate the starting offset for tag data (after header and tag table)
-        let mut offset = 128 + 4 + self.tags.len() * 12;
-
-        // For each tag (in data order), update its offset and size, and pad data to 4 bytes
-        for tag_signature in tag_signatures_by_data_order {
-            if let Some(tag_entry) = self.tags.get_mut(&tag_signature) {
-                let padded_len = (tag_entry.tag.len() + 3) & !3;
-                tag_entry.tag.pad(padded_len);
-                tag_entry.size = tag_entry.tag.len() as u32;
-                tag_entry.offset = offset as u32;
-                offset += tag_entry.size as usize;
-            }
-        }
         self
     }
-     */
 
     pub fn into_class_profile(self) -> Profile {
         match self.device_class() {

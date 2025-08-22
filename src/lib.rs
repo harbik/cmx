@@ -231,6 +231,10 @@ fn pad_size(len: usize) -> usize {
     ((len + 3) / 4) * 4 - len
 }
 
+fn padded_size(len: usize) -> usize {
+    ((len + 3) / 4) * 4
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
