@@ -30,13 +30,14 @@ pub mod device_attributes {
 #[derive(serde::Serialize)]
 pub struct Header {
     profile_size: u32,
-    cmm: String,
+    cmm: Option<String>,
     version: String,
+    #[serde(skip_serializing_if = "is_empty_or_none")]
     device_class: String,
-    color_space: String,
+    color_space: Option<String>,
     pcs: String,
     creation_datetime: String,
-    primary_platform: String,
+    primary_platform: Option<String>,
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     embedded: bool,
     #[serde(skip_serializing_if = "std::ops::Not::not")]
@@ -118,13 +119,13 @@ impl From<&super::RawProfile> for Header {
 
         Header {
             profile_size: raw_profile.profile_size() as u32,
-            cmm: raw_profile.cmm().to_string(),
+            cmm: raw_profile.cmm().map(|c| c.to_string()),
             version,
             device_class: raw_profile.device_class().to_string(),
-            color_space: raw_profile.data_color_space().to_string(),
+            color_space: raw_profile.data_color_space().map(|c| c.to_string()),
             pcs: raw_profile.pcs().unwrap().to_string(),
             creation_datetime: raw_profile.creation_date().to_string(),
-            primary_platform: raw_profile.primary_platform().to_string(),
+            primary_platform: raw_profile.primary_platform().map(|c| c.to_string()),
             embedded,
             use_embedded_only,
             manufacturer,

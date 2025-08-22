@@ -4,6 +4,7 @@
 //! This module provides a delegation pattern for RawProfile methods to all the Device Profile structs.
 
 use delegate::delegate;
+use std::path::Path;
 
 macro_rules! delegate_raw_profile_methods {
     ($($profile:ident),*) => {
@@ -11,13 +12,19 @@ macro_rules! delegate_raw_profile_methods {
             impl super::$profile {
                 delegate! {
                     to self.0 {
-                        pub fn version(&self) -> Result<(u8, u8), crate::Error>;
-                        pub fn profile_size(&self) -> usize;
+                        pub fn apple_flags(&self) -> (crate::tag::Quality, crate::tag::Interpolate, crate::tag::GamutCheck);
+                        pub fn cmm(&self) -> Option<crate::signatures::Cmm>;
+                        pub fn creation_date(&self) -> chrono::DateTime<chrono::Utc>;
+                        pub fn data_color_space(&self) -> Option<crate::signatures::ColorSpace>;
                         pub fn flags(&self) -> (bool, bool);
-                        pub fn data_color_space(&self) -> crate::signatures::ColorSpace;
-                        pub fn primary_platform(&self) -> crate::signatures::Platform;
                         pub fn manufacturer(&self) -> crate::signatures::Signature;
                         pub fn model(&self) -> crate::signatures::Signature;
+                        pub fn pcs(&self) -> Option<crate::signatures::Pcs>;
+                        pub fn pcs_illuminant(&self) -> [f64; 3];
+                        pub fn primary_platform(&self) -> Option<crate::signatures::Platform>;
+                        pub fn profile_size(&self) -> usize;
+                        pub fn version(&self) -> Result<(u8, u8), crate::Error>;
+                        pub fn to_file<P: AsRef<Path>>(self, path: P) -> Result<(), Box<dyn std::error::Error>>;
                     }
                 }
 
@@ -36,10 +43,10 @@ macro_rules! delegate_raw_profile_methods {
                     Self(self.0.with_creation_date(date))
                 }
 
-                pub fn with_tag<'a, S: Into<crate::tag::TagSignature> + Copy>(
-                    &'a mut self,
+                pub fn with_tag<S: Into<crate::tag::TagSignature> + Copy>(
+                    self,
                     signature: S,
-                ) -> super::TagSetter<'a, Self, S> {
+                ) -> super::TagSetter<Self, S> {
                     super::TagSetter::new(self, signature)
                 }
 

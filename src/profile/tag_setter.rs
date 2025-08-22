@@ -134,6 +134,15 @@ impl IsXYZArrayTag for crate::tag::tags::MediaBlackPointTag {}
 pub trait IsTextDescriptionTag {}
 impl IsTextDescriptionTag for crate::tag::tags::ProfileDescriptionTag {}
 impl IsTextDescriptionTag for crate::tag::tags::CopyrightTag {}
+impl IsTextDescriptionTag for crate::tag::tags::DeviceMfgDescTag {}
+impl IsTextDescriptionTag for crate::tag::tags::DeviceModelDescTag {}
+#[cfg(feature = "v5")]
+impl IsTextDescriptionTag for crate::tag::tags::ScreeningDescTag {}
+impl IsTextDescriptionTag for crate::tag::tags::ViewingCondDescTag {}
+
+pub trait IsTextTag {}
+impl IsTextTag for crate::tag::tags::CopyrightTag {}
+impl IsTextTag for crate::tag::tags::CharTargetTag {}
 
 pub trait IsLut8DataTag {}
 pub trait IsLut16DataTag {}
@@ -142,24 +151,24 @@ pub trait IsLutBtoADataTag {}
 
 /// A helper for safely setting the data for a specific tag signature.
 /// It is generic over the signature type `S` to enable compile-time checks,
-/// and generic over the profile type `P` to return the correct &mut P for chaining.
-pub struct TagSetter<'a, P: HasRawProfile + 'a, S: 'a> {
-    profile: &'a mut P,
+/// and generic over the profile type `P` to return the correct P for chaining.
+pub struct TagSetter<P: HasRawProfile, S> {
+    profile: P,
     tag: S,
 }
 
-impl<'a, P, S> TagSetter<'a, P, S>
+impl<P, S> TagSetter<P, S>
 where
-    P: HasRawProfile + 'a,
-    S: Into<TagSignature> + Copy + 'a,
+    P: HasRawProfile,
+    S: Into<TagSignature> + Copy,
 {
-    pub fn new(profile: &'a mut P, tag: S) -> Self {
+    pub fn new(profile: P, tag: S) -> Self {
         Self { profile, tag }
     }
 
     /// Sets the tag's data as a `CurveData`.
     /// This method is only available if the signature implements `IsCurveTag`.
-    pub fn as_curve<F>(self, configure: F) -> &'a mut P
+    pub fn as_curve<F>(mut self, configure: F) -> P
     where
         S: IsCurveTag,
         F: FnOnce(&mut CurveData),
@@ -169,7 +178,7 @@ where
         self.profile
     }
 
-    pub fn as_parametric_curve<F>(self, configure: F) -> &'a mut P
+    pub fn as_parametric_curve<F>(mut self, configure: F) -> P
     where
         S: IsParametricCurveTag,
         F: FnOnce(&mut ParametricCurveData),
@@ -182,7 +191,7 @@ where
         self.profile
     }
 
-    pub fn as_signature<F>(self, configure: F) -> &'a mut P
+    pub fn as_signature<F>(mut self, configure: F) -> P
     where
         S: IsSignatureTag,
         F: FnOnce(&mut crate::tag::tagdata::SignatureData),
@@ -192,7 +201,7 @@ where
         self.profile
     }
 
-    pub fn as_xyz_array<F>(self, configure: F) -> &'a mut P
+    pub fn as_xyz_array<F>(mut self, configure: F) -> P
     where
         S: IsXYZArrayTag,
         F: FnOnce(&mut crate::tag::tagdata::XYZArrayData),
@@ -202,13 +211,29 @@ where
         self.profile
     }
 
-    pub fn as_text_description<F>(self, configure: F) -> &'a mut P
+    pub fn as_text_description<F>(mut self, configure: F) -> P
     where
         S: IsTextDescriptionTag,
         F: FnOnce(&mut crate::tag::tagdata::TextDescriptionData),
     {
-        let text_description = self.profile.raw_mut().ensure_text_description_mut(self.tag.into());
+        let text_description = self
+            .profile
+            .raw_mut()
+            .ensure_text_description_mut(self.tag.into());
         configure(text_description);
+        self.profile
+    }
+
+    pub fn as_text<F>(mut self, configure: F) -> P
+    where
+        S: IsTextTag,
+        F: FnOnce(&mut crate::tag::tagdata::TextData),
+    {
+        let text = self
+            .profile
+            .raw_mut()
+            .ensure_text_mut(self.tag.into());
+        configure(text);
         self.profile
     }
 }

@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
-use num_derive::FromPrimitive;
+use num_derive::{FromPrimitive, ToPrimitive};
 use serde::Serialize;
 
-#[derive(FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize)]
+#[derive(
+    Default, FromPrimitive, PartialEq, Clone, Copy, Debug, Serialize, ToPrimitive, strum::Display,
+)]
 pub enum Technology {
+    #[default]
     Unknown = 0x00000000,
     DigitalCamera = 0x6463616D,              /* 'dcam' */
     FilmScanner = 0x6673636E,                /* 'fscn' */
@@ -33,10 +36,4 @@ pub enum Technology {
     MotionPictureFilmRecorder = 0x6D706672,  /* 'mpfr' */
     DigitalMotionPictureCamera = 0x646D7063, /* 'dmpc' */
     DigitalCinemaProjector = 0x64636A70,     /* 'dcpj' */
-}
-
-impl Default for Technology {
-    fn default() -> Self {
-        Self::Unknown
-    }
 }

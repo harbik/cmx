@@ -76,8 +76,8 @@
 //! You can also use the `cmx` library to create ICC profiles programmatically in Rust.
 //! The library provides a builder-style API for constructing profiles,
 //! allowing you to set various tags and properties.
-//! //! Example of creating a simple ICC profile:
-//! //! ```rust
+//!  Example of creating a simple ICC profile:
+//! ```rust
 //! use cmx::profile::DisplayProfile;
 //! use cmx::tag::tags::{ChromaticityTag, ProfileDescriptionTag};
 //! use cmx::tag::tagdata::{ChromaticityData, MultiLocalizedUnicodeData};   
@@ -94,8 +94,8 @@
 //!             mlu.set_language("en");
 //!             mlu.set_text("This is a custom display profile");
 //!     })
-//!
-//!
+//! ```
+//!</details>
 //!
 //! ## Installation
 //!
@@ -139,7 +139,7 @@
 
 pub mod error;
 pub mod header;
-pub mod language;
+//pub mod language;
 pub mod profile;
 pub mod signatures;
 pub mod tag;
@@ -224,5 +224,47 @@ impl From<S15Fixed16> for I32<BigEndian> {
 impl Display for S15Fixed16 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", f64::from(*self))
+    }
+}
+
+fn pad_size(len: usize) -> usize {
+    ((len + 3) / 4) * 4 - len
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_round_to_precision() {
+        assert_eq!(round_to_precision(1.23456, 2), 1.23);
+        assert_eq!(round_to_precision(1.23456, 3), 1.235);
+        assert_eq!(round_to_precision(1.23456, 0), 1.0);
+    }
+
+    #[test]
+    fn test_s15fixed16() {
+        let value = S15Fixed16::from(1.5);
+        assert_eq!(f64::from(value), 1.5);
+        assert_eq!(value.to_string(), "1.5");
+    }
+
+    #[test]
+    fn test_format_hex_with_spaces() {
+        let data = [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC];
+        let formatted = format_hex_with_spaces(&data);
+        assert_eq!(formatted, "12345678 9ABC");
+    }
+    #[test]
+    fn test_pad() {
+        assert_eq!(pad_size(0), 0);
+        assert_eq!(pad_size(1), 3);
+        assert_eq!(pad_size(2), 2);
+        assert_eq!(pad_size(3), 1);
+        assert_eq!(pad_size(4), 0);
+        assert_eq!(pad_size(5), 3);
+        assert_eq!(pad_size(6), 2);
+        assert_eq!(pad_size(7), 1);
+        assert_eq!(pad_size(8), 0);
     }
 }

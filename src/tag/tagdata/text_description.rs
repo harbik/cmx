@@ -139,7 +139,7 @@ impl TextDescriptionType {
     }
 }
 
-use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, Unaligned, U32, U16};
+use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, Unaligned, U16, U32};
 
 use crate::tag::tagdata::TextDescriptionData;
 
@@ -152,7 +152,7 @@ pub struct WriteAsciiLayout {
     pub reserved: [u8; 4],
     /// ASCII description length (including null terminator).
     pub ascii_length: U32<BigEndian>,
-} 
+}
 
 impl WriteAsciiLayout {
     /// Creates a new `WriteAsciiLayout` with the signature 'desc' and initializes
@@ -179,7 +179,6 @@ pub struct WriteUnicodeLayout {
     // The ICC specification requires this to be big-endian (UTF-16BE).
 }
 
-
 #[repr(C, packed)]
 #[derive(FromBytes, IntoBytes, Unaligned, KnownLayout, Immutable)]
 pub struct WriteMacScriptLayout {
@@ -202,7 +201,7 @@ impl Default for WriteMacScriptLayout {
 }
 
 impl TextDescriptionData {
-    pub fn set_ascii(&mut self, ascii: &str ) {
+    pub fn set_ascii(&mut self, ascii: &str) {
         let mut buf = Vec::new();
         let ascii_bytes = CString::new(ascii)
             .expect("ASCII string must be valid")
@@ -214,5 +213,4 @@ impl TextDescriptionData {
         buf.extend_from_slice(WriteMacScriptLayout::default().as_bytes());
         self.0 = buf.to_vec();
     }
-
 }

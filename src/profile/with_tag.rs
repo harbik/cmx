@@ -66,6 +66,11 @@ tag_kind!(
     TextDescription,
     crate::tag::tagdata::TextDescriptionData
 );
+tag_kind!(
+    TextKind,
+    Text,
+    crate::tag::tagdata::TextData
+);
 
 // Add: macro to generate {get, get_mut, ensure_mut} accessors.
 // This reduces boilerplate for simple per-variant accessors on RawProfile.
@@ -99,10 +104,10 @@ macro_rules! tag_accessors {
 }
 
 impl RawProfile {
-    pub fn with_tag<S: Into<TagSignature> + Copy>(
-        &mut self,
-        tag: S,
-    ) -> TagSetter<'_, RawProfile, S> {
+    pub fn with_tag<S>(self, tag: S) -> TagSetter<RawProfile, S>
+    where
+        S: Into<TagSignature> + Copy,
+    {
         TagSetter::new(self, tag)
     }
 
@@ -194,5 +199,15 @@ impl RawProfile {
         TextDescription,
         crate::tag::tagdata::TextDescriptionData,
         TextDescriptionKind
+    );
+
+    // TextDescription accessors
+    tag_accessors!(
+        text,
+        text_mut,
+        ensure_text_mut,
+        Text,
+        crate::tag::tagdata::TextData,
+        TextKind
     );
 }

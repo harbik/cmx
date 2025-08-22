@@ -5,8 +5,7 @@ This crate provides utilities for working with ICC color profiles
 and integrates with the Colorimetry Library.
 
 ### Use Cases
- <details>
-<summary><strong>Parsing ICC profiles and conversion to TOML format for analysis</strong></summary>
+<details><summary><strong>Parsing ICC profiles and conversion to TOML format for analysis</strong></summary>
 After installing the library, you can parse an ICC profile and convert it to a TOML format using the `cmx` command-line tool:
 
 ```bash
@@ -55,8 +54,8 @@ xyz = [0.1541900634765625, 0.06298828125, 0.782470703125]
 
 [chad]
 matrix = [
-    [1.073822, 0.038803, -0.036896], 
-    [0.055573, 0.963989, -0.014343], 
+    [1.073822, 0.038803, -0.036896],
+    [0.055573, 0.963989, -0.014343],
     [-0.004272, 0.005295, 0.862778]
 ]
 
@@ -69,7 +68,31 @@ g = 2.6
 [gTRC]
 g = 2.6
 
- ``` 
+ ```
+</details>
+<details><summary><strong>Creating ICC profiles programmatically</strong></summary>
+You can also use the `cmx` library to create ICC profiles programmatically in Rust.
+The library provides a builder-style API for constructing profiles,
+allowing you to set various tags and properties.
+ Example of creating a simple ICC profile:
+```rust
+use cmx::profile::DisplayProfile;
+use cmx::tag::tags::{ChromaticityTag, ProfileDescriptionTag};
+use cmx::tag::tagdata::{ChromaticityData, MultiLocalizedUnicodeData};   
+let profile = DisplayProfile::new()
+    .with_profile_version(4, 4)
+    .with_creation_date(None)
+    .with_tag(ChromaticityTag)
+    .with_data(|data| {
+        data.set_standard(cmx::tag::Primaries::ITU);
+    })
+    .with_tag(ProfileDescriptionTag)
+        .as_multi_localized_unicode(|mlu| {
+            mlu.set_ascii("My Display Profile");
+            mlu.set_language("en");
+            mlu.set_text("This is a custom display profile");
+    })
+```
 </details>
 
 ### Installation

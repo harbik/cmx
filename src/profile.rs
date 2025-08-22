@@ -97,10 +97,10 @@ impl Profile {
     pub fn flags(&self) -> (bool, bool) {
         self.as_raw_profile().flags()
     }
-    pub fn data_color_space(&self) -> crate::signatures::ColorSpace {
+    pub fn data_color_space(&self) -> Option<crate::signatures::ColorSpace> {
         self.as_raw_profile().data_color_space()
     }
-    pub fn primary_platform(&self) -> crate::signatures::Platform {
+    pub fn primary_platform(&self) -> Option<crate::signatures::Platform> {
         self.as_raw_profile().primary_platform()
     }
     pub fn manufacturer(&self) -> crate::signatures::Signature {
@@ -139,14 +139,60 @@ impl Profile {
         }
     }
 
-    // Mutable builder entry for tags, returning TagSetter<'_> bound to this enum.
-    pub fn with_tag<'a, S: Into<crate::tag::TagSignature> + Copy>(
-        &'a mut self,
+    // Consuming builder entry for tags, returning TagSetter bound to this enum.
+    pub fn with_tag<S: Into<crate::tag::TagSignature> + Copy>(
+        self,
         signature: S,
-    ) -> TagSetter<'a, Self, S> {
+    ) -> TagSetter<Self, S> {
         TagSetter::new(self, signature)
     }
 }
+
+// Helper: render a RawProfile as TOML (used by Display impls).
+fn write_toml_from_raw(raw: &RawProfile, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let header = Header::from(raw);
+    let tags: IndexMap<String, ParsedTag> = raw
+        .tags
+        .iter()
+        .map(|(sig, entry)| (sig.to_string(), entry.tag.to_parsed()))
+        .collect();
+    let parsed_profile = ParsedProfile { header, tags };
+    match toml::to_string(&parsed_profile) {
+        Ok(s) => write!(f, "{s}"),
+        Err(_) => Err(fmt::Error),
+    }
+}
+
+/// A display implementation for `Profile` that serializes the profile to a TOML string.
+impl fmt::Display for Profile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write_toml_from_raw(self.as_raw_profile(), f)
+    }
+}
+
+// Implement Display for all wrapper profile types by delegating to the helper.
+macro_rules! impl_display_for_wrappers {
+    ($($ty:ty),+ $(,)?) => {
+        $(
+            impl fmt::Display for $ty {
+                fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    write_toml_from_raw(&self.0, f)
+                }
+            }
+        )+
+    };
+}
+
+impl_display_for_wrappers!(
+    InputProfile,
+    DisplayProfile,
+    OutputProfile,
+    DeviceLinkProfile,
+    AbstractProfile,
+    ColorSpaceProfile,
+    NamedColorProfile,
+    SpectralProfile,
+);
 
 /// A fully parsed ICC profile represented in a structured format.
 ///
@@ -160,35 +206,6 @@ pub struct ParsedProfile {
     pub header: Header,
     #[serde(flatten)]
     pub tags: IndexMap<String, ParsedTag>,
-}
-
-/// A display implementation for `RawProfile` that serializes the profile to a TOML string.
-impl fmt::Display for Profile {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // See header::icc_header_toml.rs for the IccHeaderToml struct
-        // and its conversion from RawProfile.
-        let header = Header::from(self.as_raw_profile());
-
-        // Convert tags to a flattened IndexMap<String, ParsedTag>, using the tag signature as the
-        // key, and converting each RawTag's tag to a ParsdTag using its From<TagData>
-        // implementation, which needs to be implemented by each TagType individually.
-        // RawTag is a struct that contains the offset, size, and the "TagData" enum,
-        // which encapsulates the tag data.
-        let tags: IndexMap<String, ParsedTag> = self
-            .as_raw_profile()
-            .tags
-            .iter()
-            .map(|(sig, entry)| (sig.to_string(), entry.tag.to_parsed()))
-            .collect();
-
-        let parsed_profile = ParsedProfile { header, tags };
-
-        // serialize the ParsedProfile to a TOML string.
-        match toml::to_string(&parsed_profile) {
-            Ok(s) => write!(f, "{s}"),
-            Err(_) => Err(fmt::Error),
-        }
-    }
 }
 
 #[cfg(test)]

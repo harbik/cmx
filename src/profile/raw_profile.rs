@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
+#![allow(dead_code)]
 
 use indexmap::IndexMap;
 use serde::Serialize;
+use zerocopy::{U32, BigEndian, FromBytes, IntoBytes, KnownLayout};
 use std::fs::File;
-use std::io::{Cursor, Read, Result, Write};
+use std::io::{Cursor, Read, Write};
 use std::path::Path;
 use std::str::FromStr;
 
 use crate::profile::Profile;
-use crate::signatures::DeviceClass;
+use crate::signatures::{DeviceClass, Pcs};
 use crate::tag::tagdata::TagData;
 use crate::tag::ProfileTagRecord;
 use crate::tag::{Tag, TagSignature};
@@ -36,7 +38,35 @@ pub struct RawProfile {
     #[serde(with = "serde_arrays")]
     pub header: [u8; 128], // 128 bytes
     pub tags: IndexMap<TagSignature, ProfileTagRecord>, // preserves insertion order
-    pub padding: usize, // number of padding bytes found in a profile read
+}
+
+
+#[derive(Debug, FromBytes, IntoBytes, KnownLayout)]
+#[repr(C)]
+struct ICCHeaderLayout<'a> {
+    header: &'a [u8; 128],
+    tag_count: U32<BigEndian>,
+}
+
+impl<'a> ICCHeaderLayout<'a> {
+    fn new(profile: &'a RawProfile) -> Self {
+        Self {
+            header: &profile.header,
+            tag_count: U32::new(profile.tags.len() as u32),
+        }
+    }
+}
+
+#[derive(Debug, FromBytes, IntoBytes, KnownLayout)]
+#[repr(C)]
+struct ICCTagtableEntryLayout {
+    tag_signature: U32<BigEndian>,
+    offset: U32<BigEndian>,
+    size: U32<BigEndian>,
+}
+
+struct ICCTagtableLayout {
+    tag_entries: [ICCTagtableEntryLayout],
 }
 
 impl Default for RawProfile {
@@ -44,18 +74,19 @@ impl Default for RawProfile {
         Self {
             header: [0; 128],
             tags: IndexMap::new(),
-            padding: 0,
         }
         .with_valid_file_signature()
         .with_version(4, 3)
         .unwrap()
+        .with_pcs(Pcs::XYZ)
+        .with_pcs_illuminant([0.9642, 1.0, 0.8249]) // Default to D50
         .with_creation_date(None) // Current date and time
     }
 }
 
 impl RawProfile {
     /// Reads an ICC profile from a file.
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
         let mut file = File::open(path)?;
         let mut buf = Vec::new();
         file.read_to_end(&mut buf)?;
@@ -63,7 +94,7 @@ impl RawProfile {
     }
 
     /// Reads an ICC profile from a byte slice.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         let mut cursor = Cursor::new(bytes);
 
         // Read the header (first 128 bytes)
@@ -113,10 +144,10 @@ impl RawProfile {
             // Bounds check to avoid out-of-bounds reads
             let end = *offset as usize + *size as usize;
             if end > bytes.len() {
-                return Err(std::io::Error::new(
+                return Err(Box::new(std::io::Error::new(
                     std::io::ErrorKind::UnexpectedEof,
                     "tag data offset/size exceeds input length",
-                ));
+                )));
             }
 
             // Move the cursor to the tag's offset and read its data
@@ -147,19 +178,9 @@ impl RawProfile {
             );
         }
 
-        // Compute trailing padding as any extra bytes beyond header + tag table + tag data
-        let tag_table_bytes = 4 + tag_count as usize * 12; // 4 bytes for count + 12 per entry
-        let min_profile_len = std::cmp::max(128 + tag_table_bytes, max_end);
-        let padding = if bytes.len() > min_profile_len {
-            bytes.len() - min_profile_len
-        } else {
-            0
-        };
-
         Ok(RawProfile {
             header,
             tags,
-            padding,
         })
     }
 
@@ -171,63 +192,164 @@ impl RawProfile {
      */
 
     /// Writes the ICC profile to a file.
-    pub fn to_file<P: AsRef<Path>>(self, path: P) -> Result<()> {
+    pub fn to_file<P: AsRef<Path>>(self, path: P) -> Result<(), Box<dyn std::error::Error>> {
         let bytes = self.into_bytes()?;
         let mut file = File::create(path)?;
         file.write_all(&bytes)?;
         Ok(())
     }
 
-    /// Serializes the ICC profile to a `Vec<u8>`.
-    pub fn into_bytes(self) -> Result<Vec<u8>> {
+    pub fn into_bytes(self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         // Update offsets and sizes of tags based on their data
         let updated_self = self.with_updated_offsets_and_sizes();
-        //let updated_self = self;
         let mut buf = Vec::new();
+        
+        // Copy header
         buf.extend_from_slice(&updated_self.header);
-
+        debug_assert!(buf.len() == 128, "Header should be exactly 128 bytes long");
+         
+        // Write tag count
         let tag_count = updated_self.tags.len() as u32;
         buf.extend_from_slice(&tag_count.to_be_bytes());
-
-        // Write tag table using updated offsets and sizes
+        debug_assert!(buf.len() == 128 + 4, "Header + tag count should be 132 bytes long");
+        
+        // Write tag table (each entry is 12 bytes)
         for (sig, tag) in &updated_self.tags {
-            buf.extend_from_slice(sig.to_u32().to_be_bytes().as_ref());
+            buf.extend_from_slice(&sig.to_u32().to_be_bytes());
             buf.extend_from_slice(&tag.offset.to_be_bytes());
             buf.extend_from_slice(&tag.size.to_be_bytes());
         }
-
-        // Find the end of the tag table
-        let data_start = 128 + 4 + updated_self.tags.len() * 12;
-        // Prepare a buffer large enough for all tag data
-        let mut data_buf = vec![
-            0u8;
-            updated_self
-                .tags
-                .values()
-                .map(|t| (t.offset + t.size) as usize)
-                .max()
-                .unwrap_or(data_start)
-        ];
-
-        // Copy tag data into the correct offsets
-        for tag in updated_self.tags.values() {
-            let start = tag.offset as usize;
-            let end = start + tag.size as usize;
-            data_buf[start..end].copy_from_slice(tag.tag.as_slice());
+        debug_assert!(buf.len() == 128 + 4 + updated_self.tags.len() * 12,
+                      "Header + tag count + tag table should be {} bytes long",
+                      128 + 4 + updated_self.tags.len() * 12);
+        
+        // Calculate where tag data starts
+        let _data_start = 128 + 4 + updated_self.tags.len() * 12;
+        
+        // Sort tags by offset to process them in order, so that the data with the lowest offset
+        // is written first, ensuring correct order in the final buffer.
+        let mut sorted_tags_by_offset: Vec<_> = updated_self.tags.values().collect();
+        sorted_tags_by_offset.sort_by_key(|tag| tag.offset);
+        
+        // Write tag data directly to the buffer
+        for tag in sorted_tags_by_offset {
+            // Ensure we're at the right position
+            let current_offset = tag.offset as usize;
+            if current_offset < buf.len() {
+                // We're writing to a position we've already passed - this shouldn't happen
+                // with properly updated offsets
+                return Err("Tag offset conflict detected".into());
+            }
+            
+            // Add padding if needed
+            if current_offset > buf.len() {
+                buf.resize(current_offset, 0);
+            }
+            
+            // Append the tag data
+            buf.extend_from_slice(tag.tag.as_slice());
         }
-        buf.extend_from_slice(&data_buf[data_start..]);
-
-        // copy any padding in the orginal profile, if present
-        if updated_self.padding > 0 {
-            buf.extend_from_slice(&vec![0u8; updated_self.padding]);
-        }
+        
+        // Add padding if needed
+        buf.extend(vec![0u8; crate::pad_size(buf.len())]);
+        
+        // Update profile size
+        let length = buf.len() as u32;
+        buf[0..4].copy_from_slice(&length.to_be_bytes());
+        
         Ok(buf)
     }
 
     /// Serializes the ICC profile to a String (best-effort for debugging; lossy for non-UTF-8).
-    pub fn into_string(self) -> Result<String> {
+    pub fn into_string(self) -> Result<String, Box<dyn std::error::Error>> {
         let bytes = self.into_bytes()?;
         Ok(String::from_utf8_lossy(&bytes).into_owned())
+    }
+
+    
+    // In a RawProfile, as defined in this library, the tag table information is embeded
+    // in the `tags` field, which contains the offsets and sizes of the tags, as well as the
+    // tag data itself.
+    // The offsets and sizes are copied from the tag table when reading a binary profile from file
+    // but have to be changed if the tag data changes, for example when adding or removing tags,
+    // or when changing the tag data.
+    // This method updates the offsets and sizes of the tags based on their data, ensuring that
+    // the profile can be written back to a file with correct offsets and sizes.
+    fn with_updated_offsets_and_sizes(self) -> Self {
+        let mut result = self.clone();
+        
+        // Calculate start of tag data area
+        let tag_count = result.tags.len();
+        let data_start = 128 + 4 + (tag_count * 12);
+        
+        // Collect and sort tags (optionally by some priority if needed)
+        let tags_vec: Vec<_> = result.tags.into_iter().collect();
+        
+        // Clear existing tags map
+        result.tags = IndexMap::new();
+        
+        // Position for next tag data (aligned to 4 bytes)
+        let mut offset_for_next_tag = ((data_start + 3) / 4) * 4; // Align to 4 bytes
+        
+        // Process each tag
+        for (signature, mut tag_record) in tags_vec {
+            tag_record.offset = offset_for_next_tag as u32;
+            tag_record.size = tag_record.tag.len() as u32;
+            offset_for_next_tag += tag_record.tag.len() + crate::pad_size(tag_record.tag.len());
+            result.tags.insert(signature, tag_record);
+        } 
+        dbg!(&result);
+        
+        result
+    }
+    
+    /*
+    pub fn with_updated_offsets_and_sizes(self) -> Self {
+        let mut result = self.clone();
+        
+        // Calculate where tag data starts (header + tag count + tag table)
+        let mut next_offset = 128 + 4 + (result.tags.len() * 12) as u32;
+        
+        // Ensure 4-byte alignment for the first tag data
+        if next_offset % 4 != 0 {
+            next_offset += 4 - (next_offset % 4);
+        }
+        
+        // Create a new tag map with updated offsets and sizes
+        let mut updated_tags = IndexMap::new();
+        
+        // Process tags in the order we want them in the file
+        for (sig, tag) in result.tags {
+            // Get actual size from the tag data
+            let actual_size = tag.tag.as_slice().len() as u32;
+            
+            // Create a new tag with updated offset and size
+            let updated_tag = ProfileTagRecord {
+                offset: next_offset,
+                size: actual_size,
+                tag: tag.tag,
+            };
+            
+            // Add to our new tag map
+            updated_tags.insert(sig, updated_tag);
+            
+            // Calculate next offset with 4-byte alignment
+            next_offset += actual_size;
+            if next_offset % 4 != 0 {
+                next_offset += 4 - (next_offset % 4);
+            }
+        }
+        
+        // Update the tags
+        result.tags = updated_tags;
+        
+        // Update header size
+        let mut header = result.header;
+        let profile_size = next_offset;
+        header[0..4].copy_from_slice(&profile_size.to_be_bytes());
+        result.header = header;
+        
+        result
     }
 
     /// Builds a tags table as a vector of an array of three u32 values:
@@ -282,6 +404,7 @@ impl RawProfile {
         }
         self
     }
+     */
 
     pub fn into_class_profile(self) -> Profile {
         match self.device_class() {
@@ -293,15 +416,15 @@ impl RawProfile {
             DeviceClass::ColorSpace => Profile::ColorSpace(super::ColorSpaceProfile(self)),
             DeviceClass::NamedColor => Profile::NamedColor(super::NamedColorProfile(self)),
             DeviceClass::Spectral => Profile::Spectral(super::SpectralProfile(self)),
-            DeviceClass::Unknown => Profile::Raw(self),
+            DeviceClass::None => Profile::Raw(self),
         }
     }
 }
 
 impl FromStr for RawProfile {
-    type Err = std::io::Error;
+    type Err = Box<dyn std::error::Error>;
 
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::from_bytes(s.as_bytes())
     }
 }

@@ -17,7 +17,7 @@ struct Layout {
     signature: [u8; 4],
     /// Reserved, must be 0.
     _1: [u8; 4],
-    /// Array of three CIEXYZ values, stored as s15Fixed16Numbers.
+    /// Array of s15Fixed16Numbers.
     values: [I32<BigEndian>],
 }
 

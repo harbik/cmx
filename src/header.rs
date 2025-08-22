@@ -2,6 +2,7 @@
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
 mod parsed_header;
+use num::FromPrimitive;
 pub use parsed_header::Header;
 
 use chrono::{DateTime, Datelike, Timelike};
@@ -58,7 +59,6 @@ pub struct HeaderLayout {
     pub attributes: U64<BigEndian>,
     pub rendering_intent: U32<BigEndian>,
     pub pcs_illuminant: [S15Fixed16; 3],
-    // pub pcs_illuminant: [u8; 12],
     pub creator: U32<BigEndian>,
     pub profile_id: [u8; 16],
     pub reserved: [u8; 28],
@@ -109,15 +109,15 @@ impl RawProfile {
     /// improve color reproduction quality between devices and media, and not to create
     /// vendor-specific profiles.
     ///
-    pub fn cmm(&self) -> Cmm {
+    pub fn cmm(&self) -> Option<Cmm> {
         let header = self.header();
         let tag = Signature(header.cmm.get());
-        Cmm::new(tag) // this can not fail, as unknown CMMs are handled in the Cmm enum
+        Cmm::from_u32(tag.0)
     }
 
     /// Changes, or sets it, when creating a new profile, the Color Management Module (CMM) of the profile.
     pub fn with_cmm(mut self, cmm: Cmm) -> Result<Self, Error> {
-        let tag = Signature::from(cmm);
+        let tag = Signature::from(cmm as u32);
         self.header_mut().cmm = U32::new(tag.0);
         Ok(self)
     }
@@ -172,7 +172,7 @@ impl RawProfile {
     pub fn device_class(&self) -> DeviceClass {
         let header = self.header();
         let d = header.device_class.get();
-        DeviceClass::new(Signature(d))
+        DeviceClass::from_u32(d).unwrap_or_default()
     }
 
     /// Sets the device class of the profile.
@@ -188,7 +188,7 @@ impl RawProfile {
     /// assert_eq!(device_class, DeviceClass::Display);
     /// ```
     pub fn with_device_class(mut self, device_class: DeviceClass) -> Self {
-        self.header_mut().device_class = U32::new(device_class.into());
+        self.header_mut().device_class = U32::new(device_class as u32);
         self
     }
 
@@ -200,10 +200,10 @@ impl RawProfile {
     /// let color_space = profile.data_color_space();
     /// assert_eq!(color_space, ColorSpace::RGB);
     /// ```
-    pub fn data_color_space(&self) -> ColorSpace {
+    pub fn data_color_space(&self) -> Option<ColorSpace> {
         let header = self.header();
         let ncs = header.color_space.get();
-        ColorSpace::new(Signature(ncs))
+        ColorSpace::from_u32(ncs)
     }
 
     /// Sets the color space of the profile, which indicates the color space of the data the profile
@@ -244,11 +244,11 @@ impl RawProfile {
     /// let pcs = profile.pcs().unwrap();
     /// assert_eq!(pcs, Pcs::XYZ);
     /// ```
-    pub fn pcs(&self) -> Result<Pcs, Error> {
+    pub fn pcs(&self) -> Option<Pcs> {
         let header = self.header();
         let pcs = header.pcs.get();
         // TODO: PCS field can be any color space in the device link profile.
-        Pcs::new(Signature(pcs))
+        Pcs::from_u32(pcs)
     }
 
     /// Sets the Profile Connection Space (PCS) of the profile.
@@ -262,7 +262,25 @@ impl RawProfile {
     /// assert_eq!(pcs, Pcs::XYZ);
     /// ```
     pub fn with_pcs(mut self, pcs: Pcs) -> Self {
-        self.header_mut().pcs = U32::new(Signature::from(pcs).0);
+        self.header_mut().pcs = U32::new(pcs as u32);
+        self
+    }
+
+    /// Returns the Profile Connection Space Illuminant of the profile,
+    /// which is typically D50 for color profiles.
+    pub fn pcs_illuminant(&self) -> [f64; 3] {
+        let header = self.header();
+        let xyz = header.pcs_illuminant;
+        [f64::from(xyz[0]), f64::from(xyz[1]), f64::from(xyz[2])]
+    }
+
+    pub fn with_pcs_illuminant(mut self, illuminant: [f64; 3]) -> Self {
+        let header = self.header_mut();
+        header.pcs_illuminant = [
+            S15Fixed16::from(illuminant[0]),
+            S15Fixed16::from(illuminant[1]),
+            S15Fixed16::from(illuminant[2]),
+        ];
         self
     }
 
@@ -377,10 +395,10 @@ impl RawProfile {
     /// - The primary platform is not a strict requirement for ICC profiles, and many profiles may not have this tag set.
     /// - If the platform is not set, it will return a default value of `Platform::All`, with Signature "all ".
     ///
-    pub fn primary_platform(&self) -> Platform {
+    pub fn primary_platform(&self) -> Option<Platform> {
         let header = self.header();
         let p = header.primary_platform.get();
-        Platform::new(Signature(p))
+        Platform::from_u32(p)
     }
 
     /// Sets the primary platform of the profile.
@@ -395,8 +413,7 @@ impl RawProfile {
     /// assert_eq!(platform, Platform::Microsoft);
     /// ```
     pub fn with_primary_platform(mut self, platform: Platform) -> Self {
-        let tag = Signature::from(platform);
-        self.header_mut().primary_platform = U32::new(tag.0);
+        self.header_mut().primary_platform = U32::new(platform as u32);
         self
     }
 
@@ -557,7 +574,8 @@ impl RawProfile {
         flags |= (interpolate as u32) << 18; // set bit 18
                                              // Set the gamut check hint bit (19)
         flags |= (gamut_check as u32) << 19; // set bit 19
-        self.header_mut().cmm = U32::new(Signature::from(Cmm::Apple).0);
+        let apple_cmm = Cmm::Apple as u32;
+        self.header_mut().cmm.set(apple_cmm);
         self.header_mut().flags = U32::new(flags);
         self
     }
