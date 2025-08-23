@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
-mod raw_profile;
 use std::fmt;
 
+mod raw_profile;
+pub use raw_profile::{RawProfile, ProfileTagRecord};
+
 use indexmap::IndexMap;
-pub use raw_profile::RawProfile;
 
 mod input_profile;
 pub use input_profile::InputProfile;

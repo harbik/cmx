@@ -146,7 +146,7 @@ impl RawProfile {
             indexmap::map::Entry::Occupied(o) => o.into_mut(),
             indexmap::map::Entry::Vacant(v) => {
                 let tag = crate::tag::Tag::new(sig.to_u32(), K::wrap(Default::default()));
-                v.insert(crate::tag::ProfileTagRecord::new(0, 0, tag))
+                v.insert(crate::profile::ProfileTagRecord::new(0, 0, tag))
             }
         };
 

@@ -24,7 +24,7 @@ mod make_display_p3 {
         let display_p3_cmx = DisplayProfile::new()
             .with_version(4, 0)?
             .with_creation_date(None)
-        //    .with_cmm(cmx::signatures::Cmm::Apple)?
+            .with_cmm(cmx::signatures::Cmm::Apple)?
             .with_data_color_space(cmx::signatures::ColorSpace::RGB)
             .with_tag(ProfileDescriptionTag)
                 .as_text_description(|text| {

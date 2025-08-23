@@ -3,10 +3,10 @@
 #![allow(unused)]
 
 use crate::{
-    profile::RawProfile,
+    profile::{RawProfile, ProfileTagRecord},
     tag::{
         tagdata::{CurveData, ParametricCurveData, TagData},
-        ProfileTagRecord, Tag, TagSignature,
+        Tag, TagSignature,
     },
 };
 

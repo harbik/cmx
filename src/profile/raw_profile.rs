@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
-#![allow(dead_code)]
 
 use indexmap::IndexMap;
 use serde::Serialize;
 use zerocopy::{U32, BigEndian, FromBytes, IntoBytes, KnownLayout};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Cursor, Read, Write};
 use std::path::Path;
@@ -13,7 +13,7 @@ use std::str::FromStr;
 use crate::profile::Profile;
 use crate::signatures::{DeviceClass, Pcs};
 use crate::tag::tagdata::TagData;
-use crate::tag::ProfileTagRecord;
+use crate::tag::TagDataTraits;
 use crate::tag::{Tag, TagSignature};
 
 /// An ICC profile, deconstructed in:
@@ -33,6 +33,39 @@ use crate::tag::{Tag, TagSignature};
 ///
 ///
 
+
+/// Represents a single tag entry in an ICC profile,
+/// containing an offset, size, and it's raw tag bytes,
+/// and is the main interface for accessing tag data through
+/// the IndexMap in the `RawProfile`.
+/// These are the offset and size used to import the tag data from
+/// the raw bytes of the ICC profile, and are also used to write the
+/// tag data back to the raw bytes when exporting the profile.
+/// When writing the data the size of all the tags is checked to see
+/// if any tag data has changed in size, and if so all the tags are
+/// re-arranged to fit the new size.
+#[derive(Debug, Serialize, Clone, PartialEq)]
+pub struct ProfileTagRecord {
+    pub offset: u32,
+    pub size: i32,
+    pub tag: Tag,
+}
+
+impl ProfileTagRecord {
+    /// Creates a new `ProfileTagRecord` with the given offset, size, and tag.
+    /// It is used to represent a tag as present in a ICC profile, with its offset and size.
+    /// size can be negative, which indicates that the tag data is shared with another tag,
+    /// and the offset is not updated for the next tag.
+    pub fn new(offset: u32, size: i32, tag: Tag) -> Self {
+        Self { offset, size, tag }
+    }
+
+    /// Returns the raw bytes of the tag.
+    pub fn as_slice(&self) -> &[u8] {
+        self.tag.as_slice()
+    }
+}
+
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct RawProfile {
     #[serde(with = "serde_arrays")]
@@ -41,21 +74,6 @@ pub struct RawProfile {
 }
 
 
-#[derive(Debug, FromBytes, IntoBytes, KnownLayout)]
-#[repr(C)]
-struct ICCHeaderLayout<'a> {
-    header: &'a [u8; 128],
-    tag_count: U32<BigEndian>,
-}
-
-impl<'a> ICCHeaderLayout<'a> {
-    fn new(profile: &'a RawProfile) -> Self {
-        Self {
-            header: &profile.header,
-            tag_count: U32::new(profile.tags.len() as u32),
-        }
-    }
-}
 
 #[derive(Debug, FromBytes, IntoBytes, KnownLayout)]
 #[repr(C)]
@@ -63,10 +81,6 @@ struct ICCTagtableEntryLayout {
     tag_signature: U32<BigEndian>,
     offset: U32<BigEndian>,
     size: U32<BigEndian>,
-}
-
-struct ICCTagtableLayout {
-    tag_entries: [ICCTagtableEntryLayout],
 }
 
 impl Default for RawProfile {
@@ -172,7 +186,7 @@ impl RawProfile {
                 *signature,
                 ProfileTagRecord {
                     offset: *offset,
-                    size: *size,
+                    size: *size as i32, // size is stored as i32 in the tag record
                     tag: Tag::new(signature.to_u32(), TagData::new(data)),
                 },
             );
@@ -222,29 +236,29 @@ impl RawProfile {
         for (sig, tag) in &self.tags {
             buf.extend_from_slice(&sig.to_u32().to_be_bytes());
             buf.extend_from_slice(&tag.offset.to_be_bytes());
-            buf.extend_from_slice(&tag.size.to_be_bytes());
+
+            // shared tags have negative size, but 
+            // we store the absolute value in the tag table.
+            buf.extend_from_slice(&tag.size.abs().to_be_bytes()); 
         }
         debug_assert!(buf.len() == 128 + 4 + self.tags.len() * 12,
                       "Header + tag count + tag table should be {} bytes long",
                       128 + 4 + self.tags.len() * 12);
-        
-        
-        // Sort tags by offset to process them in order, so that the data with the lowest offset
-        // is written first, ensuring correct order in the final buffer.
-        //let mut sorted_tags_by_offset: Vec<_> = updated_self.tags.values().collect();
-        //sorted_tags_by_offset.sort_by_key(|tag| tag.offset);
-        
+
+
         // Write tag data directly to the buffer
         for tag in self.tags.values() {
-            
-            // If the current buffer length is less than the tag's offset, we need to pad it
-            // to ensure we write at the correct position.
-            if buf.len() < tag.offset as usize {
-                buf.resize(tag.offset as usize, 0);
-            }
-            
-            // Append the tag data
-            buf.extend_from_slice(tag.tag.as_slice());
+            if tag.size > 0 {
+                    // If the size is negative, it means the tag data is shared and we do not write it again.
+                // If the current buffer length is less than the tag's offset, we need to pad it
+                // to ensure we write at the correct position.
+                if buf.len() < tag.offset as usize {
+                    buf.resize(tag.offset as usize, 0);
+                }
+                
+                // Append the tag data
+                buf.extend_from_slice(tag.tag.as_slice());
+            } // else do nothing, tag data is shared and already written.``
         }
         
         // All Tags written to buf, add padding if needed if the last tag does not end on a 4-byte boundary.
@@ -283,6 +297,9 @@ impl RawProfile {
         // and the offset for next tag is not updated.
         // - create a hashmap of tag data to offset, and use that offset if a duplication is found
         
+        let mut shared_location: HashMap<&[u8], (u32, i32)> = HashMap::new();
+
+        
         // Calculate start of tag data area
         let tag_count = self.tags.len();
         let data_start = 128 + 4 + (tag_count * 12);
@@ -292,9 +309,23 @@ impl RawProfile {
         
         // Process each tag
         for (_signature, tag_record) in self.tags.iter_mut(){
-            tag_record.offset = offset_for_next_tag as u32;
-            tag_record.size = tag_record.tag.len() as u32;
-            offset_for_next_tag += crate::padded_size(tag_record.tag.len());
+            (tag_record.offset, tag_record.size) = if let Some(&(offset, size)) = shared_location.get(&tag_record.tag.data().as_slice()) {
+                // If the tag data is shared, use the existing offset and a negative size
+                // to indicate that the tag data is shared, and doesn't need to be written again.
+                // This is a performance optimization to reduce the size of the profile.
+                // We need the size information, as shared tags are still needed to write the tag table.
+                (offset, -size)
+            } else { // not shared
+                let offset = offset_for_next_tag as u32;
+                let size = tag_record.tag.len() as i32;
+                shared_location.insert(tag_record.tag.data().as_slice(), (offset, size));    
+                // Otherwise, use the current offset and size
+                offset_for_next_tag += crate::padded_size(tag_record.tag.len());
+                (offset, size)
+            };
+            
+         //   tag_record.offset = offset_for_next_tag as u32;
+        //    tag_record.size = tag_record.tag.len() as u32;
         } 
         dbg!(&self);
         
