@@ -59,6 +59,20 @@ pub enum Profile {
 }
 
 impl Profile {
+    fn into_raw_profile(self) -> RawProfile {
+        match self {
+            Profile::Input(p) => p.0,
+            Profile::Display(p) => p.0,
+            Profile::Output(p) => p.0,
+            Profile::DeviceLink(p) => p.0,
+            Profile::Abstract(p) => p.0,
+            Profile::ColorSpace(p) => p.0,
+            Profile::NamedColor(p) => p.0,
+            Profile::Spectral(p) => p.0,
+            Profile::Raw(p) => p,
+        }
+    }
+
     fn as_raw_profile(&self) -> &RawProfile {
         match self {
             Profile::Input(p) => &p.0,
@@ -104,11 +118,39 @@ impl Profile {
     pub fn primary_platform(&self) -> Option<crate::signatures::Platform> {
         self.as_raw_profile().primary_platform()
     }
-    pub fn manufacturer(&self) -> crate::signatures::Signature {
+    pub fn manufacturer(&self) -> Option<crate::signatures::Signature> {
         self.as_raw_profile().manufacturer()
     }
     pub fn model(&self) -> crate::signatures::Signature {
         self.as_raw_profile().model()
+    }
+
+    pub fn from_bytes(
+        bytes: &[u8],
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let raw = RawProfile::from_bytes(bytes)?;
+        Ok(raw.into_class_profile())
+    }
+
+    pub fn into_bytes(self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        self.into_raw_profile().into_bytes()
+    }
+
+    pub fn profile_id(&self) -> [u8; 16] {
+        self.as_raw_profile().profile_id()
+    }
+
+    pub fn creation_date(&self) -> chrono::DateTime<chrono::Utc> {
+        self.as_raw_profile().creation_date()
+    }
+    pub fn pcs_illuminant(&self) -> [f64; 3] {
+        self.as_raw_profile().pcs_illuminant()
+    }
+    pub fn pcs(&self) -> Option<crate::signatures::Pcs> {
+        self.as_raw_profile().pcs()
+    }
+    pub fn cmm(&self) -> Option<crate::signatures::Cmm> {
+        self.as_raw_profile().cmm()
     }
 
     // Consuming builders: forward to the matching wrapper and re-wrap.
@@ -126,7 +168,7 @@ impl Profile {
         })
     }
 
-    pub fn with_creation_date(self, date: Option<chrono::DateTime<chrono::Utc>>) -> Self {
+    pub fn with_creation_date(self, date: impl Into<chrono::DateTime<chrono::Utc>>) -> Self {
         match self {
             Profile::Input(p) => Profile::Input(p.with_creation_date(date)),
             Profile::Display(p) => Profile::Display(p.with_creation_date(date)),

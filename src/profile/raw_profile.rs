@@ -10,7 +10,7 @@ use std::io::{Cursor, Read, Write};
 use std::path::Path;
 use std::str::FromStr;
 
-use crate::profile::Profile;
+use crate::profile::{set_profile_id, Profile};
 use crate::signatures::{DeviceClass, Pcs};
 use crate::tag::tagdata::TagData;
 use crate::tag::TagDataTraits;
@@ -94,7 +94,7 @@ impl Default for RawProfile {
         .unwrap()
         .with_pcs(Pcs::XYZ)
         .with_pcs_illuminant([0.9642, 1.0, 0.8249]) // Default to D50
-        .with_creation_date(None) // Current date and time
+        .with_now_as_creation_date() // Current date and time
     }
 }
 
@@ -267,6 +267,13 @@ impl RawProfile {
         // Update profile size
         let length = buf.len() as u32;
         buf[0..4].copy_from_slice(&length.to_be_bytes());
+        
+        // calculate the profile ID if requested
+        if buf[99] > 0 { // calculate it
+            set_profile_id(&mut buf);
+        } else {
+           buf[84..=99].fill(0); // clear the profile ID
+        }
         
         Ok(buf)
     }

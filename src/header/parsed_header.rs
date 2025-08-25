@@ -42,8 +42,7 @@ pub struct Header {
     embedded: bool,
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     use_embedded_only: bool,
-    #[serde(skip_serializing_if = "is_empty_or_none")]
-    manufacturer: String,
+    manufacturer: Option<String>,
     #[serde(skip_serializing_if = "is_empty_or_none")]
     model: String,
     #[serde(skip_serializing_if = "is_empty_or_none")]
@@ -74,11 +73,7 @@ impl From<&super::RawProfile> for Header {
             Signature(header.model.get()).to_string()
         };
 
-        let manufacturer = if header.manufacturer == 0 {
-            String::new()
-        } else {
-            Signature(header.manufacturer.get()).to_string()
-        };
+        let manufacturer = raw_profile.manufacturer().map(|m| m.to_string());
 
         use self::device_attributes::*;
 

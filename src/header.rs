@@ -11,11 +11,7 @@ use zerocopy::{
 };
 
 use crate::{
-    error::{Error, HeaderParseError},
-    profile::RawProfile,
-    signatures::{Cmm, ColorSpace, DeviceClass, Pcs, Platform, Signature},
-    tag::{GamutCheck, Interpolate, Quality, RenderingIntent},
-    S15Fixed16,
+    error::{Error, HeaderParseError}, is_printable_ascii_bytes, profile::RawProfile, signatures::{Cmm, ColorSpace, DeviceClass, Pcs, Platform, Signature}, tag::{GamutCheck, Interpolate, Quality, RenderingIntent}, S15Fixed16
 };
 
 fn validate_version(major: u8, minor: u8) -> Result<(u8, u8), Error> {
@@ -316,23 +312,9 @@ impl RawProfile {
     /// This method allows you to specify the creation date using a `DateTime<chrono::Utc>`.
     /// If you pass `None`, it will set the creation date to the current date and time.
     ///
-    /// # Example:
-    /// ```rust
-    /// use cmx::profile::RawProfile;
-    /// use chrono::{DateTime, Utc, Timelike};
-    ///
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
-    /// let creation_date = Utc::now().with_nanosecond(0).unwrap();
-    /// let updated_profile = profile.with_creation_date(None);
-    /// let date = updated_profile.creation_date().with_nanosecond(0).unwrap();
-    /// assert_eq!(date, creation_date);
-    /// ```
-    pub fn with_creation_date(mut self, opt_date: Option<DateTime<chrono::Utc>>) -> Self {
-        let date = opt_date
-            .unwrap_or_else(chrono::Utc::now)
-            .with_nanosecond(0)
-            .unwrap();
-        let naive = date.naive_utc();
+    pub fn with_creation_date(mut self, date: impl Into<DateTime<chrono::Utc>>) -> Self {
+        let utc_date = date.into();
+        let naive = utc_date.naive_utc();
         let header = self.header_mut();
         header.creation_year = U16::new(naive.year() as u16);
         header.creation_month = U16::new(naive.month() as u16);
@@ -342,6 +324,12 @@ impl RawProfile {
         header.creation_seconds = U16::new(naive.second() as u16);
         self
     }
+
+    pub fn with_now_as_creation_date(self) -> Self {
+        let now =  chrono::Utc::now().with_nanosecond(0).unwrap();
+        self.with_creation_date(now)
+    }
+
 
     /// Checks if the file signature of the profile is valid.
     /// This method verifies that the file signature matches the expected value for an ICC profile.
@@ -589,10 +577,14 @@ impl RawProfile {
     /// let manufacturer = profile.manufacturer();
     /// assert_eq!(manufacturer.to_string(), "APPL"); // or whatever the manufacturer is for the profile
     /// ```
-    pub fn manufacturer(&self) -> Signature {
+    pub fn manufacturer(&self) -> Option<Signature> {
         let header = self.header();
         let m = header.manufacturer.get();
-        Signature(m)
+        if is_printable_ascii_bytes(m.as_bytes()) {
+            Some(Signature(m))
+        } else {
+            None
+        }
     }
 
     /// Sets the manufacturer of the profile.
@@ -610,8 +602,9 @@ impl RawProfile {
     /// ```
     /// # Notes:
     /// - For a full list of manufacturers tag signatures, see the [ICC Manufacturer Registry](https://www.color.org/signatureRegistry/index.xalter).
-    pub fn with_manufacturer(mut self, manufacturer: Option<Signature>) -> Self {
-        let manufacturer = manufacturer.unwrap_or_default();
+    pub fn with_manufacturer(mut self, manufacturer: &str) -> Self {
+        let manufacturer: Signature = manufacturer.parse()
+            .unwrap_or_else(|_| Signature::default()); // Default to Signature(0) if parsing fails
         self.header_mut().manufacturer = U32::new(manufacturer.0);
         self
     }
@@ -720,6 +713,29 @@ impl RawProfile {
         }
     }
 
+    /// Sets the creator of the profile.
+    /// This method allows you to specify the creator using a `Signature`, such as Signature::from_str("APPL"), or
+    /// using a string that can be parsed into a `Signature`.
+    /// If you pass `None`, it will set the creator to a default value of `Signature(0)`.
+    /// # Example:
+    /// ```rust
+    /// use cmx::{profile::RawProfile, signatures::Signature};
+    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();  
+    /// let test_tag: Signature = "TEST".parse().unwrap();
+    /// let updated_profile = profile.with_creator(Some(test_tag));
+    ///     
+    /// let creator = updated_profile.creator();
+    /// assert_eq!(creator.unwrap().to_string(), "TEST");
+    /// ```
+    /// # Notes:
+    /// - The creator tag is not a strict requirement for ICC profiles, and many profiles may not have this tag set.
+    /// - If the creator is not set, it will return `None`.
+    pub fn with_creator(mut self, creator: &str) -> Self {
+        let signature: Signature = creator.parse().unwrap_or_default();
+        self.header_mut().creator = U32::new(signature.0);
+        self
+    }
+
     /// Returns the profile ID of the profile, which is a unique identifier for the profile.
     /// The profile ID is a 16-byte array that is typically used to identify the profile in a unique way.
     /// # Example:
@@ -734,8 +750,18 @@ impl RawProfile {
         header.profile_id
     }
 
-    pub fn with_cleared_profile_id(mut self) -> Self {
+    /// Clears the profile ID of the profile, and indicates that the profile ID should not be included when creating a new profile.
+    /// It is also used while calculating the profile ID.
+    pub fn without_profile_id(mut self) -> Self {
         self.header_mut().profile_id = [0u8; 16];
+        self
+    }
+
+    /// Request the profile ID to be included when creating a new profile.
+    /// It will be calculated and set in the to_bytes() profile method, just before
+    /// writing or embedding the profile.
+    pub fn with_profile_id(mut self) -> Self {
+        self.header_mut().profile_id = 1u128.to_be_bytes();
         self
     }
 }
@@ -756,9 +782,8 @@ mod test {
     #[test]
     fn test_set_manufacturer() {
         let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
-        let signature: Signature = "TEST".parse().unwrap();
-        let updated_profile = profile.with_manufacturer(Some(signature));
+        let updated_profile = profile.with_manufacturer("TEST");
         let mfg_new = updated_profile.manufacturer();
-        assert_eq!(mfg_new.to_string(), "TEST");
+        assert_eq!(mfg_new.unwrap().to_string(), "TEST");
     }
 }

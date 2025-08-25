@@ -34,7 +34,8 @@ impl DisplayProfile {
         Self(
             Self(RawProfile::default())
                 .0
-                .with_device_class(crate::signatures::DeviceClass::Display),
+                .with_device_class(crate::signatures::DeviceClass::Display)
+                .with_data_color_space(crate::signatures::ColorSpace::RGB)
         )
     }
 }

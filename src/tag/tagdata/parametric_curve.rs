@@ -3,7 +3,7 @@
 
 use crate::{
     is_zero,
-    tag::tagdata::{DataSignature, ParametricCurveData},
+    tag::tagdata::{DataSignature, ParametricCurveData}, S15Fixed16,
 };
 use serde::Serialize;
 use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, Unaligned, I32, U16};
@@ -51,7 +51,8 @@ impl<const N: usize> WriteLayout<N> {
         for (i, &value) in params.iter().enumerate() {
             if i < N {
                 // Convert f64 to s15Fixed16Number
-                parameters[i].set((value * 65536.0) as i32); // 65536 is the divisor for s15Fixed16
+                let s15fixed16 = crate::S15Fixed16::from(value);
+                parameters[i] = s15fixed16.into(); // 65536 is the divisor for s15Fixed16
             }
         }
 
@@ -94,16 +95,14 @@ impl ParametricCurveData {
 /// as used
 impl From<&ParametricCurveData> for ParametricCurveType {
     fn from(para: &ParametricCurveData) -> Self {
-        const S15_FIXED_16_DIVISOR: f64 = 65536.0;
         let layout = Layout::ref_from_bytes(&para.0).unwrap();
 
         // Flatten directly during the conversion
         let vec: Vec<f64> = layout
             .parameters
             .iter()
-            .map(|v| crate::round_to_precision(v.get() as f64 / S15_FIXED_16_DIVISOR, 4))
+            .map(|&i| S15Fixed16::from(i).into())
             .collect();
-
         // Copy up to 7 values, defaulting the rest to zero
         let mut params = [0.0_f64; 7];
         for (i, v) in vec.iter().take(7).enumerate() {

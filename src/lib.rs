@@ -204,7 +204,7 @@ pub struct S15Fixed16(I32<BigEndian>);
 impl From<S15Fixed16> for f64 {
     fn from(value: S15Fixed16) -> Self {
         let s15 = value.0.get();
-        s15 as f64 / 65536.0
+        round_to_precision(s15 as f64 / 65536.0, 5)
     }
 }
 
@@ -221,6 +221,11 @@ impl From<S15Fixed16> for I32<BigEndian> {
     }
 }
 
+impl From<I32<BigEndian>> for S15Fixed16 {
+    fn from(value: I32<BigEndian>) -> Self {
+        Self(value)
+    }
+}
 impl Display for S15Fixed16 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", f64::from(*self))
@@ -233,6 +238,10 @@ fn pad_size(len: usize) -> usize {
 
 fn padded_size(len: usize) -> usize {
     ((len + 3) / 4) * 4
+}
+
+pub fn is_printable_ascii_bytes(b: &[u8]) -> bool {
+    b.iter().all(|&x| (0x20..=0x7E).contains(&x))
 }
 
 #[cfg(test)]
