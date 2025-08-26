@@ -81,7 +81,9 @@ allowing you to set various tags and properties.
 Here is an example for creating a Display P3 ICC profile:
 
 ```rust
+use chrono::{DateTime, TimeZone};
 use cmx::tag::tags::*;
+use cmx::profile::DisplayProfile;
 let display_p3_example = DisplayProfile::new()
     // set creation date, if omitted, the current date and time are used
     .with_creation_date(chrono::Utc.with_ymd_and_hms(2025, 8, 28, 0, 0, 0).unwrap())
@@ -132,15 +134,15 @@ let display_p3_example = DisplayProfile::new()
     .with_profile_id() // calculate and add profile ID to the profile
     ;
 
-display_p3_example.write("tmp/display_p3_example.icc")?;
-let display_p3_read_back = cmx::profile::Profile::read("tmp/display_p3_example.icc")?;
+display_p3_example.write("tmp/display_p3_example.icc").unwrap();
+let display_p3_read_back = cmx::profile::Profile::read("tmp/display_p3_example.icc").unwrap();
 assert_eq!(
     display_p3_read_back.profile_id_as_hex_string(),
     "617028e1 e1014e15 91f178a9 fb8efc92"
 );
 assert_eq!(display_p3_read_back.profile_size(), 524);
 ```
-Not all ICC tag types are supported yet, but please submit a pull request, or an issue, on [harbik] if you need additional tags to be supported.
+Not all ICC tag types are supported yet, but please submit a pull request, or an issue, on our [GitHub CMX repo](https://github.com/harbik/cmx) if you need additional tags to be supported.
 
 </details>
 

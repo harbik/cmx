@@ -773,7 +773,7 @@ mod test {
 
     #[test]
     fn test_header() {
-        let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
+        let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
         let header = profile.header();
         let mfg = header.manufacturer.get();
         let mfg_str = Signature(mfg).to_string();
@@ -782,7 +782,7 @@ mod test {
 
     #[test]
     fn test_set_manufacturer() {
-        let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
+        let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
         let updated_profile = profile.with_manufacturer("TEST");
         let mfg_new = updated_profile.manufacturer();
         assert_eq!(mfg_new.unwrap().to_string(), "TEST");
