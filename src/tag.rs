@@ -22,6 +22,7 @@ pub trait TagDataTraits {
     /// Converts the tag data into a byte vector.
     fn into_bytes(self) -> Vec<u8>;
     fn as_slice(&self) -> &[u8];
+    fn as_mut_slice(&mut self) -> &mut [u8];
     fn len(&self) -> usize {
         self.as_slice().len()
     }

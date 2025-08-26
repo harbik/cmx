@@ -15,7 +15,7 @@ pub fn md5checksum(bytes: &mut [u8]) -> [u8; 16] {
         panic!("ICC profile data must be at least 128 bytes long");
     }
 
-    let flags: [u8; 4] = bytes[40..=43].try_into().unwrap();
+    let flags: [u8; 4] = bytes[44..=47].try_into().unwrap();
     bytes[44..=47].fill(0);
 
     let rendering_intent: [u8; 4] = bytes[64..=67].try_into().unwrap();

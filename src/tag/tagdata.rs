@@ -140,6 +140,7 @@ impl DataSignature {
         match value {
             0x00000000 => Self::UndefinedData,
             0x6368726D => Self::ChromaticityData,
+            0x63696370 => Self::CicpData,           /* 'cicp' */
             0x636C726F => Self::ColorantOrderData,
             0x636C7274 => Self::ColorantTableData,
             0x63726469 => Self::CrdInfoData,
@@ -360,6 +361,7 @@ macro_rules! define_datatags {
                 impl TagDataTraits for [< $name Data >] {
                     fn into_bytes(self) -> Vec<u8> { self.0 }
                     fn as_slice(&self) -> &[u8] { &self.0 }
+                    fn as_mut_slice(&mut self) -> &mut [u8] { &mut self.0 }
                     fn pad(&mut self, size: usize) {
                         if self.0.len() < size { self.0.resize(size, 0); }
                     }
@@ -393,6 +395,14 @@ macro_rules! define_datatags {
                         $(
                             $(#[$meta])?
                             Self::$name(t) => t.as_slice()
+                        ),+
+                    }
+                }
+                fn as_mut_slice(&mut self) -> &mut [u8] {
+                    match self {
+                        $(
+                            $(#[$meta])?
+                            Self::$name(t) => t.as_mut_slice()
                         ),+
                     }
                 }

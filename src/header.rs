@@ -401,7 +401,7 @@ impl RawProfile {
     /// assert_eq!(platform, Platform::Microsoft);
     /// ```
     pub fn with_primary_platform(mut self, platform: Platform) -> Self {
-        self.header_mut().primary_platform = U32::new(platform as u32);
+        self.header_mut().primary_platform.set(platform as u32);
         self
     }
 
@@ -580,8 +580,9 @@ impl RawProfile {
     pub fn manufacturer(&self) -> Option<Signature> {
         let header = self.header();
         let m = header.manufacturer.get();
-        if is_printable_ascii_bytes(m.as_bytes()) {
-            Some(Signature(m))
+        let sig = Signature(m);
+        if is_printable_ascii_bytes(sig.to_string().as_bytes()) {
+            Some(sig)
         } else {
             None
         }

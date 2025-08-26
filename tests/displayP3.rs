@@ -18,9 +18,6 @@ mod make_display_p3 {
     #[test]
     #[rustfmt::skip]
     fn print_display_p3() -> Result<(), Box<dyn std::error::Error>> {
-        let display_p3_original = cmx::profile::RawProfile::from_bytes(
-            include_bytes!("../tests/profiles/Display P3.icc")
-        )?;
         let date = DateTime::parse_from_rfc3339("2017-07-07T13:22:32Z")
             .expect("Failed to parse date");
         use cmx::tag::tags::*;
@@ -78,9 +75,14 @@ mod make_display_p3 {
                 })
             ;
 
-        dbg!(&display_p3_original);
-       // display_p3_cmx.to_file("tests/profiles/Display P3_cmx.icc")?;
-       let display_p3_cmx_2= cmx::profile::Profile::from_bytes(&display_p3_cmx.to_bytes()?)?;
+        let display_p3_original = cmx::profile::RawProfile::from_bytes(
+            include_bytes!("../tests/profiles/Display P3.icc")
+        )?;
+
+        // Convert to bytes and back to ensure consistency, but also to calculate the profile ID,
+        // which is done at the end of the to_bytes() method.
+        let display_p3_cmx_bytes = display_p3_cmx.to_bytes()?;
+        let display_p3_cmx_2 = cmx::profile::Profile::from_bytes(&display_p3_cmx_bytes)?;
 
         assert!(display_p3_original.profile_id() == display_p3_cmx_2.profile_id());
         Ok(())
