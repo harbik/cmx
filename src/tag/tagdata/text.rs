@@ -60,13 +60,13 @@ impl TextData {
         // Enusure the text is valid Ascii and fits in the tag
         if !text.is_ascii() {
             panic!("TextData only supports ASCII text");
-        } 
+        }
 
         let mut buf = Vec::with_capacity(std::mem::size_of::<WriteLayout>() + text.len() + 1);
         buf.extend_from_slice(WriteLayout::new().as_bytes());
 
         buf.extend_from_slice(text.trim_end_matches('\0').as_bytes());
-         
+
         buf.push(0); // Append NUL terminator
         self.0 = buf;
     }

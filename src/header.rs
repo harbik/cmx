@@ -11,7 +11,12 @@ use zerocopy::{
 };
 
 use crate::{
-    error::{Error, HeaderParseError}, is_printable_ascii_bytes, profile::RawProfile, signatures::{Cmm, ColorSpace, DeviceClass, Pcs, Platform, Signature}, tag::{GamutCheck, Interpolate, Quality, RenderingIntent}, S15Fixed16
+    error::{Error, HeaderParseError},
+    is_printable_ascii_bytes,
+    profile::RawProfile,
+    signatures::{Cmm, ColorSpace, DeviceClass, Pcs, Platform, Signature},
+    tag::{GamutCheck, Interpolate, Quality, RenderingIntent},
+    S15Fixed16,
 };
 
 fn validate_version(major: u8, minor: u8) -> Result<(u8, u8), Error> {
@@ -326,10 +331,9 @@ impl RawProfile {
     }
 
     pub fn with_now_as_creation_date(self) -> Self {
-        let now =  chrono::Utc::now().with_nanosecond(0).unwrap();
+        let now = chrono::Utc::now().with_nanosecond(0).unwrap();
         self.with_creation_date(now)
     }
-
 
     /// Checks if the file signature of the profile is valid.
     /// This method verifies that the file signature matches the expected value for an ICC profile.
@@ -604,7 +608,8 @@ impl RawProfile {
     /// # Notes:
     /// - For a full list of manufacturers tag signatures, see the [ICC Manufacturer Registry](https://www.color.org/signatureRegistry/index.xalter).
     pub fn with_manufacturer(mut self, manufacturer: &str) -> Self {
-        let manufacturer: Signature = manufacturer.parse()
+        let manufacturer: Signature = manufacturer
+            .parse()
             .unwrap_or_else(|_| Signature::default()); // Default to Signature(0) if parsing fails
         self.header_mut().manufacturer = U32::new(manufacturer.0);
         self

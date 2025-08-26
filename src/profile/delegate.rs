@@ -70,32 +70,32 @@ macro_rules! delegate_raw_profile_methods {
                 }
 
                 pub fn with_primary_platform(
-                    self, 
+                    self,
                     platform: crate::signatures::Platform
                 ) -> Self {
                     Self(self.0.with_primary_platform(platform))
                 }
 
                 pub fn with_cmm(
-                    self, 
+                    self,
                     cmm: crate::signatures::Cmm) -> Result<Self, crate::Error> {
                         Ok(Self(self.0.with_cmm(cmm)?))
                 }
-                
+
                 pub fn with_manufacturer(mut self, manufacturer: &str) -> Self {
                     self.0 = self.0.with_manufacturer(manufacturer);
                     self
                 }
-                
+
                 pub fn with_data_color_space(
-                    self, 
+                    self,
                     color_space: crate::signatures::ColorSpace
                 ) -> Self {
                     Self(self.0.with_data_color_space(color_space))
                 }
 
                 pub fn with_creator(
-                    self, 
+                    self,
                     creator:  &str
                 ) -> Self {
                     Self(self.0.with_creator(creator))

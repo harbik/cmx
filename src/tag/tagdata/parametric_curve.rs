@@ -3,7 +3,8 @@
 
 use crate::{
     is_zero,
-    tag::tagdata::{DataSignature, ParametricCurveData}, S15Fixed16,
+    tag::tagdata::{DataSignature, ParametricCurveData},
+    S15Fixed16,
 };
 use serde::Serialize;
 use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, Unaligned, I32, U16};

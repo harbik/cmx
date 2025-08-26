@@ -8,7 +8,6 @@ use std::fs::File;
 use std::io::{Cursor, Read, Write};
 use std::path::Path;
 use std::str::FromStr;
-use zerocopy::{BigEndian, FromBytes, IntoBytes, KnownLayout, U32};
 
 use crate::profile::{set_profile_id, Profile};
 use crate::signatures::{DeviceClass, Pcs};
@@ -16,33 +15,77 @@ use crate::tag::tagdata::TagData;
 use crate::tag::TagDataTraits;
 use crate::tag::{Tag, TagSignature};
 
-/// An ICC profile, deconstructed in:
+/// # RawProfile
 ///
-/// - a raw header array, with a length of 128 bytes,
-/// - a indexmap of datablocks, with a `TagSignature`` as key and `TagBytes`` as value.
+/// Represents a deconstructed ICC color profile with direct access to its binary structure.
 ///
-/// An indexmap is used to preserve the insertion order of tags, which is technically not required
-/// by the ICC specification, but is used to maintain the order of tags as they appear in profiles
-/// read from a a file file, and to maximize compatibility with existing ICC profiles.
+/// ## Structure
+/// An ICC profile consists of:
+/// - A 128-byte header containing metadata about the profile
+/// - A tag table listing all tags in the profile
+/// - Tag data blocks containing the actual color data
 ///
-/// It does not include a separate tag table; the profile tags are the used as the indexmap's key,
-/// while offsets and sizes are included in the `DataBlock` struct. Those offsets and sizes
-/// are used to recreate the tag table on writing.
-/// Whenever the size of a tag's data changes, the offsets and sizes of all tags are updated.
+/// `RawProfile` stores the header as a raw byte array and maintains tags in an ordered map
+/// that preserves the original tag order from the source profile.
 ///
+/// ## Tag Management
+/// Rather than maintaining a separate tag table, `RawProfile` embeds offset and size information
+/// directly in the `ProfileTagRecord` structure for each tag. This approach allows for:
+/// - Direct access to tag data without parsing the entire profile
+/// - Preservation of the original tag order from the source profile
+/// - Automatic recalculation of offsets when tag data changes
 ///
+/// ## Tag Sharing
+/// ICC profiles can optimize storage by having multiple tag references point to the same data block.
+/// `RawProfile` detects and preserves this optimization:
+/// - When reading profiles, it detects duplicate tag offsets
+/// - When writing profiles, it can share identical tag data by default
+/// - Tag sharing can be disabled for round-trip testing purposes
 ///
+/// ## Usage
+/// `RawProfile` provides methods to:
+/// - Read profiles from files or byte arrays
+/// - Write profiles to files or byte arrays
+/// - Access and modify profile header fields
+/// - Access and modify tag data
+/// - Convert between raw profiles and type-specific profile interfaces
+///
+/// ## Conversion
+/// A `RawProfile` can be converted to a type-specific profile interface (like `InputProfile`
+/// or `DisplayProfile`) based on its device class using the `into_class_profile()` method.
+///
+/// ## Binary Representation
+/// When serializing to bytes, `RawProfile` ensures:
+/// - Tag data is properly aligned on 4-byte boundaries
+/// - Tag offsets and sizes are updated to reflect any changes
+/// - Special tags like NamedColor2 are handled correctly with PCS information
+/// - The profile ID is calculated if requested
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct RawProfile {
+    #[serde(with = "serde_arrays")]
+    pub header: [u8; 128], // 128 bytes
+    pub tags: IndexMap<TagSignature, ProfileTagRecord>, // preserves insertion order
+    #[serde(skip)]
+    shared_tags: bool,
+    // whether to share tag data for identical tags
+    // this is normally true, but can be set to false for for round trip testing
+    // as not all profiles use tag data sharing.
+}
 
-/// Represents a single tag entry in an ICC profile,
-/// containing an offset, size, and it's raw tag bytes,
-/// and is the main interface for accessing tag data through
-/// the IndexMap in the `RawProfile`.
-/// These are the offset and size used to import the tag data from
-/// the raw bytes of the ICC profile, and are also used to write the
-/// tag data back to the raw bytes when exporting the profile.
-/// When writing the data the size of all the tags is checked to see
-/// if any tag data has changed in size, and if so all the tags are
-/// re-arranged to fit the new size.
+/// A record representing a tag in an ICC profile.
+///
+/// In ICC profiles, tag records contain metadata about tag elements including:
+/// - The offset where the tag data begins in the profile
+/// - The size of the tag data
+/// - The actual tag data itself
+///
+/// This struct provides methods for creating new tag records and accessing
+/// their raw byte representation.
+///
+/// # ICC Profile Tag Table
+/// Tag records are part of the ICC profile's tag table, which acts as a directory
+/// of all the tags within the profile. Each record points to the actual tag data
+/// elsewhere in the profile file.
 #[derive(Debug, Serialize, Clone, PartialEq)]
 pub struct ProfileTagRecord {
     pub offset: u32,
@@ -65,26 +108,6 @@ impl ProfileTagRecord {
     }
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
-pub struct RawProfile {
-    #[serde(with = "serde_arrays")]
-    pub header: [u8; 128], // 128 bytes
-    pub tags: IndexMap<TagSignature, ProfileTagRecord>, // preserves insertion order
-    #[serde(skip)]
-    shared_tags: bool,
-    // whether to share tag data for identical tags
-    // this is normally true, but can be set to false for for round trip testing
-    // as not all profiles use tag data sharing.
-}
-
-#[derive(Debug, FromBytes, IntoBytes, KnownLayout)]
-#[repr(C)]
-struct ICCTagtableEntryLayout {
-    tag_signature: U32<BigEndian>,
-    offset: U32<BigEndian>,
-    size: U32<BigEndian>,
-}
-
 impl Default for RawProfile {
     fn default() -> Self {
         Self {
@@ -101,18 +124,37 @@ impl Default for RawProfile {
     }
 }
 
-fn share_tags(tag_entries: &Vec<(TagSignature, u32, u32)>) -> bool {
-    let mut seen_data = HashSet::new();
+// Accept a slice to avoid needless Vec typing.
+fn share_tags(tag_entries: &[(TagSignature, u32, u32)]) -> bool {
+    // Duplicate offsets in the tag table imply shared data blocks.
+    let mut seen_offsets = HashSet::new();
     for &(_sig, offset, _size) in tag_entries {
-        if seen_data.get(&offset).is_some() {
-            return true
-        } else {
-            seen_data.insert(offset);
+        if !seen_offsets.insert(offset) {
+            return true;
         }
     }
-    false // No duplicates found, so don't share tags for a profile
+    false
 }
 
+/// Implementation of the `RawProfile` struct for handling ICC color profiles.
+///
+/// A `RawProfile` represents an ICC color profile in a raw form with direct access to the
+/// profile header, tag table, and tag data. This implementation provides methods to:
+///
+/// - Read profiles from files or byte arrays
+/// - Write profiles to files
+/// - Convert profiles to binary data
+/// - Update tag record offsets and sizes
+/// - Convert raw profiles to specific device class profiles
+///
+/// ICC profiles consist of a 128-byte header, a tag count, a tag table, and tag data.
+/// The tag table contains records of tag signatures, offsets, and sizes, which point to
+/// the actual tag data in the file. This implementation handles the complexities of
+/// reading and writing this structure, including special handling for certain tags
+/// (like NamedColor2) and optional tag data sharing.
+///
+/// Tag sharing is an optimization where identical tag data blocks are stored only once
+/// in the profile and referenced by multiple tag table entries.
 impl RawProfile {
     /// Reads an ICC profile from a file.
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
@@ -165,15 +207,8 @@ impl RawProfile {
             tag_entries.push((signature, offset, size));
         }
 
-        // check if the profile uses shared tags, i.e. multiple tags with the same offset
-        // if not, we set the share_tags flag to false, which means that
-        // when writing the profile back to bytes, all tags will be written
-        // this is useful for round-trip testing, as not all profiles use
-        // tag sharing.
-        let shared_tags = share_tags(&tag_entries); 
-        
-        dbg!(shared_tags);
-        dbg!(&tag_entries);
+        // Detect if the source profile used shared tag data (duplicate offsets)
+        let shared_tags = share_tags(&tag_entries);
 
         // Create a map to hold the tags
         let mut tags = IndexMap::with_capacity(tag_count as usize);
@@ -223,7 +258,11 @@ impl RawProfile {
             );
         }
 
-        Ok(RawProfile { header, tags, shared_tags })
+        Ok(RawProfile {
+            header,
+            tags,
+            shared_tags,
+        })
     }
 
     /// Writes the ICC profile to a file.
@@ -271,13 +310,11 @@ impl RawProfile {
             128 + 4 + self.tags.len() * 12
         );
 
-        dbg!(self.shared_tags);
         // Write tag data directly to the buffer
         for (tag_signature, mut tag) in self.tags {
-
-            // Write tag data if share_tags is false, or if the size is positive.
-            // Don't write if shared_tags is true and size is negative.
-            if !(self.shared_tags && tag.size > 0) { // write the tag data
+            // Write all tags when sharing disabled; otherwise write only primaries (size > 0)
+            let should_write = if self.shared_tags { tag.size > 0 } else { true };
+            if should_write {
                 // If the current buffer length is less than the tag's offset, we need to pad it
                 // to ensure we write at the correct position.
                 if buf.len() < tag.offset as usize {
@@ -340,47 +377,46 @@ impl RawProfile {
     // This method updates the offsets and sizes of the tags based on their data, ensuring that
     // the profile can be written back to a file with correct offsets and sizes.
     fn with_updated_tagrecord_offsets_and_sizes(mut self) -> Self {
-        // TODO: TagType content sharing.
-        // Go through the tags and see which ones have the same content, and share them.
-        // This is a performance optimization to reduce the size of the profile.
-        // This is not required by the ICC specification, but it can reduce the size of the profile
-        // and improve performance when reading and writing profiles.
-        // Indicate this by making the offset a negative value, which means that the tag data is shared
-        // and the offset for next tag is not updated.
-        // - create a hashmap of tag data to offset, and use that offset if a duplication is found
-
-        let mut shared_location: HashMap<&[u8], (u32, i32)> = HashMap::new();
-
         // Calculate start of tag data area
         let tag_count = self.tags.len();
         let data_start = 128 + 4 + (tag_count * 12);
-
-        // Position for next tag data (aligned to 4 bytes)
         let mut offset_for_next_tag = crate::padded_size(data_start);
 
-        // Process each tag
+        // If the source profile did not use tag sharing, assign unique offsets/sizes and return.
+        if !self.shared_tags {
+            for (_signature, tag_record) in self.tags.iter_mut() {
+                tag_record.offset = offset_for_next_tag as u32;
+                tag_record.size = tag_record.tag.len() as i32;
+                offset_for_next_tag += crate::padded_size(tag_record.tag.len());
+            }
+            // Ensure we did not accidentally mark any tag as shared in this path.
+            debug_assert!(self.tags.values().all(|t| t.size > 0));
+            return self;
+        }
+
+        // Otherwise, share identical payloads: subsequent identical tags get same offset and negative size.
+        let mut shared_location: HashMap<&[u8], (u32, i32)> = HashMap::new();
+
         for (_signature, tag_record) in self.tags.iter_mut() {
             (tag_record.offset, tag_record.size) = if let Some(&(offset, size)) =
-                shared_location.get(&tag_record.tag.data().as_slice())
+                shared_location.get(tag_record.tag.data().as_slice())
             {
-                // If the tag data is shared, use the existing offset and a negative size
-                // to indicate that the tag data is shared, and doesn't need to be written again.
-                // This is a performance optimization to reduce the size of the profile.
-                // We need the size information, as shared tags are still needed to write the tag table.
                 (offset, -size)
             } else {
-                // not shared
                 let offset = offset_for_next_tag as u32;
                 let size = tag_record.tag.len() as i32;
                 shared_location.insert(tag_record.tag.data().as_slice(), (offset, size));
-                // Otherwise, use the current offset and size
                 offset_for_next_tag += crate::padded_size(tag_record.tag.len());
                 (offset, size)
             };
         }
-        //dbg!(&self);
 
         self
+    }
+
+    /// Returns whether this profile will use shared tag data when (re)serialized.
+    pub fn uses_shared_tags(&self) -> bool {
+        self.shared_tags
     }
 
     pub fn into_class_profile(self) -> Profile {

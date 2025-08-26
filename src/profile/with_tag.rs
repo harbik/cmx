@@ -66,11 +66,7 @@ tag_kind!(
     TextDescription,
     crate::tag::tagdata::TextDescriptionData
 );
-tag_kind!(
-    TextKind,
-    Text,
-    crate::tag::tagdata::TextData
-);
+tag_kind!(TextKind, Text, crate::tag::tagdata::TextData);
 
 tag_kind!(
     IsS15Fixed16ArrayKind,

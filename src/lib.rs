@@ -233,11 +233,13 @@ impl Display for S15Fixed16 {
 }
 
 fn pad_size(len: usize) -> usize {
-    ((len + 3) / 4) * 4 - len
+    //    ((len + 3) / 4) * 4 - len
+    len.div_ceil(4) * 4 - len
 }
 
 fn padded_size(len: usize) -> usize {
-    ((len + 3) / 4) * 4
+    //    ((len + 3) / 4) * 4
+    len.div_ceil(4) * 4
 }
 
 pub fn is_printable_ascii_bytes(b: &[u8]) -> bool {

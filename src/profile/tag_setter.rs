@@ -3,7 +3,7 @@
 #![allow(unused)]
 
 use crate::{
-    profile::{RawProfile, ProfileTagRecord},
+    profile::{ProfileTagRecord, RawProfile},
     tag::{
         tagdata::{CurveData, ParametricCurveData, TagData},
         Tag, TagSignature,
@@ -232,10 +232,7 @@ where
         S: IsTextTag,
         F: FnOnce(&mut crate::tag::tagdata::TextData),
     {
-        let text = self
-            .profile
-            .raw_mut()
-            .ensure_text_mut(self.tag.into());
+        let text = self.profile.raw_mut().ensure_text_mut(self.tag.into());
         configure(text);
         self.profile
     }

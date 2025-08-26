@@ -4,7 +4,7 @@
 use std::fmt;
 
 mod raw_profile;
-pub use raw_profile::{RawProfile, ProfileTagRecord};
+pub use raw_profile::{ProfileTagRecord, RawProfile};
 
 use indexmap::IndexMap;
 
@@ -125,9 +125,7 @@ impl Profile {
         self.as_raw_profile().model()
     }
 
-    pub fn from_bytes(
-        bytes: &[u8],
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         let raw = RawProfile::from_bytes(bytes)?;
         Ok(raw.into_class_profile())
     }

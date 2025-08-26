@@ -2,9 +2,12 @@
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
 use serde::Serialize;
-use zerocopy::{BigEndian, FromBytes, IntoBytes, Immutable, KnownLayout, Unaligned, I32};
+use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, Unaligned, I32};
 
-use crate::{tag::{self, tagdata::S15Fixed16ArrayData}, S15Fixed16};
+use crate::{
+    tag::{self, tagdata::S15Fixed16ArrayData},
+    S15Fixed16,
+};
 
 /// Represents the raw memory layout of an ICC `XYZData` tag.
 ///
@@ -37,9 +40,7 @@ struct WriteLayout<const N: usize> {
 impl<const N: usize> WriteLayout<N> {
     /// Creates a new `WriteLayout` with the correct signature and reserved bytes.
     pub fn new(vec: [f64; N]) -> Self {
-        let values= vec.map(
-            |v| S15Fixed16::from(v).into()
-        );
+        let values = vec.map(|v| S15Fixed16::from(v).into());
         Self {
             signature: tag::DataSignature::S15Fixed16ArrayData.into(),
             _1: [0; 4],
@@ -88,10 +89,8 @@ impl From<&S15Fixed16ArrayData> for S15Fixed16ArrayType {
 }
 
 impl S15Fixed16ArrayData {
-    pub fn set<const N:usize>(&mut self, values: [f64; N]) {
+    pub fn set<const N: usize>(&mut self, values: [f64; N]) {
         let layout = WriteLayout::new(values);
         self.0 = layout.as_bytes().to_vec();
-
     }
-    
 }

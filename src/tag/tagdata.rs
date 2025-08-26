@@ -140,7 +140,7 @@ impl DataSignature {
         match value {
             0x00000000 => Self::UndefinedData,
             0x6368726D => Self::ChromaticityData,
-            0x63696370 => Self::CicpData,           /* 'cicp' */
+            0x63696370 => Self::CicpData, /* 'cicp' */
             0x636C726F => Self::ColorantOrderData,
             0x636C7274 => Self::ColorantTableData,
             0x63726469 => Self::CrdInfoData,

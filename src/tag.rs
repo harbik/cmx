@@ -36,7 +36,6 @@ pub trait TagDataTraits {
     }
 }
 
-
 // Macro to which dispatches methods for each Tag variant to the corresponding TagData methods.
 macro_rules! impl_tag_dispatch {
     (
