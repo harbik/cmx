@@ -127,7 +127,7 @@ impl RawProfile {
     /// Example:
     /// ```rust
     /// use cmx::profile::RawProfile;
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let (major, minor) = profile.version().unwrap();
     /// assert_eq!(major, 4);
     /// assert_eq!(minor, 0);
@@ -149,7 +149,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::profile::RawProfile;
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_version(4, 3).unwrap();
     /// let (major, minor) = updated_profile.version().unwrap();
     /// assert_eq!(major, 4);
@@ -166,7 +166,7 @@ impl RawProfile {
     /// Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::DeviceClass};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let device_class = profile.device_class();
     /// assert_eq!(device_class, DeviceClass::Display);
     /// ```
@@ -183,7 +183,7 @@ impl RawProfile {
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::{Signature, DeviceClass}};
     /// use std::str::FromStr;
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_device_class(DeviceClass::Display);
     /// let device_class = updated_profile.device_class();
     /// assert_eq!(device_class, DeviceClass::Display);
@@ -197,7 +197,7 @@ impl RawProfile {
     /// Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::ColorSpace};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let color_space = profile.data_color_space().unwrap();
     /// assert_eq!(color_space, ColorSpace::RGB);
     /// ```
@@ -214,7 +214,7 @@ impl RawProfile {
     /// Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::ColorSpace};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_data_color_space(ColorSpace::RGB);
     /// let color_space = updated_profile.data_color_space().unwrap();
     /// assert_eq!(color_space, ColorSpace::RGB);
@@ -233,7 +233,7 @@ impl RawProfile {
     /// Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Pcs};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let pcs = profile.pcs().unwrap();
     /// assert_eq!(pcs, Pcs::XYZ);
     /// ```
@@ -249,7 +249,7 @@ impl RawProfile {
     /// Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Pcs};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_pcs(Pcs::XYZ);
     /// let pcs = updated_profile.pcs().unwrap();
     /// assert_eq!(pcs, Pcs::XYZ);
@@ -284,7 +284,7 @@ impl RawProfile {
     /// ```rust
     /// use cmx::profile::RawProfile;
     /// use chrono::{DateTime, Datelike, Utc};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let creation_date = profile.creation_date();
     /// assert_eq!(creation_date.year(), 2017);
     /// assert_eq!(creation_date.month(), 7);
@@ -333,7 +333,7 @@ impl RawProfile {
     /// Example:
     /// ```rust
     /// use cmx::profile::RawProfile;
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// profile.check_file_signature().expect("Not a valid ICC file"); // should not return an error
     /// ```
     pub fn check_file_signature(&self) -> Result<(), Error> {
@@ -351,7 +351,7 @@ impl RawProfile {
     /// Example:
     /// ```rust
     /// use cmx::profile::RawProfile;
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_valid_file_signature();
     /// assert!(updated_profile.check_file_signature().is_ok()); // should not return an error
     /// ```
@@ -371,7 +371,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Platform};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let platform = profile.primary_platform().unwrap();
     /// assert_eq!(platform, Platform::Apple); // or whatever the primary platform is for the profile
     /// ```
@@ -391,7 +391,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Platform};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_primary_platform(Platform::Microsoft);
     /// let platform = updated_profile.primary_platform().unwrap();
     /// assert_eq!(platform, Platform::Microsoft);
@@ -408,7 +408,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::profile::RawProfile;
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let (embedded, use_embedded_only) = profile.flags();
     /// assert!(!embedded); // Not an embeded profile, as read from a file
     /// assert!(!use_embedded_only); // Not set to use embedded only
@@ -437,7 +437,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::profile::RawProfile;
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_flags(true,false).unwrap();
     /// let (embedded, use_embedded_only) = updated_profile.flags();
     /// assert!(embedded); // Now set to embedded
@@ -480,7 +480,7 @@ impl RawProfile {
     ///  ```rust
     /// use cmx::profile::RawProfile;
     /// use cmx::tag::{Quality, Interpolate, GamutCheck};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let (quality, interpolate, gamut_check) = profile.apple_flags();
     /// assert_eq!(quality, Quality::Normal);
     /// assert_eq!(interpolate, Interpolate::True);
@@ -538,7 +538,7 @@ impl RawProfile {
     /// ```rust
     /// use cmx::profile::RawProfile;
     /// use cmx::tag::{Quality, Interpolate, GamutCheck};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_apple_flags(Quality::High, Interpolate::False, GamutCheck::False);
     /// let (quality, interpolate, gamut_check) = updated_profile.apple_flags();
     /// assert_eq!(quality, Quality::High);
@@ -569,7 +569,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Signature};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let manufacturer = profile.manufacturer().unwrap();
     /// assert_eq!(manufacturer.to_string(), "APPL"); // or whatever the manufacturer is for the profile
     /// ```
@@ -591,7 +591,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Signature};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_manufacturer("TEST");
     /// let manufacturer = updated_profile.manufacturer().unwrap();
     /// assert_eq!(manufacturer.to_string(), "TEST");
@@ -611,7 +611,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Signature};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let model = profile.model();
     /// assert_eq!(model, Signature::default()); // or whatever the model is for the profile
     /// ```
@@ -628,7 +628,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Signature};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let test_tag: Signature = "abcd".parse().unwrap();
     /// let updated_profile = profile.with_model(Some(test_tag));
     /// let model = updated_profile.model();
@@ -645,7 +645,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::profile::RawProfile;
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let attributes = profile.attributes();
     /// assert_eq!(attributes, 0); // or whatever the attributes are for the profile
     /// ```
@@ -659,7 +659,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::profile::RawProfile;
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_attributes(0x0000000000000001); // Set the first attribute
     /// let attributes = updated_profile.attributes();
     /// assert_eq!(attributes, 0x0000000000000001); // or whatever the attributes are for the profile
@@ -674,7 +674,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Signature, tag::RenderingIntent};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let rendering_intent = profile.rendering_intent();
     /// assert_eq!(rendering_intent, RenderingIntent::Perceptual); // or whatever the rendering intent is for the profile
     /// ```
@@ -690,7 +690,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Signature, tag::RenderingIntent};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_rendering_intent(RenderingIntent::Perceptual);
     /// let rendering_intent = updated_profile.rendering_intent();
     /// assert_eq!(rendering_intent, RenderingIntent::Perceptual);
@@ -717,7 +717,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Signature};
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();  
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();  
     /// let updated_profile = profile.with_creator("TEST");
     ///     
     /// let creator = updated_profile.creator();
@@ -737,7 +737,7 @@ impl RawProfile {
     /// # Example:
     /// ```rust
     /// use cmx::profile::RawProfile;
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
     /// let profile_id = profile.profile_id();
     /// assert_eq!(profile_id, [202, 26, 149, 130, 37, 127, 16, 77, 56, 153, 19, 213, 209, 234, 21, 130]); // or whatever the profile ID is for the profile
     /// ```
@@ -773,7 +773,7 @@ mod test {
 
     #[test]
     fn test_header() {
-        let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+        let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
         let header = profile.header();
         let mfg = header.manufacturer.get();
         let mfg_str = Signature(mfg).to_string();
@@ -782,7 +782,7 @@ mod test {
 
     #[test]
     fn test_set_manufacturer() {
-        let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+        let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
         let updated_profile = profile.with_manufacturer("TEST");
         let mfg_new = updated_profile.manufacturer();
         assert_eq!(mfg_new.unwrap().to_string(), "TEST");

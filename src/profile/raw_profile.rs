@@ -157,7 +157,7 @@ fn share_tags(tag_entries: &[(TagSignature, u32, u32)]) -> bool {
 /// in the profile and referenced by multiple tag table entries.
 impl RawProfile {
     /// Reads an ICC profile from a file.
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn read<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
         let mut file = File::open(path)?;
         let mut buf = Vec::new();
         file.read_to_end(&mut buf)?;

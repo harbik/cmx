@@ -131,7 +131,7 @@ impl Profile {
     }
 
     pub fn read(path: impl AsRef<std::path::Path>) -> Result<Self, Box<dyn std::error::Error>> {
-        let raw = RawProfile::from_file(path)?;
+        let raw = RawProfile::read(path)?;
         Ok(raw.into_class_profile())
     }
 
