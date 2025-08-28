@@ -11,7 +11,12 @@ use zerocopy::{
 };
 
 use crate::{
-    error::{Error, HeaderParseError}, format_hex_with_spaces, is_printable_ascii_bytes, profile::RawProfile, signatures::{Cmm, ColorSpace, DeviceClass, Pcs, Platform, Signature}, tag::{GamutCheck, Interpolate, Quality, RenderingIntent}, S15Fixed16
+    error::{Error, HeaderParseError},
+    format_hex_with_spaces, is_printable_ascii_bytes,
+    profile::RawProfile,
+    signatures::{Cmm, ColorSpace, DeviceClass, Pcs, Platform, Signature},
+    tag::{GamutCheck, Interpolate, Quality, RenderingIntent},
+    S15Fixed16,
 };
 
 fn validate_version(major: u8, minor: u8) -> Result<(u8, u8), Error> {

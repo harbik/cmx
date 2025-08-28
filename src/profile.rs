@@ -139,7 +139,10 @@ impl Profile {
         self.into_raw_profile().into_bytes()
     }
 
-    pub fn write(self, path: impl AsRef<std::path::Path>) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn write(
+        self,
+        path: impl AsRef<std::path::Path>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         self.into_raw_profile().write(path)
     }
 

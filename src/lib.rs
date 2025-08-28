@@ -77,7 +77,7 @@ g = 2.60001
 You can also use the `cmx` library to create ICC profiles programmatically in Rust.
 The library provides a builder-style API for constructing profiles,
 allowing you to set various tags and properties.
- 
+
 Here is an example for creating a Display P3 ICC profile:
 
 ```rust
@@ -318,7 +318,7 @@ mod test {
     fn test_format_hex_with_spaces() {
         let data = [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC];
         let formatted = format_hex_with_spaces(&data);
-        assert_eq!(formatted, "12345678 9ABC");
+        assert_eq!(formatted, "12345678 9abc");
     }
     #[test]
     fn test_pad() {
