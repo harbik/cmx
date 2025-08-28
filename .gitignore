@@ -1,6 +1,6 @@
 /target
 **/.DS_Store
-**/.vscode
-**/.cargo
-/book
+/.vscode/
+/.cargo/
+/book/
 /tmp/
