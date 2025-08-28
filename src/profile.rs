@@ -130,12 +130,25 @@ impl Profile {
         Ok(raw.into_class_profile())
     }
 
+    pub fn read(path: impl AsRef<std::path::Path>) -> Result<Self, Box<dyn std::error::Error>> {
+        let raw = RawProfile::read(path)?;
+        Ok(raw.into_class_profile())
+    }
+
     pub fn into_bytes(self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         self.into_raw_profile().into_bytes()
     }
 
+    pub fn write(self, path: impl AsRef<std::path::Path>) -> Result<(), Box<dyn std::error::Error>> {
+        self.into_raw_profile().write(path)
+    }
+
     pub fn profile_id(&self) -> [u8; 16] {
         self.as_raw_profile().profile_id()
+    }
+
+    pub fn profile_id_as_hex_string(&self) -> String {
+        self.as_raw_profile().profile_id_as_hex_string()
     }
 
     pub fn creation_date(&self) -> chrono::DateTime<chrono::Utc> {

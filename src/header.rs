@@ -11,12 +11,7 @@ use zerocopy::{
 };
 
 use crate::{
-    error::{Error, HeaderParseError},
-    is_printable_ascii_bytes,
-    profile::RawProfile,
-    signatures::{Cmm, ColorSpace, DeviceClass, Pcs, Platform, Signature},
-    tag::{GamutCheck, Interpolate, Quality, RenderingIntent},
-    S15Fixed16,
+    error::{Error, HeaderParseError}, format_hex_with_spaces, is_printable_ascii_bytes, profile::RawProfile, signatures::{Cmm, ColorSpace, DeviceClass, Pcs, Platform, Signature}, tag::{GamutCheck, Interpolate, Quality, RenderingIntent}, S15Fixed16
 };
 
 fn validate_version(major: u8, minor: u8) -> Result<(u8, u8), Error> {
@@ -39,7 +34,7 @@ fn validate_version(major: u8, minor: u8) -> Result<(u8, u8), Error> {
 
 #[derive(FromBytes, IntoBytes, Unaligned, KnownLayout, Immutable, Debug, Clone, Copy)]
 #[repr(C)]
-pub struct HeaderLayout {
+pub(crate) struct HeaderLayout {
     pub profile_size: U32<BigEndian>,
     pub cmm: U32<BigEndian>,
     pub version: U32<BigEndian>,
@@ -66,23 +61,23 @@ pub struct HeaderLayout {
 }
 
 impl RawProfile {
-    /// Returns a reference to the ICC profile header, from an zerocopy overlay.
-    /// Unwrap justificiation:
-    ///
-    /// - The header is a 128-byte array that contains metadata about the profile.
-    /// - The byte array has already been validated to have a size of 128 bytes,
-    ///   and to have a valid ICC profile signature.
-    pub fn header(&self) -> Ref<&[u8], HeaderLayout> {
+    // Returns a reference to the ICC profile header, from an zerocopy overlay.
+    // Unwrap justificiation:
+    //
+    // - The header is a 128-byte array that contains metadata about the profile.
+    // - The byte array has already been validated to have a size of 128 bytes,
+    //   and to have a valid ICC profile signature.
+    pub(crate) fn header(&self) -> Ref<&[u8], HeaderLayout> {
         Ref::<&[u8], HeaderLayout>::from_bytes(self.header.as_slice()).unwrap()
     }
 
-    /// Returns a mutual reference to the ICC profile header, from an zerocopy overlay.
-    /// Unwrap justificiation:
-    ///``
-    /// - The header is a 128-byte array that contains metadata about the profile.
-    /// - The byte array has already been validated to have a size of 128 bytes,
-    ///   and to have a valid ICC profile signature.
-    pub fn header_mut(&mut self) -> &mut HeaderLayout {
+    // Returns a mutual reference to the ICC profile header, from an zerocopy overlay.
+    // Unwrap justificiation:
+    //
+    // - The header is a 128-byte array that contains metadata about the profile.
+    // - The byte array has already been validated to have a size of 128 bytes,
+    //   and to have a valid ICC profile signature.
+    pub(crate) fn header_mut(&mut self) -> &mut HeaderLayout {
         let mut_ref = Ref::<&mut [u8], HeaderLayout>::from_bytes(&mut self.header).unwrap();
         Ref::into_mut(mut_ref)
     }
@@ -198,7 +193,7 @@ impl RawProfile {
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::ColorSpace};
     /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
-    /// let color_space = profile.data_color_space();
+    /// let color_space = profile.data_color_space().unwrap();
     /// assert_eq!(color_space, ColorSpace::RGB);
     /// ```
     pub fn data_color_space(&self) -> Option<ColorSpace> {
@@ -216,16 +211,8 @@ impl RawProfile {
     /// use cmx::{profile::RawProfile, signatures::ColorSpace};
     /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_data_color_space(ColorSpace::RGB);
-    /// let color_space = updated_profile.data_color_space();
+    /// let color_space = updated_profile.data_color_space().unwrap();
     /// assert_eq!(color_space, ColorSpace::RGB);
-    ///
-    /// // or, using a Signature directly:
-    /// use cmx::signatures::Signature;
-    /// let xyz_tag: Signature = "XYZ".parse().unwrap();
-    /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
-    /// let updated_profile = profile.with_data_color_space(xyz_tag);
-    /// let color_space = updated_profile.data_color_space();
-    /// assert_eq!(color_space, ColorSpace::XYZ);
     /// ```
     pub fn with_data_color_space(mut self, color_space: ColorSpace) -> Self {
         self.header_mut().color_space = U32::new(color_space as u32);
@@ -380,7 +367,7 @@ impl RawProfile {
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Platform};
     /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
-    /// let platform = profile.primary_platform();
+    /// let platform = profile.primary_platform().unwrap();
     /// assert_eq!(platform, Platform::Apple); // or whatever the primary platform is for the profile
     /// ```
     /// # Notes:
@@ -401,7 +388,7 @@ impl RawProfile {
     /// use cmx::{profile::RawProfile, signatures::Platform};
     /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
     /// let updated_profile = profile.with_primary_platform(Platform::Microsoft);
-    /// let platform = updated_profile.primary_platform();
+    /// let platform = updated_profile.primary_platform().unwrap();
     /// assert_eq!(platform, Platform::Microsoft);
     /// ```
     pub fn with_primary_platform(mut self, platform: Platform) -> Self {
@@ -578,7 +565,7 @@ impl RawProfile {
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Signature};
     /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
-    /// let manufacturer = profile.manufacturer();
+    /// let manufacturer = profile.manufacturer().unwrap();
     /// assert_eq!(manufacturer.to_string(), "APPL"); // or whatever the manufacturer is for the profile
     /// ```
     pub fn manufacturer(&self) -> Option<Signature> {
@@ -600,9 +587,8 @@ impl RawProfile {
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Signature};
     /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
-    /// let test_tag: Signature = "TEST".parse().unwrap();
-    /// let updated_profile = profile.with_manufacturer(Some(test_tag));
-    /// let manufacturer = updated_profile.manufacturer();
+    /// let updated_profile = profile.with_manufacturer("TEST");
+    /// let manufacturer = updated_profile.manufacturer().unwrap();
     /// assert_eq!(manufacturer.to_string(), "TEST");
     /// ```
     /// # Notes:
@@ -727,8 +713,7 @@ impl RawProfile {
     /// ```rust
     /// use cmx::{profile::RawProfile, signatures::Signature};
     /// let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();  
-    /// let test_tag: Signature = "TEST".parse().unwrap();
-    /// let updated_profile = profile.with_creator(Some(test_tag));
+    /// let updated_profile = profile.with_creator("TEST");
     ///     
     /// let creator = updated_profile.creator();
     /// assert_eq!(creator.unwrap().to_string(), "TEST");
@@ -756,6 +741,11 @@ impl RawProfile {
         header.profile_id
     }
 
+    pub fn profile_id_as_hex_string(&self) -> String {
+        let profile_id = self.profile_id();
+        format_hex_with_spaces(&profile_id)
+    }
+
     /// Clears the profile ID of the profile, and indicates that the profile ID should not be included when creating a new profile.
     /// It is also used while calculating the profile ID.
     pub fn without_profile_id(mut self) -> Self {
@@ -778,7 +768,7 @@ mod test {
 
     #[test]
     fn test_header() {
-        let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+        let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
         let header = profile.header();
         let mfg = header.manufacturer.get();
         let mfg_str = Signature(mfg).to_string();
@@ -787,7 +777,7 @@ mod test {
 
     #[test]
     fn test_set_manufacturer() {
-        let profile = RawProfile::from_file("tests/profiles/Display P3.icc").unwrap();
+        let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
         let updated_profile = profile.with_manufacturer("TEST");
         let mfg_new = updated_profile.manufacturer();
         assert_eq!(mfg_new.unwrap().to_string(), "TEST");

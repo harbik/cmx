@@ -12,12 +12,14 @@ pub fn read_display_p3_profile() -> Result<cmx::profile::Profile, Box<dyn std::e
 #[cfg(test)]
 mod make_display_p3 {
 
-    use chrono::DateTime;
+    use chrono::{DateTime, TimeZone};
     use cmx::profile::DisplayProfile;
 
     #[test]
     #[rustfmt::skip]
-    fn print_display_p3() -> Result<(), Box<dyn std::error::Error>> {
+    // This test constructs the Display P3 profile as provided by Apple using the cmx builder API,
+    // and compares the profile ID to ensure it matches the original profile.
+    fn apple_display_p3() -> Result<(), Box<dyn std::error::Error>> {
         let date = DateTime::parse_from_rfc3339("2017-07-07T13:22:32Z")
             .expect("Failed to parse date");
         use cmx::tag::tags::*;
@@ -85,6 +87,69 @@ mod make_display_p3 {
         let display_p3_cmx_2 = cmx::profile::Profile::from_bytes(&display_p3_cmx_bytes)?;
 
         assert!(display_p3_original.profile_id() == display_p3_cmx_2.profile_id());
+        Ok(())
+    }
+
+    #[test]
+    fn display_p3_doc_example() -> Result<(), Box<dyn std::error::Error>> {
+        use cmx::tag::tags::*;
+        let display_p3_example = DisplayProfile::new()
+            // set creation date, if omitted, the current date and time is used
+            .with_creation_date(chrono::Utc.with_ymd_and_hms(2025, 8, 28, 0, 0, 0).unwrap())
+            .with_tag(ProfileDescriptionTag)
+                .as_text_description(|text| {
+                    text.set_ascii("Display P3");
+                })
+            .with_tag(CopyrightTag)
+                .as_text(|text| {
+                    text.set_text("CC0");
+                })
+            .with_tag(MediaWhitePointTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.950455, 1.00000, 1.08905]);
+                })
+            .with_tag(RedMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.515121, 0.241196, -0.001053]);
+                })
+            .with_tag(GreenMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.291977, 0.692245, 0.041885]);
+                })
+            .with_tag(BlueMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.157104, 0.066574, 0.784073]);
+                })
+            .with_tag(RedTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.39999, 0.94786, 0.05214, 0.07739, 0.04045]);
+                })
+            .with_tag(BlueTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.39999, 0.94786, 0.05214, 0.07739, 0.04045]);
+                })
+            .with_tag(GreenTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.39999, 0.94786, 0.05214, 0.07739, 0.04045]);
+                })
+            .with_tag(ChromaticAdaptationTag)
+                .as_sf15_fixed_16_array(|array| {
+                    array.set([
+                         1.047882, 0.022919, -0.050201,
+                         0.029587, 0.990479, -0.017059,
+                        -0.009232, 0.015076,  0.751678
+                    ]);
+                })
+            .with_profile_id() // calcualate and add profile ID to the profile
+            ;
+
+        display_p3_example.write("tmp/display_p3_example.icc")?;
+        let display_p3_read_back = cmx::profile::Profile::read("tmp/display_p3_example.icc")?;
+        assert_eq!(
+            display_p3_read_back.profile_id_as_hex_string(),
+            "617028e1 e1014e15 91f178a9 fb8efc92"
+        );
+        assert_eq!(display_p3_read_back.profile_size(), 524);
         Ok(())
     }
 }

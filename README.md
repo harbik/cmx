@@ -41,16 +41,19 @@ ascii = "SMPTE RP 431-2-2007 DCI (P3)"
 text = "Copyright Apple Inc., 2015"
 
 [wtpt]
-xyz = [0.89459228515625, 1.0, 0.9544219970703125]
+xyz = [0.894592, 1.0, 0.954422]
 
 [rXYZ]
-xyz = [0.4861602783203125, 0.2266845703125, -0.0008087158203125]
+xyz = [0.48616, 0.226685, -0.000809]
 
 [gXYZ]
-xyz = [0.3238525390625, 0.7103271484375, 0.0432281494140625]
+xyz = [0.323853, 0.710327, 0.043228]
 
 [bXYZ]
-xyz = [0.1541900634765625, 0.06298828125, 0.782470703125]
+xyz = [0.15419, 0.062988, 0.782471]
+
+[rTRC]
+g = 2.60001
 
 [chad]
 matrix = [
@@ -59,41 +62,86 @@ matrix = [
     [-0.004272, 0.005295, 0.862778]
 ]
 
-[rTRC]
-g = 2.6
-
 [bTRC]
-g = 2.6
+g = 2.60001
 
 [gTRC]
-g = 2.6
+g = 2.60001
 
  ```
 </details>
-<details><summary><strong>Creating ICC profiles programmatically</strong></summary>
+<details><summary><strong>Create ICC profiles programmatically</strong></summary>
 You can also use the `cmx` library to create ICC profiles programmatically in Rust.
 The library provides a builder-style API for constructing profiles,
 allowing you to set various tags and properties.
- Example of creating a simple ICC profile:
+ 
+Here is an example for creating a Display P3 ICC profile:
+
 ```rust
-use cmx::profile::DisplayProfile;
-use cmx::tag::tags::{ChromaticityTag, ProfileDescriptionTag};
-use cmx::tag::tagdata::{ChromaticityData, MultiLocalizedUnicodeData};   
-let profile = DisplayProfile::new()
-    .with_profile_version(4, 4)
-    .with_creation_date(None)
-    .with_tag(ChromaticityTag)
-    .with_data(|data| {
-        data.set_standard(cmx::tag::Primaries::ITU);
-    })
+use cmx::tag::tags::*;
+let display_p3_example = DisplayProfile::new()
+    // set creation date, if omitted, the current date and time are used
+    .with_creation_date(chrono::Utc.with_ymd_and_hms(2025, 8, 28, 0, 0, 0).unwrap())
     .with_tag(ProfileDescriptionTag)
-        .as_multi_localized_unicode(|mlu| {
-            mlu.set_ascii("My Display Profile");
-            mlu.set_language("en");
-            mlu.set_text("This is a custom display profile");
-    })
+        .as_text_description(|text| {
+            text.set_ascii("Display P3");
+        })
+    .with_tag(CopyrightTag)
+        .as_text(|text| {
+            text.set_text("CC0");
+        })
+    .with_tag(MediaWhitePointTag)
+        .as_xyz_array(|xyz| {
+            xyz.set([0.950455, 1.00000, 1.08905]);
+        })
+    .with_tag(RedMatrixColumnTag)
+        .as_xyz_array(|xyz| {
+            xyz.set([0.515121, 0.241196, -0.001053]);
+        })
+    .with_tag(GreenMatrixColumnTag)
+        .as_xyz_array(|xyz| {
+            xyz.set([0.291977, 0.692245, 0.041885]);
+        })
+    .with_tag(BlueMatrixColumnTag)
+        .as_xyz_array(|xyz| {
+            xyz.set([0.157104, 0.066574, 0.784073]);
+        })
+    .with_tag(RedTRCTag)
+        .as_parametric_curve(|para| {
+            para.set_parameters([2.39999, 0.94786, 0.05214, 0.07739, 0.04045]);
+        })
+    .with_tag(BlueTRCTag)
+        .as_parametric_curve(|para| {
+            para.set_parameters([2.39999, 0.94786, 0.05214, 0.07739, 0.04045]);
+        })
+    .with_tag(GreenTRCTag)
+        .as_parametric_curve(|para| {
+            para.set_parameters([2.39999, 0.94786, 0.05214, 0.07739, 0.04045]);
+        })
+    .with_tag(ChromaticAdaptationTag)
+        .as_sf15_fixed_16_array(|array| {
+            array.set([
+                 1.047882, 0.022919, -0.050201,
+                 0.029587, 0.990479, -0.017059,
+                -0.009232, 0.015076,  0.751678
+            ]);
+        })
+    .with_profile_id() // calculate and add profile ID to the profile
+    ;
+
+display_p3_example.write("tmp/display_p3_example.icc")?;
+let display_p3_read_back = cmx::profile::Profile::read("tmp/display_p3_example.icc")?;
+assert_eq!(
+    display_p3_read_back.profile_id_as_hex_string(),
+    "617028e1 e1014e15 91f178a9 fb8efc92"
+);
+assert_eq!(display_p3_read_back.profile_size(), 524);
 ```
+Not all ICC tag types are supported yet, but please submit a pull request, or an issue if you need additional tags to be supported.
+
 </details>
+
+
 
 ### Installation
 

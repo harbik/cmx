@@ -25,7 +25,7 @@ macro_rules! delegate_raw_profile_methods {
                         pub fn profile_size(&self) -> usize;
                         pub fn profile_id(&self) -> [u8; 16];
                         pub fn version(&self) -> Result<(u8, u8), crate::Error>;
-                        pub fn to_file<P: AsRef<Path>>(self, path: P) -> Result<(), Box<dyn std::error::Error>>;
+                        pub fn write<P: AsRef<Path>>(self, path: P) -> Result<(), Box<dyn std::error::Error>>;
                     }
                 }
 
