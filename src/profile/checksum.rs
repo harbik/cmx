@@ -10,12 +10,12 @@
 ///
 /// # Notes:
 /// - We need a mut reference to the byte slice because we modify it by zeroing out certain fields.
-pub fn md5checksum(bytes: &mut [u8]) -> Result<[u8; 16], crate::Error> {
+pub fn md5checksum(bytes: &mut [u8]) -> [u8; 16] {
     if bytes.len() < 128 {
-        return Err(crate::Error::InvalidICCProfile);
+        panic!("ICC profile data must be at least 128 bytes long");
     }
 
-    let flags: [u8; 4] = bytes[40..=43].try_into().unwrap();
+    let flags: [u8; 4] = bytes[44..=47].try_into().unwrap();
     bytes[44..=47].fill(0);
 
     let rendering_intent: [u8; 4] = bytes[64..=67].try_into().unwrap();
@@ -30,7 +30,7 @@ pub fn md5checksum(bytes: &mut [u8]) -> Result<[u8; 16], crate::Error> {
 
     bytes[44..=47].copy_from_slice(&flags);
     bytes[64..=67].copy_from_slice(&rendering_intent);
-    Ok(checksum)
+    checksum
 }
 
 /// Sets the profile ID in the ICC profile data.
@@ -41,10 +41,10 @@ pub fn md5checksum(bytes: &mut [u8]) -> Result<[u8; 16], crate::Error> {
 /// - This is not a method of the `RawProfile` struct, as that is a parsed ICC profile, and the
 ///   checksum has to be calculated from the binary profile representations, as stored in a file, or
 ///   embedded in an image.
-pub fn set_profile_id(bytes: &mut [u8]) -> Result<[u8; 16], crate::Error> {
-    let checksum = md5checksum(bytes)?;
+pub fn set_profile_id(bytes: &mut [u8]) -> [u8; 16] {
+    let checksum = md5checksum(bytes);
     bytes[84..=99].copy_from_slice(&checksum);
-    Ok(checksum)
+    checksum
 }
 
 #[cfg(test)]
@@ -57,7 +57,7 @@ mod test {
         let mut icc_data_mut = icc_data.to_vec();
 
         // &mut Vec<u8> is a mutable byte slice because it implements `DerefMut` for `&mut [u8]`
-        let result = set_profile_id(&mut icc_data_mut).unwrap();
+        let result = set_profile_id(&mut icc_data_mut);
 
         // checksum as reported by ColorSync
         let expected_checksum: [u8; 16] = [

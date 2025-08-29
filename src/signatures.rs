@@ -46,9 +46,10 @@ impl Debug for Signature {
 }
 
 fn format_u32_as_string(f: &mut std::fmt::Formatter<'_>, value: u32) -> std::fmt::Result {
+    use crate::is_printable_ascii_bytes;
     let bytes = value.to_be_bytes();
-    let s = String::from_utf8_lossy(&bytes);
-    if s.is_ascii() && s.len() == 4 {
+    if is_printable_ascii_bytes(&bytes) {
+        let s = String::from_utf8_lossy(&bytes);
         write!(f, "{s}")
     } else {
         write!(f, "{value:08X}")
@@ -101,5 +102,11 @@ impl From<Signature> for u32 {
 impl From<u32> for Signature {
     fn from(value: u32) -> Self {
         Signature(value)
+    }
+}
+
+impl From<Signature> for [u8; 4] {
+    fn from(sig: Signature) -> Self {
+        sig.0.to_be_bytes()
     }
 }

@@ -1,114 +1,285 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
+#![allow(unused)]
 
 use crate::{
-    profile::RawProfile,
+    profile::{ProfileTagRecord, RawProfile},
     tag::{
-        tag_value::CurveType, 
-        tag_value::MultiLocalizedUnicodeType, tag_value::TagValue, TagTable,
-        TagSignature,
+        tagdata::{CurveData, ParametricCurveData, TagData},
+        Tag, TagSignature,
     },
 };
 
-// Marker traits (families of allowed inner types)
-pub trait UnambiguousTag {}
-pub trait IsTextDescriptionTag {}
-pub trait IsMultiLocalizedUnicodeTag {}
-pub trait IsCurveTag {}
-pub trait IsParametricCurveTag {}
-pub trait IsLut8TypeTag {}
-pub trait IsLut16TypeTag {}
-pub trait IsLutAtoBTypeTag {}
-pub trait IsLutBtoATypeTag {}
-
-
-/*
-Allows for a ergonomic way to set tag data in a `RawProfile`.
-Example usage:
-let mut profile = RawProfile::new()
-    // set profile header data
-    .with_profile_version(4, 4)
-    .with_creation_date(None)
-    .add_tag(ChromaticityTag)
-        .with_data(|data| { // all umbiguous tags can use this method
-            // use data to set the ChromaticityType
-            data.set_standard(Primaries::ITU);
-        }) // This returns &mut RawProfile, so we can chain...
-    .add_tag(ProfileDescriptionTag)
-        .as_multi_localized_unicode(|mlu| {
-            // use mlu to set the data for the MultiLocalizedUnicode tag
-        }) // This returns &mut RawProfile, so we can chain...
-    /*
-        alternatively
-        .as_text_description(|text| {
-            // use text to set the data for the TextDescription tag
-        })
-    */
-    .add_tag(RedTRCTag)
-        .as_curve(|curve| {
-            // ...
-        }); // ...and so on.
-*/
-
-/// A helper for safely setting the data for a specific tag signature.
-/// It is generic over the signature type `S` to enable compile-time checks.
-pub struct TagSetter<'a, S: 'a> {
-    profile: &'a mut RawProfile,
-    signature: S,
+// Provide a way to access the inner RawProfile from wrappers and Profile enum.
+pub trait HasRawProfile {
+    fn raw(&self) -> &RawProfile;
+    fn raw_mut(&mut self) -> &mut RawProfile;
 }
 
-impl<'a, S: Into<TagSignature> + Copy> TagSetter<'a, S> {
-    pub fn new(profile: &'a mut RawProfile, signature: S) -> Self {
-        Self { profile, signature }
+// Implement for RawProfile itself.
+impl HasRawProfile for RawProfile {
+    fn raw(&self) -> &RawProfile {
+        self
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        self
+    }
+}
+
+// Implement for all wrapper profiles.
+impl HasRawProfile for super::InputProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+impl HasRawProfile for super::DisplayProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+impl HasRawProfile for super::OutputProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+impl HasRawProfile for super::DeviceLinkProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+impl HasRawProfile for super::AbstractProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+impl HasRawProfile for super::ColorSpaceProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+impl HasRawProfile for super::NamedColorProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+impl HasRawProfile for super::SpectralProfile {
+    fn raw(&self) -> &RawProfile {
+        &self.0
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        &mut self.0
+    }
+}
+
+// Implement for the enum Profile.
+impl HasRawProfile for super::Profile {
+    fn raw(&self) -> &RawProfile {
+        self.as_raw_profile()
+    }
+    fn raw_mut(&mut self) -> &mut RawProfile {
+        super::Profile::as_raw_profile_mut(self)
+    }
+}
+
+pub trait IsMultiLocalizedUnicodeTag {}
+
+pub trait IsCurveTag {}
+impl IsCurveTag for crate::tag::tags::BlueTRCTag {}
+impl IsCurveTag for crate::tag::tags::GreenTRCTag {}
+impl IsCurveTag for crate::tag::tags::RedTRCTag {}
+impl IsCurveTag for crate::tag::tags::GrayTRCTag {}
+
+pub trait IsParametricCurveTag {}
+impl IsParametricCurveTag for crate::tag::tags::BlueTRCTag {}
+impl IsParametricCurveTag for crate::tag::tags::GreenTRCTag {}
+impl IsParametricCurveTag for crate::tag::tags::RedTRCTag {}
+impl IsParametricCurveTag for crate::tag::tags::GrayTRCTag {}
+
+pub trait IsSignatureTag {}
+impl IsSignatureTag for crate::tag::tags::ColorimetricIntentImageStateTag {}
+impl IsSignatureTag for crate::tag::tags::TechnologyTag {}
+#[cfg(feature = "v5")]
+impl IsSignatureTag for crate::tag::tags::SaturationRenderingIntentGamutTag {}
+impl IsSignatureTag for crate::tag::tags::PerceptualRenderingIntentGamutTag {}
+
+pub trait IsXYZArrayTag {}
+impl IsXYZArrayTag for crate::tag::tags::RedMatrixColumnTag {}
+impl IsXYZArrayTag for crate::tag::tags::GreenMatrixColumnTag {}
+impl IsXYZArrayTag for crate::tag::tags::BlueMatrixColumnTag {}
+impl IsXYZArrayTag for crate::tag::tags::LuminanceTag {}
+impl IsXYZArrayTag for crate::tag::tags::MediaWhitePointTag {}
+impl IsXYZArrayTag for crate::tag::tags::MediaBlackPointTag {}
+
+pub trait IsTextDescriptionTag {}
+impl IsTextDescriptionTag for crate::tag::tags::ProfileDescriptionTag {}
+impl IsTextDescriptionTag for crate::tag::tags::CopyrightTag {}
+impl IsTextDescriptionTag for crate::tag::tags::DeviceMfgDescTag {}
+impl IsTextDescriptionTag for crate::tag::tags::DeviceModelDescTag {}
+#[cfg(feature = "v5")]
+impl IsTextDescriptionTag for crate::tag::tags::ScreeningDescTag {}
+impl IsTextDescriptionTag for crate::tag::tags::ViewingCondDescTag {}
+
+pub trait IsTextTag {}
+impl IsTextTag for crate::tag::tags::CopyrightTag {}
+impl IsTextTag for crate::tag::tags::CharTargetTag {}
+
+pub trait IsS15Fixed16ArrayTag {}
+impl IsS15Fixed16ArrayTag for crate::tag::tags::ChromaticAdaptationTag {}
+
+pub trait IsLut8DataTag {}
+pub trait IsLut16DataTag {}
+pub trait IsLutAtoBDataTag {}
+pub trait IsLutBtoADataTag {}
+
+/// A helper for safely setting the data for a specific tag signature.
+/// It is generic over the signature type `S` to enable compile-time checks,
+/// and generic over the profile type `P` to return the correct P for chaining.
+pub struct TagSetter<P: HasRawProfile, S> {
+    profile: P,
+    tag: S,
+}
+
+impl<P, S> TagSetter<P, S>
+where
+    P: HasRawProfile,
+    S: Into<TagSignature> + Copy,
+{
+    pub fn new(profile: P, tag: S) -> Self {
+        Self { profile, tag }
     }
 
-    /// Configures the tag's data directly using a closure.
-    ///
-    /// This ergonomic method is only available for tag signatures that have a single,
-    /// unambiguous data type. The closure receives a mutable reference to the
-    /// correct data type automatically.
-    pub fn with_data<F>(self, configure: F) -> &'a mut RawProfile
-    where
-        S: UnambiguousTag, // This method is only available for unambiguous tags!
-        F: FnOnce(&mut S::TagType),
-    {
-        let mut data = S::TagType::default();
-        configure(&mut data);
-        let tag = S::new_tag(data);
-        // as this is a new tag, it did not get assigned an offset and length yet.
-        self.profile
-            .tags
-            .insert(self.signature.into(), TagTable::new(0, 0, tag));
-        self.profile
-    }
-
-    /// Sets the tag's data as a `curveType`.
+    /// Sets the tag's data as a `CurveData`.
     /// This method is only available if the signature implements `IsCurveTag`.
-    pub fn as_curve<F>(self, configure: F) -> &'a mut RawProfile
+    pub fn as_curve<F>(mut self, configure: F) -> P
     where
-        S: IsCurveTag, // The compile-time safety check!
-        F: FnOnce(&mut CurveType),
+        S: IsCurveTag,
+        F: FnOnce(&mut CurveData),
     {
-        let mut curve = CurveType::default();
-        configure(&mut curve);
-        let curve_tag = TagValue::Curve(curve);
-        self.profile
-            .tags
-            .insert(self.signature.into(), TagTable::new(0, 0, curve_tag));
+        let curve = self.profile.raw_mut().ensure_curve_mut(self.tag.into());
+        configure(curve);
         self.profile
     }
 
-    pub fn as_multi_localized_unicode<F>(self, configure: F) -> &'a mut RawProfile
+    pub fn as_parametric_curve<F>(mut self, configure: F) -> P
     where
-        S: IsMultiLocalizedUnicodeTag,
-        F: FnOnce(&mut MultiLocalizedUnicodeType),
+        S: IsParametricCurveTag,
+        F: FnOnce(&mut ParametricCurveData),
     {
-        let mut mlu = MultiLocalizedUnicodeType::default();
-        configure(&mut mlu);
-        let mlu_tag = TagValue::MultiLocalizedUnicode(mlu);
+        let para_curve = self
+            .profile
+            .raw_mut()
+            .ensure_parametric_curve_mut(self.tag.into());
+        configure(para_curve);
         self.profile
-            .tags
-            .insert(self.signature.into(), TagTable::new(0, 0, mlu_tag));
-        self.profile // Return a mutable reference to the profile itself
+    }
+
+    pub fn as_signature<F>(mut self, configure: F) -> P
+    where
+        S: IsSignatureTag,
+        F: FnOnce(&mut crate::tag::tagdata::SignatureData),
+    {
+        let signature = self.profile.raw_mut().ensure_signature_mut(self.tag.into());
+        configure(signature);
+        self.profile
+    }
+
+    pub fn as_xyz_array<F>(mut self, configure: F) -> P
+    where
+        S: IsXYZArrayTag,
+        F: FnOnce(&mut crate::tag::tagdata::XYZArrayData),
+    {
+        let xyz = self.profile.raw_mut().ensure_xyz_array_mut(self.tag.into());
+        configure(xyz);
+        self.profile
+    }
+
+    pub fn as_text_description<F>(mut self, configure: F) -> P
+    where
+        S: IsTextDescriptionTag,
+        F: FnOnce(&mut crate::tag::tagdata::TextDescriptionData),
+    {
+        let text_description = self
+            .profile
+            .raw_mut()
+            .ensure_text_description_mut(self.tag.into());
+        configure(text_description);
+        self.profile
+    }
+
+    pub fn as_text<F>(mut self, configure: F) -> P
+    where
+        S: IsTextTag,
+        F: FnOnce(&mut crate::tag::tagdata::TextData),
+    {
+        let text = self.profile.raw_mut().ensure_text_mut(self.tag.into());
+        configure(text);
+        self.profile
+    }
+
+    pub fn as_sf15_fixed_16_array<F>(mut self, configure: F) -> P
+    where
+        S: IsS15Fixed16ArrayTag,
+        F: FnOnce(&mut crate::tag::tagdata::S15Fixed16ArrayData),
+    {
+        let array = self
+            .profile
+            .raw_mut()
+            .ensure_s15_fixed_16_array_mut(self.tag.into());
+        configure(array);
+        self.profile
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::profile::InputProfile;
+    use crate::tag::tags::*;
+    #[test]
+    fn test_tag_setter() -> Result<(), Box<dyn std::error::Error>> {
+        let mut profile = InputProfile::new();
+
+        profile
+            .with_tag(RedTRCTag)
+            .as_curve(|curve| {
+                curve.set_gamma(2.2);
+            })
+            .with_tag(GreenTRCTag)
+            .as_curve(|curve| {
+                curve.set_gamma(2.2);
+            })
+            .with_tag(BlueTRCTag)
+            .as_curve(|curve| {
+                curve.set_gamma(2.2);
+            })
+            .with_tag(GrayTRCTag)
+            .as_parametric_curve(|para_curve| para_curve.set_parameters([0.5]))
+            .with_tag(TechnologyTag)
+            .as_signature(|signature| {
+                signature.set_signature("fscn");
+            });
+
+        Ok(())
     }
 }

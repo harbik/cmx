@@ -1,0 +1,166 @@
+Tag Signature,Official Tag Name
+psd0,PostScript color rendering dictionary 0
+psd1,PostScript color rendering dictionary 1
+psd2,PostScript color rendering dictionary 2
+psd3,PostScript color rendering dictionary 3
+scrd,Screening description
+scrn,Screening
+bkpt,Media black point
+vued,Viewing conditions description
+ncol,Named color
+bfd ,UCR/BG
+bTRC,Blue tone reproduction curve
+bXYZ,Blue matrix column
+gTRC,Green tone reproduction curve
+gXYZ,Green matrix column
+mwpc,Measurement white point chromaticity
+mwpl,Measurement white point luminance
+rTRC,Red tone reproduction curve
+rXYZ,Red matrix column
+wlum,Luminance (XYZ) of white point
+wXYZ,White point XYZ
+lumi,Luminance
+meas,Measurement
+svcn,Spectral viewing conditions
+swpt,Spectral white point
+view,Viewing conditions
+wtpt,Media white point
+attr,Profile/device attributes
+cprt,Copyright
+desc,Profile description
+dmdd,Device manufacturer description
+dmnd,Device model description
+dmns,Device MCS description
+lcnm,Localized device model name
+lmat,Localized device manufacturer name
+pdsc,Profile description (alternate)
+tech,Technology
+tint,Tint
+type,Profile type signature
+A2B0,AToB0 transform
+A2B1,AToB1 transform
+A2B2,AToB2 transform
+B2A0,BToA0 transform
+B2A1,BToA1 transform
+B2A2,BToA2 transform
+pcs ,Profile connection space
+chad,Chromatic adaptation matrix
+ncl2,Named color 2
+B2D0,BToD0 transform
+B2D1,BToD1 transform
+B2D2,BToD2 transform
+B2D3,BToD3 transform
+D2B0,DToB0 transform
+D2B1,DToB1 transform
+D2B2,DToB2 transform
+D2B3,DToB3 transform
+ailm,Ambient illumination
+awlm,Ambient white luminance
+awpc,Ambient white point chromaticity
+bcol,Background color
+bcp0,Background color patch 0
+bcp1,Background color patch 1
+bcp2,Background color patch 2
+bcp3,Background color patch 3
+bcpr,Background color patch reference
+bits,Bit depth information
+bsp0,Background spectral patch 0
+bsp1,Background spectral patch 1
+bsp2,Background spectral patch 2
+bsp3,Background spectral patch 3
+bspc,Background spectral patch chromaticity
+bspr,Background spectral patch reference
+cept,Capture encoding parameters
+cinf,Calibration information
+csnm,Color space name
+CxF,CxF data
+eRng,Exposure range
+flar,Flash reference
+func,Function type
+gbd0,Gamut boundary description 0
+gbd1,Gamut boundary description 1
+gbd2,Gamut boundary description 2
+gbd3,Gamut boundary description 3
+ibkg,Illuminant background
+imst,Image state
+lrng,Luminance range
+mbak,Material background
+mbpc,Material background patch chromaticity
+mbpl,Material background patch luminance
+mcta,Material coating type A
+mflr,Material fluorescence reference
+mgeo,Material geometry
+miin,Material index
+mill,Material illuminant
+minf,Material information
+miwr,Material white reference
+mmod,Material model
+xfrm,Transform
+c2sp,Color to spectral parameters
+s2cp,Spectral to color parameters
+smap,Spectral map
+spcb,Spectral PCB data
+spcg,Spectral PCS gamut
+spec,Spectral data
+srnd,Surround
+name,Name
+nmap,Name map
+nump,Number of patches
+rfnm,Reference name
+rtrn,Return
+A2B3,AToB3 transform
+A2M0,AToMaterial0 transform
+B2A3,BToA3 transform
+bAB0,BToMaterialAB0 transform
+bAB1,BToMaterialAB1 transform
+bAB2,BToMaterialAB2 transform
+bAB3,BToMaterialAB3 transform
+bBA0,BToMaterialBA0 transform
+bBA1,BToMaterialBA1 transform
+bBA2,BToMaterialBA2 transform
+bBA3,BToMaterialBA3 transform
+bBD0,BToMaterialBD0 transform
+bBD1,BToMaterialBD1 transform
+bBD2,BToMaterialBD2 transform
+bBD3,BToMaterialBD3 transform
+bDB0,BToMaterialDB0 transform
+bDB1,BToMaterialDB1 transform
+bDB2,BToMaterialDB2 transform
+bDB3,BToMaterialDB3 transform
+bMB0,BToMaterialMB0 transform
+bMB1,BToMaterialMB1 transform
+bMB2,BToMaterialMB2 transform
+bMB3,BToMaterialMB3 transform
+bMS0,BToMaterialMS0 transform
+bMS1,BToMaterialMS1 transform
+bMS2,BToMaterialMS2 transform
+bMS3,BToMaterialMS3 transform
+dAB0,DToMaterialAB0 transform
+dAB1,DToMaterialAB1 transform
+dAB2,DToMaterialAB2 transform
+dAB3,DToMaterialAB3 transform
+dBA0,DToMaterialBA0 transform
+dBA1,DToMaterialBA1 transform
+dBA2,DToMaterialBA2 transform
+dBA3,DToMaterialBA3 transform
+dBD0,DToMaterialBD0 transform
+dBD1,DToMaterialBD1 transform
+dBD2,DToMaterialBD2 transform
+dBD3,DToMaterialBD3 transform
+dDB0,DToMaterialDB0 transform
+dDB1,DToMaterialDB1 transform
+dDB2,DToMaterialDB2 transform
+dDB3,DToMaterialDB3 transform
+M2A0,MaterialToATo0 transform
+M2B0,MaterialToBTo0 transform
+M2B1,MaterialToBTo1 transform
+M2B2,MaterialToBTo2 transform
+M2B3,MaterialToBTo3 transform
+M2S0,MaterialToSTo0 transform
+M2S1,MaterialToSTo1 transform
+M2S2,MaterialToSTo2 transform
+M2S3,MaterialToSTo3 transform
+dev ,Device information
+mdv ,Measurement device
+mod ,Measurement mode
+pid ,Profile ID

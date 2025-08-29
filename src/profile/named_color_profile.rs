@@ -21,3 +21,26 @@ impl TryFrom<Profile> for NamedColorProfile {
         }
     }
 }
+
+impl NamedColorProfile {
+    /// Creates a new, empty, `InputProfile` with
+    ///
+    /// - the default `RawProfile` with
+    ///   - the ICC profile signature
+    ///   - version set to 4.3
+    ///   - the current date
+    /// - `DeviceClass` set to `NamedColor`
+    pub fn new() -> Self {
+        Self(
+            Self(RawProfile::default())
+                .0
+                .with_device_class(crate::signatures::DeviceClass::NamedColor),
+        )
+    }
+}
+
+impl Default for NamedColorProfile {
+    fn default() -> Self {
+        Self::new()
+    }
+}

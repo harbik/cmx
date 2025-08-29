@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
-use crate::{signatures::Signature, Error};
+use num_derive::{FromPrimitive, ToPrimitive};
 
 /// Represents the Profile Connection Space (PCS) of an ICC profile.
 // The PCS defines the color space used for the profile connection, which is essential for color management.
 // The PCS can be XYZ (CIE1931 XYZ), Lab (CIELAB), or Spectral.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::Display)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::Display, FromPrimitive, ToPrimitive)]
 pub enum Pcs {
     /// Profile Connection Space (PCS) for XYZ color space.
     XYZ = 0x58595A20, // 'XYZ '
@@ -15,6 +15,7 @@ pub enum Pcs {
     Spectral = 0x73706563, // 'spec' - Spectral PCS
 }
 
+/*
 impl Pcs {
     pub fn new(tag: Signature) -> Result<Self, Error> {
         match tag.0 {
@@ -31,3 +32,5 @@ impl From<Pcs> for Signature {
         Signature(pcs as u32)
     }
 }
+
+ */

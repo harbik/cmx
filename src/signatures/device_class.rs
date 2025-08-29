@@ -1,12 +1,24 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
-use crate::signatures::Signature;
+use num_derive::{FromPrimitive, ToPrimitive};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::Display, serde::Serialize)]
+#[derive(
+    Default,
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    strum::Display,
+    serde::Serialize,
+    FromPrimitive,
+    ToPrimitive,
+)]
 #[repr(u32)]
 pub enum DeviceClass {
-    Unknown,
+    #[default]
+    None = 0x00000000, // '\0\0\0\0``
     Input = 0x73636E72,      // 'scnr'
     Display = 0x6D6E7472,    // 'mntr'
     Output = 0x70727472,     // 'prtr'
@@ -18,6 +30,7 @@ pub enum DeviceClass {
     Spectral = 0x73706563, // 'spec'
 }
 
+/*
 impl DeviceClass {
     pub fn new(tag: Signature) -> Self {
         match tag.0 {
@@ -29,7 +42,7 @@ impl DeviceClass {
             0x73706163 => DeviceClass::ColorSpace,
             0x6E6D636C => DeviceClass::NamedColor,
             0x73706563 => DeviceClass::Spectral,
-            _ => DeviceClass::Unknown,
+            _ => DeviceClass::None,
         }
     }
 }
@@ -45,3 +58,5 @@ impl From<DeviceClass> for u32 {
         device_class as u32
     }
 }
+
+ */

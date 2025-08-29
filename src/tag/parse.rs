@@ -8,16 +8,16 @@ use paste::paste;
 
 use crate::tag::TagSignature;
 
-use super::tag_value::*;
+use super::tagdata::*;
 
 
 /// A trait for tag signatures that have only one valid data type.
 pub trait UnambiguousTag {
     /// The single data type associated with this tag signature.
-    type TagType: Default;
+    type TagData: Default;
 
-    /// A function to create the correct `TagValue` enum variant from the TagValue block data.
-    fn new_tag(tag_type_instance: Self::TagType) -> TagValue;
+    /// A function to create the correct `TagData` enum variant from the TagData block data.
+    fn new_tag(tag_type_instance: Self::TagData) -> TagData;
 }
 
 /// A helper macro to reduce boilerplate when implementing `UnambiguousTag`.
@@ -28,37 +28,37 @@ macro_rules! impl_unambiguous_tag {
             // The compiler will correctly substitute the identifier at the end.
             // This also uses the correct ZST pattern (implementing on the type, not a reference).
             impl UnambiguousTag for crate::signatures::tag_signature::$tag_type_name {
-                type TagType = [< $tag_variant Type >];
-                fn new_tag(tag_type_instance: Self::TagType) -> TagValue {
-                    TagValue::$tag_variant(tag_type_instance)
+                type TagData = [< $tag_variant Data >];
+                fn new_tag(tag_type_instance: Self::TagData) -> TagData {
+                    TagData::$tag_variant(tag_type_instance)
                 }
             }
         }
     };
 }
 
-// Tags of type XYZType
+// Tags of type XYZData
 impl_unambiguous_tag!(MediaWhitePointTag, XYZArray);
 impl_unambiguous_tag!(MediaBlackPointTag, XYZArray);
 impl_unambiguous_tag!(LuminanceTag, XYZArray);
 
-// Tags of type CurveType
+// Tags of type CurveData
 impl_unambiguous_tag!(RedTRCTag, Curve);
 impl_unambiguous_tag!(GreenTRCTag, Curve);
 impl_unambiguous_tag!(BlueTRCTag, Curve);
 impl_unambiguous_tag!(GrayTRCTag, Curve); // Assuming you have a GrayTRCTag ZST
 
-// Tags of type TextDescriptionType
+// Tags of type TextDescriptionData
 impl_unambiguous_tag!(CopyrightTag, TextDescription);
 impl_unambiguous_tag!(DeviceMfgDescTag, TextDescription);
 impl_unambiguous_tag!(DeviceModelDescTag, TextDescription);
 impl_unambiguous_tag!(ScreeningDescTag, TextDescription);
 impl_unambiguous_tag!(ViewingCondDescTag, TextDescription);
 
-// Tags of type TextType
+// Tags of type TextData
 impl_unambiguous_tag!(CharTargetTag, Text);
 
-// Tags of type SignatureType
+// Tags of type SignatureData
 impl_unambiguous_tag!(TechnologyTag, Signature);
 impl_unambiguous_tag!(ColorimetricIntentImageStateTag,Signature); // Assuming ZST exists
 
@@ -88,10 +88,10 @@ pub trait IsTextDescriptionTag {}
 pub trait IsMultiLocalizedUnicodeTag {}
 pub trait IsCurveTag {}
 pub trait IsParametricCurveTag {}
-pub trait IsLut8TypeTag {}
-pub trait IsLut16TypeTag {}
-pub trait IsLutAtoBTypeTag {}
-pub trait IsLutBtoATypeTag {}
+pub trait IsLut8DataTag {}
+pub trait IsLut16DataTag {}
+pub trait IsLutAtoBDataTag {}
+pub trait IsLutBtoADataTag {}
 
 // Family helpers: dispatch by inner type signature (first 4 bytes).
 #[inline]
@@ -100,55 +100,55 @@ fn inner_sig(bytes: &[u8]) -> Option<&[u8; 4]> {
 }
 
 #[inline]
-fn parse_trc_family<S: IsCurveTag + IsParametricCurveTag>(data: Vec<u8>) -> TagValue {
+fn parse_trc_family<S: IsCurveTag + IsParametricCurveTag>(data: Vec<u8>) -> TagData {
     match inner_sig(&data) {
-        Some(b"curv") => TagValue::Curve(CurveType(data)),
-        Some(b"para") => TagValue::ParametricCurve(ParametricCurveType(data)),
-        _ => TagValue::Raw(RawType(data)),
+        Some(b"curv") => TagData::Curve(CurveData(data)),
+        Some(b"para") => TagData::ParametricCurve(ParametricCurveData(data)),
+        _ => TagData::Raw(RawData(data)),
     }
 }
 
 #[inline]
-fn parse_desc_family<S: IsTextDescriptionTag + IsMultiLocalizedUnicodeTag>(data: Vec<u8>) -> TagValue {
+fn parse_desc_family<S: IsTextDescriptionTag + IsMultiLocalizedUnicodeTag>(data: Vec<u8>) -> TagData {
     match inner_sig(&data) {
-        Some(b"desc") => TagValue::TextDescription(TextDescriptionType(data)),
-        Some(b"mluc") => TagValue::MultiLocalizedUnicode(MultiLocalizedUnicodeType(data)),
-        _ => TagValue::Raw(RawType(data)),
+        Some(b"desc") => TagData::TextDescription(TextDescriptionData(data)),
+        Some(b"mluc") => TagData::MultiLocalizedUnicode(MultiLocalizedUnicodeData(data)),
+        _ => TagData::Raw(RawData(data)),
     }
 }
 
 #[inline]
-fn parse_preview_family<S: IsLut8TypeTag + IsLut16TypeTag>(data: Vec<u8>) -> TagValue {
+fn parse_preview_family<S: IsLut8DataTag + IsLut16DataTag>(data: Vec<u8>) -> TagData {
     match inner_sig(&data) {
-        Some(b"mft1") => TagValue::Lut8(Lut8Type(data)),
-        Some(b"mft2") => TagValue::Lut16(Lut16Type(data)),
-        _ => TagValue::Raw(RawType(data)),
+        Some(b"mft1") => TagData::Lut8(Lut8Data(data)),
+        Some(b"mft2") => TagData::Lut16(Lut16Data(data)),
+        _ => TagData::Raw(RawData(data)),
     }
 }
 
 #[inline]
-fn parse_atob_family<S: IsLutAtoBTypeTag>(data: Vec<u8>) -> TagValue {
+fn parse_atob_family<S: IsLutAtoBDataTag>(data: Vec<u8>) -> TagData {
     match inner_sig(&data) {
-        Some(b"mAB ") => TagValue::LutAToB(LutAToBType(data)),
-        _ => TagValue::Raw(RawType(data)),
+        Some(b"mAB ") => TagData::LutAToB(LutAToBData(data)),
+        _ => TagData::Raw(RawData(data)),
     }
 }
 
 #[inline]
-fn parse_btoa_family<S: IsLutBtoATypeTag>(data: Vec<u8>) -> TagValue {
+fn parse_btoa_family<S: IsLutBtoADataTag>(data: Vec<u8>) -> TagData {
     match inner_sig(&data) {
-        Some(b"mBA ") => TagValue::LutBToA(LutBToAType(data)),
-        _ => TagValue::Raw(RawType(data)),
+        Some(b"mBA ") => TagData::LutBToA(LutBToAData(data)),
+        _ => TagData::Raw(RawData(data)),
     }
 }
 
 #[inline]
-fn parse_gamut_family<S: IsLut8TypeTag + IsLut16TypeTag + IsLutBtoATypeTag>(data: Vec<u8>) -> TagValue {
+fn parse_gamut_family<S: IsLut8DataTag + IsLut16DataTag + IsLutBtoADataTag>(data: Vec<u8>) -> TagData {
     match inner_sig(&data) {
-        Some(b"mft1") => TagValue::Lut8(Lut8Type(data)),
-        Some(b"mft2") => TagValue::Lut16(Lut16Type(data)),
-        Some(b"mBA ") => TagValue::LutBToA(LutBToAType(data)),
-        _ => TagValue::Raw(RawType(data)),
+        Some(b"mft1") => TagData::Lut8(Lut8Data(data)),
+        Some(b"mft2") => TagData::Lut16(Lut16Data(data)),
+        Some(b"mBA ") => TagData::LutBToA(LutBToAData(data)),
+        _ => TagData::Raw(RawData(data)),
     }
 }
 
@@ -171,30 +171,30 @@ impl IsCurveTag for GrayTRCTag {}
 impl IsParametricCurveTag for GrayTRCTag {}
 
 // Preview LUTs
-impl IsLut8TypeTag for Preview0Tag {}
-impl IsLut16TypeTag for Preview0Tag {}
-impl IsLut8TypeTag for Preview1Tag {}
-impl IsLut16TypeTag for Preview1Tag {}
-impl IsLut8TypeTag for Preview2Tag {}
-impl IsLut16TypeTag for Preview2Tag {}
+impl IsLut8DataTag for Preview0Tag {}
+impl IsLut16DataTag for Preview0Tag {}
+impl IsLut8DataTag for Preview1Tag {}
+impl IsLut16DataTag for Preview1Tag {}
+impl IsLut8DataTag for Preview2Tag {}
+impl IsLut16DataTag for Preview2Tag {}
 
 // AToB / BToA families
-impl IsLutAtoBTypeTag for AToB0Tag {}
-impl IsLutAtoBTypeTag for AToB1Tag {}
-impl IsLutAtoBTypeTag for AToB2Tag {}
-impl IsLutBtoATypeTag for BToA0Tag {}
-impl IsLutBtoATypeTag for BToA1Tag {}
-impl IsLutBtoATypeTag for BToA2Tag {}
+impl IsLutAtoBDataTag for AToB0Tag {}
+impl IsLutAtoBDataTag for AToB1Tag {}
+impl IsLutAtoBDataTag for AToB2Tag {}
+impl IsLutBtoADataTag for BToA0Tag {}
+impl IsLutBtoADataTag for BToA1Tag {}
+impl IsLutBtoADataTag for BToA2Tag {}
 
 // Gamut family
-impl IsLut8TypeTag for GamutTag {}
-impl IsLut16TypeTag for GamutTag {}
-impl IsLutBtoATypeTag for GamutTag {}
+impl IsLut8DataTag for GamutTag {}
+impl IsLut16DataTag for GamutTag {}
+impl IsLutBtoADataTag for GamutTag {}
 
 
 
 // Use the family helpers inside the single factory.
-impl TagValue {
+impl TagData {
     pub fn parse(signature: TagSignature, data: Vec<u8>) -> Self {
         match signature {
             // Ambiguous families (marker-constrained)
@@ -221,28 +221,28 @@ impl TagValue {
             TagSignature::GamutTag => parse_gamut_family::<GamutTag>(data),
 
             // non-ambiguous tags
-            TagSignature::ChromaticityTag => Self::Chromaticity(ChromaticityType(data)),
-            TagSignature::ColorantOrderTag => Self::ColorantOrder(ColorantOrderType(data)),
-            TagSignature::DataTag => Self::Data(DataType(data)),
-            TagSignature::DateTimeTag => Self::DateTime(DateTimeType(data)),
-            TagSignature::MeasurementTag => Self::Measurement(MeasurementType(data)),
-            TagSignature::MakeAndModelTag => Self::MakeAndModel(MakeAndModelType(data)),
+            TagSignature::ChromaticityTag => Self::Chromaticity(ChromaticityData(data)),
+            TagSignature::ColorantOrderTag => Self::ColorantOrder(ColorantOrderData(data)),
+            TagSignature::DataTag => Self::Data(DataData(data)),
+            TagSignature::DateTimeTag => Self::DateTime(DateTimeData(data)),
+            TagSignature::MeasurementTag => Self::Measurement(MeasurementData(data)),
+            TagSignature::MakeAndModelTag => Self::MakeAndModel(MakeAndModelData(data)),
             TagSignature::NativeDisplayInfoTag => {
-                Self::NativeDisplayInfo(NativeDisplayInfoType(data))
+                Self::NativeDisplayInfo(NativeDisplayInfoData(data))
             }
-            TagSignature::NamedColor2Tag => Self::NamedColor2(NamedColor2Type(data)),
+            TagSignature::NamedColor2Tag => Self::NamedColor2(NamedColor2Data(data)),
             TagSignature::SpectralViewingConditionsTag => {
-                Self::SpectralViewingConditions(SpectralViewingConditionsType(data))
+                Self::SpectralViewingConditions(SpectralViewingConditionsData(data))
             }
-            TagSignature::VcgtTag => Self::Vcgt(VcgtType(data)),
-            TagSignature::VcgpTag => Self::Vcgp(VcgpType(data)),
+            TagSignature::VcgtTag => Self::Vcgt(VcgtData(data)),
+            TagSignature::VcgpTag => Self::Vcgp(VcgpData(data)),
             TagSignature::ViewingConditionsTag => {
-                Self::ViewingConditions(ViewingConditionsType(data))
+                Self::ViewingConditions(ViewingConditionsData(data))
             }
-            TagSignature::MediaWhitePointTag => Self::XYZArray(XYZArrayType(data)),
+            TagSignature::MediaWhitePointTag => Self::XYZArray(XYZArrayData(data)),
 
             // Fallback
-            _ => Self::Raw(RawType(data)),
+            _ => Self::Raw(RawData(data)),
         }
     }
 }

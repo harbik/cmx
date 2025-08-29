@@ -21,3 +21,27 @@ impl TryFrom<Profile> for DisplayProfile {
         }
     }
 }
+
+impl DisplayProfile {
+    /// Creates a new, empty, `InputProfile` with
+    ///
+    /// - the default `RawProfile` with
+    ///   - the ICC profile signature
+    ///   - version set to 4.3
+    ///   - the current date
+    /// - `DeviceClass` set to `Display`
+    pub fn new() -> Self {
+        Self(
+            Self(RawProfile::default())
+                .0
+                .with_device_class(crate::signatures::DeviceClass::Display)
+                .with_data_color_space(crate::signatures::ColorSpace::RGB),
+        )
+    }
+}
+
+impl Default for DisplayProfile {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -32,6 +32,7 @@ fn main() -> Result<()> {
 
     // Parse the profile
     let raw_profile = RawProfile::from_bytes(&profile_bytes)
+        .map_err(|e| anyhow::anyhow!("{}", e))
         .with_context(|| format!("Failed to parse profile {:?}", cli.profile))?;
 
     let profile = Profile::Raw(raw_profile);

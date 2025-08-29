@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
-mod raw_profile;
 use std::fmt;
 
+mod raw_profile;
+pub use raw_profile::{ProfileTagRecord, RawProfile};
+
 use indexmap::IndexMap;
-pub use raw_profile::RawProfile;
 
 mod input_profile;
 pub use input_profile::InputProfile;
@@ -35,13 +36,12 @@ pub use spectral_profile::SpectralProfile;
 /// delegates methods from the RawProfile to all Profiles.
 mod delegate;
 
-// TODO
-// mod with_tag;
-//mod tag_setter;
-//pub use tag_setter::TagSetter;
+mod tag_setter;
+mod with_tag;
+pub use tag_setter::TagSetter;
 
 mod checksum;
-use crate::{header::IccHeaderToml, tag::TagToml};
+use crate::{header::Header, tag::ParsedTag};
 
 pub use {checksum::md5checksum, checksum::set_profile_id};
 
@@ -59,6 +59,20 @@ pub enum Profile {
 }
 
 impl Profile {
+    fn into_raw_profile(self) -> RawProfile {
+        match self {
+            Profile::Input(p) => p.0,
+            Profile::Display(p) => p.0,
+            Profile::Output(p) => p.0,
+            Profile::DeviceLink(p) => p.0,
+            Profile::Abstract(p) => p.0,
+            Profile::ColorSpace(p) => p.0,
+            Profile::NamedColor(p) => p.0,
+            Profile::Spectral(p) => p.0,
+            Profile::Raw(p) => p,
+        }
+    }
+
     fn as_raw_profile(&self) -> &RawProfile {
         match self {
             Profile::Input(p) => &p.0,
@@ -72,67 +86,183 @@ impl Profile {
             Profile::Raw(p) => p,
         }
     }
-}
 
-/// A serde-friendly TOML façade for an ICC profile.
-///
-/// This struct is used to:
-/// - Print a profile to TOML (currently used by `RawProfile`'s `Display` impl to write to
-///   standard output).
-/// - Eventually deserialize a profile from TOML as an alternative to reading a binary ICC file.
-///
-/// Layout:
-/// - `header`: Stored as `IccHeaderToml`, providing a structured view of the 128-byte ICC header.
-/// - `tags` (flattened): An `IndexMap` from stringified tag signatures to `TagToml`. The map is
-///   flattened into the top level of the TOML document (i.e., each tag appears as its own top-level
-///   TOML key next to the `header` table). `IndexMap` preserves insertion order to retain the
-///   original tag order for readability and compatibility.
-///
-/// TagValue representation:
-/// - Every tag type implements its own `TagTypeToml`.
-/// - `TagToml` is an enum that encapsulates all tag-type-specific TOML representations, allowing the
-///   `tags` map to hold heterogeneous tag values while remaining serializable/deserializable.
-///
-/// Round-tripping notes:
-/// - On serialization, tags are emitted in their insertion order.
-#[derive(Serialize)]
-pub struct ProfileToml {
-    pub header: IccHeaderToml,
-    #[serde(flatten)]
-    pub tags: IndexMap<String, TagToml>,
-}
-
-/// A display implementation for `RawProfile` that serializes the profile to a TOML string.
-impl fmt::Display for Profile {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // See header::icc_header_toml.rs for the IccHeaderToml struct
-        // and its conversion from RawProfile.
-        let header = IccHeaderToml::from(self.as_raw_profile());
-
-        // Convert tags to a flattened IndexMap<String, TagToml>, using the tag signature as the
-        // key, and converting each TagTable's tag to a TagToml using its From<TagType>
-        // implementation, which needs to be implemented by each TagType individually.
-        // TagTable is a struct that contains the offset, size, and the "TagValue" enum,
-        // which encapsulates the tag data.
-        let tags: IndexMap<String, TagToml> = self
-            .as_raw_profile()
-            .tags
-            .iter()
-            .map(|(sig, entry)| {
-                //    let name: &str = sig.as_ref();
-                //    (name.to_string(), entry.tag.as_table())
-                (sig.to_string(), entry.tag.as_table())
-            })
-            .collect();
-
-        let profile_toml = ProfileToml { header, tags };
-
-        match toml::to_string(&profile_toml) {
-            //  match toml::to_string_pretty(&profile_toml) {
-            Ok(s) => write!(f, "{s}"),
-            Err(_) => Err(fmt::Error),
+    // Add mutable access to the underlying RawProfile for enum variants.
+    fn as_raw_profile_mut(&mut self) -> &mut RawProfile {
+        match self {
+            Profile::Input(p) => &mut p.0,
+            Profile::Display(p) => &mut p.0,
+            Profile::Output(p) => &mut p.0,
+            Profile::DeviceLink(p) => &mut p.0,
+            Profile::Abstract(p) => &mut p.0,
+            Profile::ColorSpace(p) => &mut p.0,
+            Profile::NamedColor(p) => &mut p.0,
+            Profile::Spectral(p) => &mut p.0,
+            Profile::Raw(p) => p,
         }
     }
+
+    // Read-only getters delegated to RawProfile.
+    pub fn version(&self) -> Result<(u8, u8), crate::Error> {
+        self.as_raw_profile().version()
+    }
+    pub fn profile_size(&self) -> usize {
+        self.as_raw_profile().profile_size()
+    }
+    pub fn flags(&self) -> (bool, bool) {
+        self.as_raw_profile().flags()
+    }
+    pub fn data_color_space(&self) -> Option<crate::signatures::ColorSpace> {
+        self.as_raw_profile().data_color_space()
+    }
+    pub fn primary_platform(&self) -> Option<crate::signatures::Platform> {
+        self.as_raw_profile().primary_platform()
+    }
+    pub fn manufacturer(&self) -> Option<crate::signatures::Signature> {
+        self.as_raw_profile().manufacturer()
+    }
+    pub fn model(&self) -> crate::signatures::Signature {
+        self.as_raw_profile().model()
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
+        let raw = RawProfile::from_bytes(bytes)?;
+        Ok(raw.into_class_profile())
+    }
+
+    pub fn read(path: impl AsRef<std::path::Path>) -> Result<Self, Box<dyn std::error::Error>> {
+        let raw = RawProfile::read(path)?;
+        Ok(raw.into_class_profile())
+    }
+
+    pub fn into_bytes(self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        self.into_raw_profile().into_bytes()
+    }
+
+    pub fn write(
+        self,
+        path: impl AsRef<std::path::Path>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.into_raw_profile().write(path)
+    }
+
+    pub fn profile_id(&self) -> [u8; 16] {
+        self.as_raw_profile().profile_id()
+    }
+
+    pub fn profile_id_as_hex_string(&self) -> String {
+        self.as_raw_profile().profile_id_as_hex_string()
+    }
+
+    pub fn creation_date(&self) -> chrono::DateTime<chrono::Utc> {
+        self.as_raw_profile().creation_date()
+    }
+    pub fn pcs_illuminant(&self) -> [f64; 3] {
+        self.as_raw_profile().pcs_illuminant()
+    }
+    pub fn pcs(&self) -> Option<crate::signatures::Pcs> {
+        self.as_raw_profile().pcs()
+    }
+    pub fn cmm(&self) -> Option<crate::signatures::Cmm> {
+        self.as_raw_profile().cmm()
+    }
+
+    // Consuming builders: forward to the matching wrapper and re-wrap.
+    pub fn with_version(self, major: u8, minor: u8) -> Result<Self, crate::Error> {
+        Ok(match self {
+            Profile::Input(p) => Profile::Input(p.with_version(major, minor)?),
+            Profile::Display(p) => Profile::Display(p.with_version(major, minor)?),
+            Profile::Output(p) => Profile::Output(p.with_version(major, minor)?),
+            Profile::DeviceLink(p) => Profile::DeviceLink(p.with_version(major, minor)?),
+            Profile::Abstract(p) => Profile::Abstract(p.with_version(major, minor)?),
+            Profile::ColorSpace(p) => Profile::ColorSpace(p.with_version(major, minor)?),
+            Profile::NamedColor(p) => Profile::NamedColor(p.with_version(major, minor)?),
+            Profile::Spectral(p) => Profile::Spectral(p.with_version(major, minor)?),
+            Profile::Raw(p) => Profile::Raw(p.with_version(major, minor)?),
+        })
+    }
+
+    pub fn with_creation_date(self, date: impl Into<chrono::DateTime<chrono::Utc>>) -> Self {
+        match self {
+            Profile::Input(p) => Profile::Input(p.with_creation_date(date)),
+            Profile::Display(p) => Profile::Display(p.with_creation_date(date)),
+            Profile::Output(p) => Profile::Output(p.with_creation_date(date)),
+            Profile::DeviceLink(p) => Profile::DeviceLink(p.with_creation_date(date)),
+            Profile::Abstract(p) => Profile::Abstract(p.with_creation_date(date)),
+            Profile::ColorSpace(p) => Profile::ColorSpace(p.with_creation_date(date)),
+            Profile::NamedColor(p) => Profile::NamedColor(p.with_creation_date(date)),
+            Profile::Spectral(p) => Profile::Spectral(p.with_creation_date(date)),
+            Profile::Raw(p) => Profile::Raw(p.with_creation_date(date)),
+        }
+    }
+
+    // Consuming builder entry for tags, returning TagSetter bound to this enum.
+    pub fn with_tag<S: Into<crate::tag::TagSignature> + Copy>(
+        self,
+        signature: S,
+    ) -> TagSetter<Self, S> {
+        TagSetter::new(self, signature)
+    }
+}
+
+// Helper: render a RawProfile as TOML (used by Display impls).
+fn write_toml_from_raw(raw: &RawProfile, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    let header = Header::from(raw);
+    let tags: IndexMap<String, ParsedTag> = raw
+        .tags
+        .iter()
+        .map(|(sig, entry)| (sig.to_string(), entry.tag.to_parsed()))
+        .collect();
+    let parsed_profile = ParsedProfile { header, tags };
+    match toml::to_string(&parsed_profile) {
+        Ok(s) => write!(f, "{s}"),
+        Err(_) => Err(fmt::Error),
+    }
+}
+
+/// A display implementation for `Profile` that serializes the profile to a TOML string.
+impl fmt::Display for Profile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write_toml_from_raw(self.as_raw_profile(), f)
+    }
+}
+
+// Implement Display for all wrapper profile types by delegating to the helper.
+macro_rules! impl_display_for_wrappers {
+    ($($ty:ty),+ $(,)?) => {
+        $(
+            impl fmt::Display for $ty {
+                fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    write_toml_from_raw(&self.0, f)
+                }
+            }
+        )+
+    };
+}
+
+impl_display_for_wrappers!(
+    InputProfile,
+    DisplayProfile,
+    OutputProfile,
+    DeviceLinkProfile,
+    AbstractProfile,
+    ColorSpaceProfile,
+    NamedColorProfile,
+    SpectralProfile,
+);
+
+/// A fully parsed ICC profile represented in a structured format.
+///
+/// This is **mainly used for serialization to TOML**, providing a human-readable
+/// representation of an ICC profile's header and tags.
+/// For all other operations, use the Profile enums (`InputProfile`, `DisplayProfile`, etc.),
+/// and use lazily parsed operations on their encapsulated `RawProfile`s directly.
+#[derive(Serialize)]
+pub struct ParsedProfile {
+    #[serde(flatten)]
+    pub header: Header,
+    #[serde(flatten)]
+    pub tags: IndexMap<String, ParsedTag>,
 }
 
 #[cfg(test)]
