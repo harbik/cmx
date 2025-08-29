@@ -73,10 +73,14 @@ g = 2.60001
 
  ```
 </details>
+
 <details><summary><strong>Create ICC profiles programmatically</strong></summary>
-You can also use the `cmx` library to create ICC profiles programmatically in Rust.
-The library provides a builder-style API for constructing profiles,
-allowing you to set various tags and properties.
+
+You can also use the `cmx` library to create ICC profiles from scratch, or read existing
+profiles and change them, using Rust.
+
+The library provides a builder-style API for constructing, or read and change profiles,
+allowing you to set or change various tags and properties.
 
 Here is an example for creating a Display P3 ICC profile:
 
@@ -142,7 +146,11 @@ assert_eq!(
 );
 assert_eq!(display_p3_read_back.profile_size(), 524);
 ```
-Not all ICC tag types are supported yet, but please submit a pull request, or an issue, on our [GitHub CMX repo](https://github.com/harbik/cmx) if you need additional tags to be supported.
+
+Not all ICC tag types are supported yet, but please submit a pull request, or an issue, on our
+[GitHub CMX repo](https://github.com/harbik/cmx) if you want additional tag types to be supported.
+
+However, you can use the `as_raw` method to set raw data for tags that are not yet supported.
 
 </details>
 
@@ -168,10 +176,16 @@ Documentation is available at [docs.rs/cmx](https://docs.rs/cmx).
 
 - [x] Parse full ICC profiles
 - [x] Convert to TOML format
-- [ ] Support more ICC tags and color models
-- [ ] Add builder-style API for constructing ICC profiles
+- [x] Add builder-style API for constructing ICC profiles
+- [x] Support basic ICC Type tags and color models
+- [ ] Read TOML Color profiles and convert to binary ICC profiles
+- [ ] Utilities for commandline profile conversion and manipulation
+- [ ] Calibration and profiling tools
+- [ ] X-Rite I1 Profiler support
+- [ ] Support all ICC Type tags
 - [ ] Enable spectral data and advanced color management
-- [ ] Provide utilities for profile conversion and manipulation
+
+
 
 ## Overview
 
