@@ -2,6 +2,8 @@
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
 pub mod tagdata;
+
+pub mod bradford;
 /*
 mod parse;
 pub use parse::{UnambiguousTag, IsCurveTag, IsParametricCurveTag, IsTextDescriptionTag, IsMultiLocalizedUnicodeTag, IsLut8DataTag, IsLut16DataTag, IsLutAtoBDataTag, IsLutBtoADataTag};

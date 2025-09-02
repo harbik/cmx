@@ -3,7 +3,7 @@
 
 use serde::Serialize;
 
-use crate::profile::Profile;
+use crate::{profile::Profile, tag::{bradford::Bradford, tags::*}};
 
 use super::RawProfile;
 
@@ -93,6 +93,73 @@ impl InputProfile {
         )
     }
 
+    /// Creates an input profile from a Colorimetry::RgbSpace.
+    /// 
+    /// This type of profile is typically used to embed in image files,
+    /// such as a PNG.
+    /// 
+    /// # Example
+    /// See `colorimetry-plot::examples::display_p3_gamut.rs` how this is used to show a full
+    /// DisplayP3 gamut in a CIE 1931 chromaticity diagram, if viewed on a high gamut display, using
+    /// a modern Web Browser with support of managed color workflows.
+    pub fn from_rgb_space(rgb_space: colorimetry::rgb::RgbSpace) -> InputProfile {
+        let input_profile = Self::new();
+        let pcs_illuminant = input_profile.pcs_illuminant(); // always D50
+        let obs = colorimetry::observer::Observer::Cie1931;
+        let pcs_illuminant_xyz = colorimetry::xyz::XYZ::new(pcs_illuminant, obs);
+        let media_white_xyz = rgb_space.white_point(obs).set_illuminance(1.0).values();
+        let m_rgb = obs.calc_rgb2xyz_matrix_with_alt_white(rgb_space, Some(pcs_illuminant_xyz));
+        let r_xyz = m_rgb.column(0);
+        let g_xyz = m_rgb.column(1);
+        let b_xyz = m_rgb.column(2);
+        let bradford = Bradford::new(media_white_xyz, pcs_illuminant).as_matrix();
+
+        input_profile
+            .with_tag(ProfileDescriptionTag)
+                .as_text_description(|text| {
+                    text.set_ascii("CMX_P3");
+                })
+            .with_tag(CopyrightTag)
+                .as_text(|text| {
+                    text.set_text("CC0");
+                })
+            .with_tag(MediaWhitePointTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set(media_white_xyz);
+                })
+            .with_tag(RedMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set(r_xyz.as_slice().try_into().unwrap());
+                })
+            .with_tag(GreenMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set(g_xyz.as_slice().try_into().unwrap());
+                })
+            .with_tag(BlueMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set(b_xyz.as_slice().try_into().unwrap());
+                })
+            .with_tag(ChromaticAdaptationTag)
+                .as_sf15_fixed_16_array(|array| {
+                    let bradford_array: [f64; 9] = bradford.as_slice().try_into().unwrap();
+                    array.set(bradford_array);
+                })
+            .with_tag(RedTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.4, 0.94786, 0.05214, 0.07739, 0.04045]);
+                })
+            .with_tag(BlueTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.4, 0.94786, 0.05214, 0.07739, 0.04045]);
+                })
+            .with_tag(GreenTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.4, 0.94786, 0.05214, 0.07739, 0.04045]);
+                })
+            .with_profile_id()
+        
+    }
+
     #[allow(unused)]
     /// Creates a new Three-component matrix-based ("RGB") InputProfile
     /// using one of RGB color spaces as defined in the Rust `Colorimetry` library.
@@ -118,5 +185,19 @@ impl TryFrom<Profile> for InputProfile {
         } else {
             Err(Self::Error::IsNotA("Input Profile"))
         }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_input_profile_from_rgb_space() {
+        let input_profile = InputProfile::from_rgb_space(colorimetry::rgb::RgbSpace::DisplayP3);
+        let bytes = input_profile.to_bytes().unwrap();
+        let input_profile_2 = InputProfile::try_from(Profile::from_bytes(&bytes).unwrap()).unwrap();
+        println!("{}", input_profile_2);
     }
 }

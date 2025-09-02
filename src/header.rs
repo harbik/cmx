@@ -109,7 +109,20 @@ impl RawProfile {
     /// interpret them correctly.  However, such a use is discouraged, as the ICC's intention is to
     /// improve color reproduction quality between devices and media, and not to create
     /// vendor-specific profiles.
+    /// # Example:
+    /// ```rust
+    /// use cmx::profile::RawProfile;
+    /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
+    /// let cmm = profile.cmm().unwrap();
+    /// assert_eq!(cmm, cmx::signatures::Cmm::Apple);
+    /// ```
     ///
+    /// ```rust
+    /// use cmx::profile::RawProfile;
+    /// let profile = RawProfile::read("tests/profiles/Display P3_cmx.icc").unwrap();
+    /// let cmm = profile.cmm().unwrap();
+    /// assert_eq!(cmm, cmx::signatures::Cmm::Apple);
+    /// ```
     pub fn cmm(&self) -> Option<Cmm> {
         let header = self.header();
         let tag = Signature(header.cmm.get());
@@ -577,7 +590,7 @@ impl RawProfile {
         let header = self.header();
         let m = header.manufacturer.get();
         let sig = Signature(m);
-        if is_printable_ascii_bytes(sig.to_string().as_bytes()) {
+        if m>0 && is_printable_ascii_bytes(sig.to_string().as_bytes()) {
             Some(sig)
         } else {
             None
