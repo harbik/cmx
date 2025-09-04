@@ -590,7 +590,7 @@ impl RawProfile {
         let header = self.header();
         let m = header.manufacturer.get();
         let sig = Signature(m);
-        if m>0 && is_printable_ascii_bytes(sig.to_string().as_bytes()) {
+        if m > 0 && is_printable_ascii_bytes(sig.to_string().as_bytes()) {
             Some(sig)
         } else {
             None

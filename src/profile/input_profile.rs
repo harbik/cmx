@@ -3,7 +3,10 @@
 
 use serde::Serialize;
 
-use crate::{profile::Profile, tag::{bradford::Bradford, tags::*}};
+use crate::{
+    profile::Profile,
+    tag::{bradford::Bradford, tags::*},
+};
 
 use super::RawProfile;
 
@@ -94,10 +97,10 @@ impl InputProfile {
     }
 
     /// Creates an input profile from a Colorimetry::RgbSpace.
-    /// 
+    ///
     /// This type of profile is typically used to embed in image files,
     /// such as a PNG.
-    /// 
+    ///
     /// # Example
     /// See `colorimetry-plot::examples::display_p3_gamut.rs` how this is used to show a full
     /// DisplayP3 gamut in a CIE 1931 chromaticity diagram, if viewed on a high gamut display, using
@@ -113,51 +116,52 @@ impl InputProfile {
         let g_xyz = m_rgb.column(1);
         let b_xyz = m_rgb.column(2);
         let bradford = Bradford::new(media_white_xyz, pcs_illuminant).as_matrix();
+        let gamma_values = rgb_space.gamma().values();
 
         input_profile
+            .with_rendering_intent(crate::tag::RenderingIntent::RelativeColorimetric)
             .with_tag(ProfileDescriptionTag)
-                .as_text_description(|text| {
-                    text.set_ascii("CMX_P3");
-                })
+            .as_text_description(|text| {
+                text.set_ascii("CMX_P3");
+            })
             .with_tag(CopyrightTag)
-                .as_text(|text| {
-                    text.set_text("CC0");
-                })
+            .as_text(|text| {
+                text.set_text("CC0");
+            })
             .with_tag(MediaWhitePointTag)
-                .as_xyz_array(|xyz| {
-                    xyz.set(media_white_xyz);
-                })
+            .as_xyz_array(|xyz| {
+                xyz.set(media_white_xyz);
+            })
             .with_tag(RedMatrixColumnTag)
-                .as_xyz_array(|xyz| {
-                    xyz.set(r_xyz.as_slice().try_into().unwrap());
-                })
+            .as_xyz_array(|xyz| {
+                xyz.set(r_xyz.as_slice().try_into().unwrap());
+            })
             .with_tag(GreenMatrixColumnTag)
-                .as_xyz_array(|xyz| {
-                    xyz.set(g_xyz.as_slice().try_into().unwrap());
-                })
+            .as_xyz_array(|xyz| {
+                xyz.set(g_xyz.as_slice().try_into().unwrap());
+            })
             .with_tag(BlueMatrixColumnTag)
-                .as_xyz_array(|xyz| {
-                    xyz.set(b_xyz.as_slice().try_into().unwrap());
-                })
+            .as_xyz_array(|xyz| {
+                xyz.set(b_xyz.as_slice().try_into().unwrap());
+            })
             .with_tag(ChromaticAdaptationTag)
-                .as_sf15_fixed_16_array(|array| {
-                    let bradford_array: [f64; 9] = bradford.as_slice().try_into().unwrap();
-                    array.set(bradford_array);
-                })
+            .as_sf15_fixed_16_array(|array| {
+                let bradford_array: [f64; 9] = bradford.as_slice().try_into().unwrap();
+                array.set(bradford_array);
+            })
             .with_tag(RedTRCTag)
-                .as_parametric_curve(|para| {
-                    para.set_parameters([2.4, 0.94786, 0.05214, 0.07739, 0.04045]);
-                })
+            .as_parametric_curve(|para| {
+                para.set_parameters_slice(gamma_values);
+            })
             .with_tag(BlueTRCTag)
-                .as_parametric_curve(|para| {
-                    para.set_parameters([2.4, 0.94786, 0.05214, 0.07739, 0.04045]);
-                })
+            .as_parametric_curve(|para| {
+                para.set_parameters_slice(gamma_values);
+            })
             .with_tag(GreenTRCTag)
-                .as_parametric_curve(|para| {
-                    para.set_parameters([2.4, 0.94786, 0.05214, 0.07739, 0.04045]);
-                })
+            .as_parametric_curve(|para| {
+                para.set_parameters_slice(gamma_values);
+            })
             .with_profile_id()
-        
     }
 
     #[allow(unused)]
@@ -188,16 +192,44 @@ impl TryFrom<Profile> for InputProfile {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tag::{
+        tagdata::parametric_curve::ParametricCurveType, tags::RedTRCTag, TagSignature,
+    };
 
     #[test]
-    fn test_input_profile_from_rgb_space() {
+    fn test_input_profile_from_display_p3() {
         let input_profile = InputProfile::from_rgb_space(colorimetry::rgb::RgbSpace::DisplayP3);
         let bytes = input_profile.to_bytes().unwrap();
         let input_profile_2 = InputProfile::try_from(Profile::from_bytes(&bytes).unwrap()).unwrap();
-        println!("{}", input_profile_2);
+        let ts: TagSignature = RedTRCTag.into();
+        let t = input_profile_2.0.tags.get(&ts).unwrap();
+        let parametric_curve_data = t.tag.data().as_parametric_curve().unwrap();
+        let parametric_curve_values: ParametricCurveType = parametric_curve_data.into();
+        assert_eq!(
+            parametric_curve_values.values().as_slice(),
+            [2.39999, 0.94786, 0.05214, 0.07739, 0.04045, 0.0, 0.0].as_slice()
+        );
+
+        println!("{input_profile_2}");
+    }
+
+    #[test]
+    fn test_input_profile_from_srgb() {
+        let input_profile = InputProfile::from_rgb_space(colorimetry::rgb::RgbSpace::Adobe);
+        let bytes = input_profile.to_bytes().unwrap();
+        let input_profile_2 = InputProfile::try_from(Profile::from_bytes(&bytes).unwrap()).unwrap();
+        let ts: TagSignature = RedTRCTag.into();
+        let t = input_profile_2.0.tags.get(&ts).unwrap();
+        let parametric_curve_data = t.tag.data().as_parametric_curve().unwrap();
+        let parametric_curve_values: ParametricCurveType = parametric_curve_data.into();
+        assert_eq!(
+            parametric_curve_values.values().as_slice(),
+            [2.19922, 0., 0., 0., 0., 0., 0.].as_slice()
+        );
+
+        println!("{input_profile_2}");
     }
 }

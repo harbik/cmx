@@ -94,6 +94,13 @@ macro_rules! delegate_raw_profile_methods {
                     Self(self.0.with_data_color_space(color_space))
                 }
 
+                pub fn with_rendering_intent(
+                    self,
+                    intent: crate::tag::RenderingIntent
+                ) -> Self {
+                    Self(self.0.with_rendering_intent(intent))
+                }
+
                 pub fn with_creator(
                     self,
                     creator:  &str
