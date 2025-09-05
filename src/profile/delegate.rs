@@ -29,6 +29,10 @@ macro_rules! delegate_raw_profile_methods {
                     }
                 }
 
+                pub fn read<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
+                    Ok(Self(crate::profile::RawProfile::read(path)?))
+                }
+
                 pub fn from_bytes(
                     bytes: &[u8],
                 ) -> Result<Self, Box<dyn std::error::Error>> {
@@ -92,6 +96,13 @@ macro_rules! delegate_raw_profile_methods {
                     color_space: crate::signatures::ColorSpace
                 ) -> Self {
                     Self(self.0.with_data_color_space(color_space))
+                }
+
+                pub fn with_rendering_intent(
+                    self,
+                    intent: crate::tag::RenderingIntent
+                ) -> Self {
+                    Self(self.0.with_rendering_intent(intent))
                 }
 
                 pub fn with_creator(

@@ -11,6 +11,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 * **Fixed**: for any bug fixes.
 * **Security**: in case of vulnerabilities.
 
+## [0.0.3] - 2025-09-03
+
+### Added
+
+* InputProfile::from_rgb_space, using Colorimetry RgbSpace
+* Example setting intent to relative intent for a given ICC profile
+
 ## [0.0.2] - 2025-08-28
 
 ### Added

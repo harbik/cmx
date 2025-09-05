@@ -12,7 +12,7 @@ use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, Unaligne
 /// Represents the raw memory layout of an ICC `ParametricCurveData` tag.
 #[repr(C)]
 #[derive(FromBytes, KnownLayout, Unaligned, Immutable)]
-struct Layout {
+struct ReadLayout {
     signature: [u8; 4],
     /// Reserved, must be 0.
     _reserved: [u8; 4],
@@ -20,6 +20,34 @@ struct Layout {
     _reserved2: [u8; 2],
     /// Array of three CIEXYZ values, stored as s15Fixed16Numbers.
     parameters: [I32<BigEndian>],
+}
+
+#[derive(IntoBytes, KnownLayout, Unaligned, Immutable)]
+#[repr(C, packed)]
+struct WriteLayoutHeader {
+    signature: [u8; 4],
+    _reserved: [u8; 4],
+    encoded_value: U16<BigEndian>,
+    _reserved2: [u8; 2],
+}
+
+impl WriteLayoutHeader {
+    pub fn new(size: usize) -> Self {
+        let encoded_value = match size {
+            1 => U16::<BigEndian>::new(0),
+            3 => U16::<BigEndian>::new(1),
+            4 => U16::<BigEndian>::new(2),
+            5 => U16::<BigEndian>::new(3),
+            7 => U16::<BigEndian>::new(4),
+            _ => panic!("Unsupported number of parameters: {size}"),
+        };
+        Self {
+            signature: DataSignature::ParametricCurveData.into(),
+            _reserved: [0; 4],
+            encoded_value,
+            _reserved2: [0; 2],
+        }
+    }
 }
 
 /// Represents the raw memory layout of an ICC `ParametricCurveData` tag.
@@ -71,6 +99,8 @@ impl<const N: usize> WriteLayout<N> {
 #[derive(Serialize)]
 pub struct ParametricCurveType {
     #[serde(skip_serializing_if = "is_zero")]
+    g: f64,
+    #[serde(skip_serializing_if = "is_zero")]
     a: f64,
     #[serde(skip_serializing_if = "is_zero")]
     b: f64,
@@ -82,13 +112,32 @@ pub struct ParametricCurveType {
     e: f64,
     #[serde(skip_serializing_if = "is_zero")]
     f: f64,
-    #[serde(skip_serializing_if = "is_zero")]
-    g: f64,
+}
+
+impl ParametricCurveType {
+    pub fn values(&self) -> [f64; 7] {
+        [self.g, self.a, self.b, self.c, self.d, self.e, self.f]
+    }
 }
 
 impl ParametricCurveData {
+    // TODO: rename to set_array, or remove all together in favor or set_slice
     pub fn set_parameters<const N: usize>(&mut self, parameters: [f64; N]) {
         self.0 = WriteLayout::new(parameters).as_bytes().to_vec();
+    }
+
+    pub fn set_parameters_slice(&mut self, values: &[f64]) {
+        let n = values.len();
+        let mut bytes = Vec::with_capacity(
+            std::mem::size_of::<WriteLayoutHeader>() + n * std::mem::size_of::<I32<BigEndian>>(),
+        );
+        bytes.extend_from_slice(WriteLayoutHeader::new(n).as_bytes());
+        let params: Vec<I32<BigEndian>> = values
+            .iter()
+            .map(|&v| crate::S15Fixed16::from(v).into())
+            .collect();
+        bytes.extend_from_slice(params.as_slice().as_bytes());
+        self.0 = bytes;
     }
 }
 
@@ -96,7 +145,7 @@ impl ParametricCurveData {
 /// as used
 impl From<&ParametricCurveData> for ParametricCurveType {
     fn from(para: &ParametricCurveData) -> Self {
-        let layout = Layout::ref_from_bytes(&para.0).unwrap();
+        let layout = ReadLayout::ref_from_bytes(&para.0).unwrap();
 
         // Flatten directly during the conversion
         let vec: Vec<f64> = layout
