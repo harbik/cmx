@@ -29,6 +29,10 @@ macro_rules! delegate_raw_profile_methods {
                     }
                 }
 
+                pub fn read<P: AsRef<Path>>(path: P) -> Result<Self, Box<dyn std::error::Error>> {
+                    Ok(Self(crate::profile::RawProfile::read(path)?))
+                }
+
                 pub fn from_bytes(
                     bytes: &[u8],
                 ) -> Result<Self, Box<dyn std::error::Error>> {

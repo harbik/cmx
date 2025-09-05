@@ -5,3 +5,5 @@
 /book/
 /tmp/
 /.markdownlint.json
+examples/Color LCD-37D8832-relative.icc
+examples/Color LCD-37D8832.icc
