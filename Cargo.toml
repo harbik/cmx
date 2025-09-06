@@ -24,7 +24,7 @@ chrono = { version = "0.4.19", features = ["serde"] }
 clap = { version = "4.3", features = ["derive"] }
 colorimetry = {path = "../colorimetry", version = "0.0.8"}
 delegate = "0.13.4"
-half = { version = "2.6", features = ["serde"] }
+# half = { version = "2.6", features = ["serde"] }
 hex = "0.4.3"
 indexmap = { version = "2.10.0", features = ["serde"] }
 isocountry = "0.3.2"
@@ -48,5 +48,7 @@ name = "cmx"
 path = "src/bin/cmx.rs"
 
 [dev-dependencies]
-glob = "0.3.0"
+# glob = "0.3.0"
+image = { version = "0.25", default-features = false, features = ["png"] }
+base64 = "0.21"
 
