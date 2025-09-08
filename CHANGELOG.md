@@ -11,11 +11,23 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 * **Fixed**: for any bug fixes.
 * **Security**: in case of vulnerabilities.
 
+## [0.0.5]
+
+### Added
+
+* `examples/primaries.rs`, creates RGB test patches with different embedded profiles
+* `DisplayProfile::from_rgb_space`, to create a display profile associated with a `Colorimetry` color space
+
+### Removed
+
+* `InputProfile::from_rgb_space`; Input profiles are used for scanners and cameras, and are typically not embedded
+  in images to be processed by Web Browsers and Color Managed Applications.
+
 ## [0.0.4] - 2025-09-06
 
 ### Fixed
 
-* Colorimetry dependcy set to v0.0.8, needed to expose RgbSpace gamma curve values
+* Colorimetry dependency set to v0.0.8, needed to expose RgbSpace gamma curve values
 
 ## [0.0.3] - 2025-09-03
 
