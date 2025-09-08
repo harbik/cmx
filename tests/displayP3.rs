@@ -143,8 +143,8 @@ mod make_display_p3 {
             .with_profile_id() // calcualate and add profile ID to the profile
             ;
 
-        display_p3_example.write("tmp/display_p3_example.icc")?;
-        let display_p3_read_back = cmx::profile::Profile::read("tmp/display_p3_example.icc")?;
+        let bytes = display_p3_example.to_bytes()?;
+        let display_p3_read_back = cmx::profile::Profile::from_bytes(&bytes)?;
         assert_eq!(
             display_p3_read_back.profile_id_as_hex_string(),
             "617028e1 e1014e15 91f178a9 fb8efc92"
