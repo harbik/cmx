@@ -3,9 +3,7 @@
 
 use serde::Serialize;
 
-use crate::{
-    profile::Profile,
-};
+use crate::profile::Profile;
 
 use super::RawProfile;
 

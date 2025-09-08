@@ -3,7 +3,10 @@
 
 use serde::Serialize;
 
-use crate::{profile::Profile, tag::{bradford::Bradford, RenderingIntent}};
+use crate::{
+    profile::Profile,
+    tag::{bradford::Bradford, RenderingIntent},
+};
 
 use super::RawProfile;
 
@@ -39,7 +42,7 @@ impl DisplayProfile {
         )
     }
 
-        /// Creates an output profile from a Colorimetry::RgbSpace.
+    /// Creates an output profile from a Colorimetry::RgbSpace.
     ///
     /// This type of profile is typically used to embed in image files,
     /// such as a PNG.
@@ -126,9 +129,13 @@ mod tests {
 
     #[test]
     fn test_input_profile_from_display_p3() {
-        let input_profile = DisplayProfile::from_rgb_space(colorimetry::rgb::RgbSpace::DisplayP3, RenderingIntent::RelativeColorimetric);
+        let input_profile = DisplayProfile::from_rgb_space(
+            colorimetry::rgb::RgbSpace::DisplayP3,
+            RenderingIntent::RelativeColorimetric,
+        );
         let bytes = input_profile.to_bytes().unwrap();
-        let display_profile_2 = DisplayProfile::try_from(Profile::from_bytes(&bytes).unwrap()).unwrap();
+        let display_profile_2 =
+            DisplayProfile::try_from(Profile::from_bytes(&bytes).unwrap()).unwrap();
         let ts: TagSignature = RedTRCTag.into();
         let t = display_profile_2.0.tags.get(&ts).unwrap();
         let parametric_curve_data = t.tag.data().as_parametric_curve().unwrap();
@@ -143,9 +150,13 @@ mod tests {
 
     #[test]
     fn test_display_profile_from_srgb() {
-        let display_profile = DisplayProfile::from_rgb_space(colorimetry::rgb::RgbSpace::Adobe, RenderingIntent::RelativeColorimetric);
+        let display_profile = DisplayProfile::from_rgb_space(
+            colorimetry::rgb::RgbSpace::Adobe,
+            RenderingIntent::RelativeColorimetric,
+        );
         let bytes = display_profile.to_bytes().unwrap();
-        let display_profile_2 = DisplayProfile::try_from(Profile::from_bytes(&bytes).unwrap()).unwrap();
+        let display_profile_2 =
+            DisplayProfile::try_from(Profile::from_bytes(&bytes).unwrap()).unwrap();
         let ts: TagSignature = RedTRCTag.into();
         let t = display_profile_2.0.tags.get(&ts).unwrap();
         let parametric_curve_data = t.tag.data().as_parametric_curve().unwrap();
