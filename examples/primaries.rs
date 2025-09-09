@@ -54,7 +54,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Save the image with a Display P3 color profile
     let display_p3_profile =
-        DisplayProfile::cmx_p3(RenderingIntent::RelativeColorimetric);
+        DisplayProfile::cmx_display_p3(RenderingIntent::RelativeColorimetric);
     display_p3_profile
         .clone()
         .write("examples/display_p3.icc")?;
