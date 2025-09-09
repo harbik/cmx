@@ -112,6 +112,57 @@ impl DisplayProfile {
                 })
             .with_profile_id()
     }
+
+    pub fn cmx_p3(rendering_intent: RenderingIntent) -> Self {
+        use crate::tag::tags::*;
+        DisplayProfile::new()
+            .with_rendering_intent(rendering_intent)
+            .with_tag(ProfileDescriptionTag)
+                .as_text_description(|text| {
+                    text.set_ascii("CMX_P3");
+                })
+            .with_tag(CopyrightTag)
+                .as_text(|text| {
+                    text.set_text("CC0");
+                })
+            .with_tag(MediaWhitePointTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.950455, 1.00000, 1.08905]);
+                })
+            .with_tag(RedMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.515121, 0.241196, -0.001053]);
+                })
+            .with_tag(GreenMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.291977, 0.692245, 0.041885]);
+                })
+            .with_tag(BlueMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.157104, 0.066574, 0.784073]);
+                })
+            .with_tag(RedTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.39999, 0.94786, 0.05214, 0.07739, 0.04045]);
+                })
+            .with_tag(BlueTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.39999, 0.94786, 0.05214, 0.07739, 0.04045]);
+                })
+            .with_tag(GreenTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.39999, 0.94786, 0.05214, 0.07739, 0.04045]);
+                })
+            .with_tag(ChromaticAdaptationTag)
+                .as_sf15_fixed_16_array(|array| {
+                    array.set([
+                         1.047882, 0.022919, -0.050201,
+                         0.029587, 0.990479, -0.017059,
+                        -0.009232, 0.015076,  0.751678
+                    ]);
+                })
+    }
+
 }
 
 impl Default for DisplayProfile {
