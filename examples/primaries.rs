@@ -1,11 +1,14 @@
-// Creates three small png images, with size three horizontally stacked blocks,
+// Creates four small png images, with horizontally stacked blocks,
 // each 100 by 100 pixels wide, with repectively a fully satured red, green,
 // and blue color with RGB coordinates of [255, 0, 0], [0, 255, 0], and [0, 0, 255].
 //
-// * The first image, written to "tmp/srgb_test.png" contains no color profile, and uses the sRGB color space,
-// * The second image, written to "tmp/srgb_profile_test.png" contains an sRGB based input profile, set with
+// * The first image, written to "tmp/srgb_test.png" contains no color profile. If no profile is
+//   embedded, color management systems will assume the image is in the sRGB color space.
+// * The second image, written to "tmp/srgb_profile_test.png" contains an sRGB based display profile, set with
 //   relative colorimetric intent.
-// * The third contains a display_p3 Colorimetry input profile, also with relative colorimetric intent,
+// * The third contains a Display P3 display profile, also with relative colorimetric intent,
+//   and is written to "tmp/display_p3_test.png".
+// * The fourth contains an Adobe RGB display profile, also with relative colorimetric intent,
 //   and is written to "tmp/display_p3_test.png".
 //
 // The purpose of these images is to check if an application, rendering the images, interprets the
