@@ -65,5 +65,18 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::write("examples/display_p3_test.png", &display_p3_png_data)?;
     println!("Saved examples/display_p3_test.png with Display P3 color profile");
 
+    // Save the image with a Adobe color profile
+    let adobe_rgb =
+        DisplayProfile::cmx_adobe_rgb(RenderingIntent::RelativeColorimetric);
+    adobe_rgb
+        .clone()
+        .write("examples/display_p3.icc")?;
+    let mut adobe_rgb_png_data = Vec::new();
+    let mut encoder = PngEncoder::new(&mut adobe_rgb_png_data);
+    encoder.set_icc_profile(adobe_rgb.to_bytes()?)?;
+    encoder.write_image(image.as_raw(), width, height, ExtendedColorType::Rgb8)?;
+    std::fs::write("examples/adobe_rgb_test.png", &adobe_rgb_png_data)?;
+    println!("Saved examples/adobe_rgb_test.png with Adobe RGB color profile");
+
     Ok(())
 }
