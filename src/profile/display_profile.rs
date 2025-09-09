@@ -75,7 +75,7 @@ impl DisplayProfile {
                 })
             .with_tag(CopyrightTag)
                 .as_text(|text| {
-                    text.set_text("CC0");
+                    text.set_text("CC0 1.0");
                 })
             .with_tag(MediaWhitePointTag)
                 .as_xyz_array(|xyz| {
@@ -113,6 +113,66 @@ impl DisplayProfile {
             .with_profile_id()
     }
 
+    /// Creates a sRGB Display Profile, with the specified rendering intent.
+    /// 
+    /// # License: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
+    /// This ICC Display Profile by Harbers Bik LLC is marked <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a>
+    #[rustfmt::skip]
+    pub fn cmx_srgb(rendering_intent: RenderingIntent) -> Self {
+        use crate::tag::tags::*;
+        DisplayProfile::new()
+            .with_rendering_intent(rendering_intent)
+            .with_tag(ProfileDescriptionTag)
+                .as_text_description(|text| {
+                    text.set_ascii("CMX_SRGB");
+                })
+            .with_tag(CopyrightTag)
+                .as_text(|text| {
+                    text.set_text("CC0 1.0");
+                })
+            .with_tag(MediaWhitePointTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.950455, 1.00000, 1.08905]);
+                })
+            .with_tag(RedMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.436066, 0.222488, 0.013916]);
+                })
+            .with_tag(GreenMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.385147, 0.716873, 0.097076]);
+                })
+            .with_tag(BlueMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.143066, 0.060608, 0.714096]);
+                })
+            .with_tag(RedTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.39999, 0.94786, 0.05214, 0.07739, 0.04045]);
+                })
+            .with_tag(BlueTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.39999, 0.94786, 0.05214, 0.07739, 0.04045]);
+                })
+            .with_tag(GreenTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.39999, 0.94786, 0.05214, 0.07739, 0.04045]);
+                })
+            .with_tag(ChromaticAdaptationTag)
+                .as_sf15_fixed_16_array(|array| {
+                    array.set([
+                         1.047882, 0.022919, -0.050201,
+                         0.029587, 0.990479, -0.017059,
+                        -0.009232, 0.015076,  0.751678
+                    ]);
+                })
+    }
+
+    /// Creates a DisplayProfile for the Display P3 color space, with the specified rendering intent.
+    /// 
+    /// # License: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
+    /// This ICC Display Profile by Harbers Bik LLC is marked <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a>
+    #[rustfmt::skip]
     pub fn cmx_p3(rendering_intent: RenderingIntent) -> Self {
         use crate::tag::tags::*;
         DisplayProfile::new()
@@ -123,7 +183,7 @@ impl DisplayProfile {
                 })
             .with_tag(CopyrightTag)
                 .as_text(|text| {
-                    text.set_text("CC0");
+                    text.set_text("CC0 1.0");
                 })
             .with_tag(MediaWhitePointTag)
                 .as_xyz_array(|xyz| {

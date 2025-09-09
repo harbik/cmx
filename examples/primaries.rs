@@ -23,7 +23,6 @@
 // the Display P3 image.
 
 use cmx::{profile::DisplayProfile, tag::RenderingIntent};
-use colorimetry::rgb::RgbSpace;
 use image::{codecs::png::PngEncoder, ExtendedColorType, ImageEncoder, Rgb, RgbImage};
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -45,7 +44,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Save the image with an sRGB color profile
     let srgb_profile =
-        DisplayProfile::from_rgb_space(RgbSpace::SRGB, RenderingIntent::RelativeColorimetric);
+        DisplayProfile::cmx_srgb(RenderingIntent::RelativeColorimetric);
     let mut srgb_png_data = Vec::new();
     let mut encoder = PngEncoder::new(&mut srgb_png_data);
     encoder.set_icc_profile(srgb_profile.to_bytes()?)?;
@@ -55,7 +54,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Save the image with a Display P3 color profile
     let display_p3_profile =
-        DisplayProfile::from_rgb_space(RgbSpace::DisplayP3, RenderingIntent::RelativeColorimetric);
+        DisplayProfile::cmx_p3(RenderingIntent::RelativeColorimetric);
     display_p3_profile
         .clone()
         .write("examples/display_p3.icc")?;
