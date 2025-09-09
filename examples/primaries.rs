@@ -12,7 +12,7 @@
 // color profiles correctly. This is a visual test, and you can view the images in different applications and on
 // different screens, and try to make sense of what you see, and the pixel values you read with an
 // applications such as Apple's Digital Color Meter.
-// 
+//
 // I have also included a primaries.html file, that uses the same images, and
 // displays them in a browser, using the HTML `<img>` tag. Modern browsers
 // such as Safari, Firefox, and Chrome, support color managed rendering of images,
