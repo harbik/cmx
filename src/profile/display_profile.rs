@@ -115,6 +115,11 @@ impl DisplayProfile {
 
     /// Creates a sRGB Display Profile, with the specified rendering intent.
     /// 
+    /// # Note
+    /// sRGB is the standard color space for web images and most consumer devices.
+    /// It is designed to match typical home and office viewing conditions, making it suitable for
+    /// general-purpose images that will be viewed on a variety of devices.
+    /// 
     /// # License: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
     /// This ICC Display Profile by Harbers Bik LLC is marked <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a>
     #[rustfmt::skip]
@@ -168,12 +173,82 @@ impl DisplayProfile {
                 })
     }
 
-    /// Creates a DisplayProfile for the Display P3 color space, with the specified rendering intent.
+    /// Creates a DisplayProfile for the Adobe RGB color space, with the specified rendering intent.
+    /// 
+    /// # Note 
+    /// Adobe RGB is the preferred color space for high-end printing and premium photography.
+    /// It has a wider gamut than sRGB, especially in the green and cyan areas, making it suitable for
+    /// images that require vibrant and accurate color reproduction.
+    ///
+    /// # License: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
+    /// This ICC Display Profile by Harbers Bik LLC is marked <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a>
+    #[rustfmt::skip]
+    pub fn cmx_adobe_rgb(rendering_intent: RenderingIntent) -> Self {
+        use crate::tag::tags::*;
+        DisplayProfile::new()
+            .with_rendering_intent(rendering_intent)
+            .with_tag(ProfileDescriptionTag)
+                .as_text_description(|text| {
+                    text.set_ascii("CMX_AdobeRGB");
+                })
+            .with_tag(CopyrightTag)
+                .as_text(|text| {
+                    text.set_text("CC0 1.0");
+                })
+            .with_tag(MediaWhitePointTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.950455, 1.00000, 1.08905]);
+                })
+            .with_tag(RedMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.609741, 0.311111, 0.01947]);
+                })
+            .with_tag(GreenMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.205276, 0.625671, 0.060867]);
+                })
+            .with_tag(BlueMatrixColumnTag)
+                .as_xyz_array(|xyz| {
+                    xyz.set([0.149185, 0.063217, 0.744568]);
+                })
+            .with_tag(RedTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.1992]);
+                })
+            .with_tag(BlueTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.1992]);
+                })
+            .with_tag(GreenTRCTag)
+                .as_parametric_curve(|para| {
+                    para.set_parameters([2.1992]);
+                })
+            .with_tag(ChromaticAdaptationTag)
+                .as_sf15_fixed_16_array(|array| {
+                    array.set([
+                         1.047882, 0.022919, -0.050201,
+                         0.029587, 0.990479, -0.017059,
+                        -0.009232, 0.015076,  0.751678
+                    ]);
+                })
+    }
+
+    /// Creates a DisplayProfile for Apple's Display P3 RGB color space, with the specified rendering intent.
+    /// 
+    /// # Notes
+    /// 
+    /// * Display P3 is commonlay high-end monitors, and Apple devices.
+    ///   It offers a wider gamut than sRGB, particularly in the red and green areas, making it ideal for
+    ///   vibrant and immersive visual experiences.
+    /// * It shares the same white point as sRGB (D65) and uses the same gamma curve as sRGB, but uses
+    ///   the primaries as defined in the DCI-P3 standard, which are more saturated than the ones in sRGB.
+    /// * Although Apple created Display P3, it is now an open standard, and is now widely supported
+    ///   across various platforms and devices.
     /// 
     /// # License: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication
     /// This ICC Display Profile by Harbers Bik LLC is marked <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a>
     #[rustfmt::skip]
-    pub fn cmx_p3(rendering_intent: RenderingIntent) -> Self {
+    pub fn cmx_display_p3(rendering_intent: RenderingIntent) -> Self {
         use crate::tag::tags::*;
         DisplayProfile::new()
             .with_rendering_intent(rendering_intent)

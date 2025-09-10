@@ -1,11 +1,14 @@
-// Creates three small png images, with size three horizontally stacked blocks,
+// Creates four small png images, with horizontally stacked blocks,
 // each 100 by 100 pixels wide, with repectively a fully satured red, green,
 // and blue color with RGB coordinates of [255, 0, 0], [0, 255, 0], and [0, 0, 255].
 //
-// * The first image, written to "tmp/srgb_test.png" contains no color profile, and uses the sRGB color space,
-// * The second image, written to "tmp/srgb_profile_test.png" contains an sRGB based input profile, set with
+// * The first image, written to "tmp/srgb_test.png" contains no color profile. If no profile is
+//   embedded, color management systems will assume the image is in the sRGB color space.
+// * The second image, written to "tmp/srgb_profile_test.png" contains an sRGB based display profile, set with
 //   relative colorimetric intent.
-// * The third contains a display_p3 Colorimetry input profile, also with relative colorimetric intent,
+// * The third contains a Display P3 display profile, also with relative colorimetric intent,
+//   and is written to "tmp/display_p3_test.png".
+// * The fourth contains an Adobe RGB display profile, also with relative colorimetric intent,
 //   and is written to "tmp/display_p3_test.png".
 //
 // The purpose of these images is to check if an application, rendering the images, interprets the
@@ -54,7 +57,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Save the image with a Display P3 color profile
     let display_p3_profile =
-        DisplayProfile::cmx_p3(RenderingIntent::RelativeColorimetric);
+        DisplayProfile::cmx_display_p3(RenderingIntent::RelativeColorimetric);
     display_p3_profile
         .clone()
         .write("examples/display_p3.icc")?;
@@ -64,6 +67,19 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     encoder.write_image(image.as_raw(), width, height, ExtendedColorType::Rgb8)?;
     std::fs::write("examples/display_p3_test.png", &display_p3_png_data)?;
     println!("Saved examples/display_p3_test.png with Display P3 color profile");
+
+    // Save the image with a Adobe color profile
+    let adobe_rgb =
+        DisplayProfile::cmx_adobe_rgb(RenderingIntent::RelativeColorimetric);
+    adobe_rgb
+        .clone()
+        .write("examples/display_p3.icc")?;
+    let mut adobe_rgb_png_data = Vec::new();
+    let mut encoder = PngEncoder::new(&mut adobe_rgb_png_data);
+    encoder.set_icc_profile(adobe_rgb.to_bytes()?)?;
+    encoder.write_image(image.as_raw(), width, height, ExtendedColorType::Rgb8)?;
+    std::fs::write("examples/adobe_rgb_test.png", &adobe_rgb_png_data)?;
+    println!("Saved examples/adobe_rgb_test.png with Adobe RGB color profile");
 
     Ok(())
 }
