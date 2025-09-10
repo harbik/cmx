@@ -65,7 +65,7 @@ use crate::error::ParseError;
 #[derive(PartialEq, Clone, Copy, Debug, Serialize)]
 #[repr(u32)]
 pub enum DataSignature {
-    UndefinedData = 0x00000000,
+    //    UndefinedData = 0x00000000,
     ChromaticityData = 0x6368726D,   /* 'chrm' */
     CicpData = 0x63696370,           /* 'cicp' */
     ColorantOrderData = 0x636C726F,  /* 'clro' */
@@ -138,7 +138,7 @@ pub enum DataSignature {
 impl DataSignature {
     pub fn from_u32(value: u32) -> Self {
         match value {
-            0x00000000 => Self::UndefinedData,
+            //            0x00000000 => Self::UndefinedData,
             0x6368726D => Self::ChromaticityData,
             0x63696370 => Self::CicpData, /* 'cicp' */
             0x636C726F => Self::ColorantOrderData,
@@ -210,7 +210,7 @@ impl DataSignature {
 
     pub fn to_u32(self) -> u32 {
         match self {
-            DataSignature::UndefinedData => 0x00000000,
+            //           DataSignature::UndefinedData => 0x00000000,
             DataSignature::ChromaticityData => 0x6368726D,
             DataSignature::ColorantOrderData => 0x636C726F,
             DataSignature::ColorantTableData => 0x636C7274,
@@ -602,6 +602,7 @@ impl TagData {
     }
 }
 
+/*
 impl ColorantOrderData {
     pub fn new(colorant_order: Vec<u8>) -> Self {
         Self(colorant_order)
@@ -611,3 +612,5 @@ impl ColorantOrderData {
         &self.0
     }
 }
+
+ */

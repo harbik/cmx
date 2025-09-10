@@ -5,6 +5,7 @@
 use crate::{
     profile::{ProfileTagRecord, RawProfile},
     tag::{
+        self,
         tagdata::{CurveData, ParametricCurveData, TagData},
         Tag, TagSignature,
     },
@@ -152,6 +153,8 @@ pub trait IsLut16DataTag {}
 pub trait IsLutAtoBDataTag {}
 pub trait IsLutBtoADataTag {}
 
+pub trait IsRawTag {}
+
 /// A helper for safely setting the data for a specific tag signature.
 /// It is generic over the signature type `S` to enable compile-time checks,
 /// and generic over the profile type `P` to return the correct P for chaining.
@@ -247,6 +250,32 @@ where
             .raw_mut()
             .ensure_s15_fixed_16_array_mut(self.tag.into());
         configure(array);
+        self.profile
+    }
+
+    /// Sets the tag's data as raw bytes.
+    /// This is used for non-ICC or manufacturer private tags, with unknown data formats, It is the
+    /// caller's responsibility to ensure the data is valid for the intended use.
+    pub fn as_raw<F>(mut self, configure: F) -> P
+    where
+        S: IsRawTag,
+        F: FnOnce(&mut crate::tag::tagdata::RawData),
+    {
+        let sig: TagSignature = self.tag.into();
+        let raw = self.profile.raw_mut().ensure_raw_mut(self.tag.into());
+
+        // If the raw data is empty, initialize it with the tag signature and reserved bytes.
+        // as in this case we have a unknown tag and tag signature, which we need to transfer to
+        // the raw data parser. In all other cases, we are working with a known tag and type,
+        // and in those cases we transferring an empty raw data vec is Ok.
+        if raw.0.is_empty() {
+            // Initialize with the tag signature and zero reserved bytes.
+            let mut initial_data = Vec::with_capacity(8);
+            initial_data.extend_from_slice(&sig.to_u32().to_be_bytes());
+            initial_data.extend_from_slice(&[0u8; 4]); // Reserved bytes
+            raw.0 = initial_data;
+        }
+        configure(raw);
         self.profile
     }
 }

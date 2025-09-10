@@ -4,10 +4,6 @@
 pub mod tagdata;
 
 pub mod bradford;
-/*
-mod parse;
-pub use parse::{UnambiguousTag, IsCurveTag, IsParametricCurveTag, IsTextDescriptionTag, IsMultiLocalizedUnicodeTag, IsLut8DataTag, IsLut16DataTag, IsLutAtoBDataTag, IsLutBtoADataTag};
- */
 
 mod parsed_tag;
 pub use parsed_tag::ParsedTag;
@@ -105,7 +101,6 @@ macro_rules! impl_tag_dispatch {
     };
 }
 
-// KEEP define_tag_signatures! as-is; we will reuse it from define_tags!.
 macro_rules! define_tag_signatures {
     ($( $(#[$meta:meta])? ($variant:ident, $tag:expr) ),* $(,)?) => {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, strum::AsRefStr)]
