@@ -256,20 +256,22 @@ where
     /// Sets the tag's data as raw bytes.
     /// This is used for non-ICC or manufacturer private tags, with unknown data formats, It is the
     /// caller's responsibility to ensure the data is valid for the intended use.
+    /// It can also be used to set the raw data for known tags, but this is not recommended,
+    /// as it bypasses the type safety provided by the other methods.
     pub fn as_raw<F>(mut self, configure: F) -> P
     where
-        S: IsRawTag,
         F: FnOnce(&mut crate::tag::tagdata::RawData),
     {
         let sig: TagSignature = self.tag.into();
         let raw = self.profile.raw_mut().ensure_raw_mut(self.tag.into());
 
-        // If the raw data is empty, initialize it with the tag signature and reserved bytes.
-        // as in this case we have a unknown tag and tag signature, which we need to transfer to
-        // the raw data parser. In all other cases, we are working with a known tag and type,
-        // and in those cases we transferring an empty raw data vec is Ok.
+        // If the tag has no data yet (is a new tag), initialize it with the tag signature and
+        // reserved bytes.  This method is intended for use with unknown tags.  If a new tag is
+        // being created using this method, it will use the tag signature also as the type
+        // signature.  If the tag already exists, it may already have data, in which case we do not
+        // overwrite it.
         if raw.0.is_empty() {
-            // Initialize with the tag signature and zero reserved bytes.
+            // Initialize with the tag signature and reserved bytes.
             let mut initial_data = Vec::with_capacity(8);
             initial_data.extend_from_slice(&sig.to_u32().to_be_bytes());
             initial_data.extend_from_slice(&[0u8; 4]); // Reserved bytes

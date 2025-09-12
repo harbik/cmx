@@ -124,6 +124,16 @@ macro_rules! define_tag_signatures {
             }
         }
 
+        impl From<&str> for TagSignature {
+            fn from(tag: &str) -> Self {
+                use std::str::FromStr;
+                let sig = crate::signatures::Signature::from_str(tag).unwrap_or_else(|_| {
+                    panic!("Invalid tag string: '{}'. Must be 1 to 4 ASCII characters", tag)
+                });
+                Self::from(sig.0)
+            }
+        }
+
         impl TagSignature {
             pub fn to_u32(&self) -> u32 {
                 match self {

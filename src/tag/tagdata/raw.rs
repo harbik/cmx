@@ -14,7 +14,7 @@ use crate::{
 
 #[derive(Serialize)]
 pub struct RawType {
-    #[serde(rename = "unparsed")]
+    #[serde(rename = "type")]
     type_signature: String,
     #[serde(skip)]
     #[allow(unused)]
@@ -45,7 +45,7 @@ impl From<&TagData> for RawType {
 }
 
 impl RawData {
-    pub fn set_data(&mut self, data: &[u8]) {
+    pub fn set_bytes(&mut self, data: &[u8]) {
         let mut new_data = Vec::with_capacity(8 + data.len());
         new_data.extend_from_slice(&self.0[..8]);
         new_data.extend_from_slice(data);
@@ -53,30 +53,36 @@ impl RawData {
     }
 
     pub fn set_hex(&mut self, hex: &str) {
-        let bytes = hex
-            .split_whitespace()
-            .map(|s| u8::from_str_radix(s, 16).unwrap())
-            .collect::<Vec<u8>>();
-        self.set_data(&bytes);
+        if hex.is_empty()
+            || hex
+                .chars()
+                .any(|c| !(c.is_whitespace() || c.is_ascii_hexdigit()))
+        {
+            panic!("Invalid hex string");
+        }
+        let bytes = crate::parse_hex_string(hex).unwrap();
+        self.set_bytes(&bytes);
     }
 }
 
 #[cfg(test)]
 mod raw_test {
-    // use std::str::FromStr;
+    use crate::tag::{TagDataTraits, TagSignature};
 
-    // use crate::tag::TagSignature;
 
     #[test]
     fn test_raw_tag() {
-        /*
-        let signature = crate::signatures::Signature::from_str("ndin").unwrap();
-        let tag_signature = TagSignature::from(signature.0);
-        let _profile = crate::profile::RawProfile::default()
-            .with_tag(tag_signature)
+        let profile = crate::profile::DisplayProfile::default()
+            .with_tag("cmx0")
             .as_raw(|raw| {
-                raw.set_hex("01 02 03 04 05 06 07 08 09 0A 0B 0C");
+                raw.set_hex("12345678 9abc");
             });
-         */
+        let cmx0: TagSignature = "cmx0".into();
+        let data = profile.0.tags.get(&cmx0).unwrap().tag.data();
+        let data_hex = crate::format_hex_with_spaces(data.as_slice());
+
+        // "cmxx0" tag signature, 4 reserved bytes (0), and the data we set.
+        assert_eq!(data_hex, "636d7830 00000000 12345678 9abc");
+        //println!("{profile}");
     }
 }
