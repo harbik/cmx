@@ -74,6 +74,8 @@ tag_kind!(
     crate::tag::tagdata::S15Fixed16ArrayData
 );
 
+tag_kind!(RawKind, Raw, crate::tag::tagdata::RawData);
+
 // Add: macro to generate {get, get_mut, ensure_mut} accessors.
 // This reduces boilerplate for simple per-variant accessors on RawProfile.
 macro_rules! tag_accessors {
@@ -128,8 +130,9 @@ impl RawProfile {
         self.tags.get_mut(&sig).map(|rec| rec.tag.data_mut())
     }
 
-    /// Generic: get or insert a specific TagData kind and return a mutable reference.
-    /// - If the signature is absent, we insert a new Tag wrapping Default::default() for the kind.
+    /// Get or insert a specific TagData kind and return a mutable reference.
+    /// - If the signature is absent, we insert a new Tag wrapping Default::default(), which is
+    ///   currently implemented as an empty Data vec.
     /// - If the signature exists but wraps a different variant, we replace it with the requested kind.
     /// - Otherwise we return a mutable reference to the existing inner data.
     pub fn ensure_tag_mut<K, S>(&mut self, tag: S) -> &mut K::Data
@@ -221,5 +224,15 @@ impl RawProfile {
         S15Fixed16Array,
         crate::tag::tagdata::S15Fixed16ArrayData,
         IsS15Fixed16ArrayKind
+    );
+
+    // Raw accessors
+    tag_accessors!(
+        raw,
+        raw_mut,
+        ensure_raw_mut,
+        Raw,
+        crate::tag::tagdata::RawData,
+        RawKind
     );
 }

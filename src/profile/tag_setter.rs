@@ -5,6 +5,7 @@
 use crate::{
     profile::{ProfileTagRecord, RawProfile},
     tag::{
+        self,
         tagdata::{CurveData, ParametricCurveData, TagData},
         Tag, TagSignature,
     },
@@ -152,6 +153,8 @@ pub trait IsLut16DataTag {}
 pub trait IsLutAtoBDataTag {}
 pub trait IsLutBtoADataTag {}
 
+pub trait IsRawTag {}
+
 /// A helper for safely setting the data for a specific tag signature.
 /// It is generic over the signature type `S` to enable compile-time checks,
 /// and generic over the profile type `P` to return the correct P for chaining.
@@ -247,6 +250,34 @@ where
             .raw_mut()
             .ensure_s15_fixed_16_array_mut(self.tag.into());
         configure(array);
+        self.profile
+    }
+
+    /// Sets the tag's data as raw bytes.
+    /// This is used for non-ICC or manufacturer private tags, with unknown data formats, It is the
+    /// caller's responsibility to ensure the data is valid for the intended use.
+    /// It can also be used to set the raw data for known tags, but this is not recommended,
+    /// as it bypasses the type safety provided by the other methods.
+    pub fn as_raw<F>(mut self, configure: F) -> P
+    where
+        F: FnOnce(&mut crate::tag::tagdata::RawData),
+    {
+        let sig: TagSignature = self.tag.into();
+        let raw = self.profile.raw_mut().ensure_raw_mut(self.tag.into());
+
+        // If the tag has no data yet (is a new tag), initialize it with the tag signature and
+        // reserved bytes.  This method is intended for use with unknown tags.  If a new tag is
+        // being created using this method, it will use the tag signature also as the type
+        // signature.  If the tag already exists, it may already have data, in which case we do not
+        // overwrite it.
+        if raw.0.is_empty() {
+            // Initialize with the tag signature and reserved bytes.
+            let mut initial_data = Vec::with_capacity(8);
+            initial_data.extend_from_slice(&sig.to_u32().to_be_bytes());
+            initial_data.extend_from_slice(&[0u8; 4]); // Reserved bytes
+            raw.0 = initial_data;
+        }
+        configure(raw);
         self.profile
     }
 }

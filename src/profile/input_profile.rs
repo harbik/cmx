@@ -86,11 +86,8 @@ impl InputProfile {
     ///   - the current date
     /// - `DeviceClass` set to `Input`
     pub fn new() -> Self {
-        Self(
-            Self(RawProfile::default())
-                .0
-                .with_device_class(crate::signatures::DeviceClass::Input),
-        )
+        let raw = RawProfile::default().with_device_class(crate::signatures::DeviceClass::Input);
+        Self(raw)
     }
 
     pub fn new_nlut() -> Self {

@@ -46,8 +46,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Saved examples/srgb_test.png without color profile");
 
     // Save the image with an sRGB color profile
-    let srgb_profile =
-        DisplayProfile::cmx_srgb(RenderingIntent::RelativeColorimetric);
+    let srgb_profile = DisplayProfile::cmx_srgb(RenderingIntent::RelativeColorimetric);
     let mut srgb_png_data = Vec::new();
     let mut encoder = PngEncoder::new(&mut srgb_png_data);
     encoder.set_icc_profile(srgb_profile.to_bytes()?)?;
@@ -56,8 +55,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Saved examples/srgb_profile_test.png with sRGB color profile");
 
     // Save the image with a Display P3 color profile
-    let display_p3_profile =
-        DisplayProfile::cmx_display_p3(RenderingIntent::RelativeColorimetric);
+    let display_p3_profile = DisplayProfile::cmx_display_p3(RenderingIntent::RelativeColorimetric);
     display_p3_profile
         .clone()
         .write("examples/display_p3.icc")?;
@@ -69,11 +67,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Saved examples/display_p3_test.png with Display P3 color profile");
 
     // Save the image with a Adobe color profile
-    let adobe_rgb =
-        DisplayProfile::cmx_adobe_rgb(RenderingIntent::RelativeColorimetric);
-    adobe_rgb
-        .clone()
-        .write("examples/display_p3.icc")?;
+    let adobe_rgb = DisplayProfile::cmx_adobe_rgb(RenderingIntent::RelativeColorimetric);
+    adobe_rgb.clone().write("examples/display_p3.icc")?;
     let mut adobe_rgb_png_data = Vec::new();
     let mut encoder = PngEncoder::new(&mut adobe_rgb_png_data);
     encoder.set_icc_profile(adobe_rgb.to_bytes()?)?;

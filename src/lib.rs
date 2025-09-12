@@ -248,7 +248,18 @@ pub(crate) fn u1_fixed15_number(v: u16) -> f64 {
 
 /// Render bytes as uppercase hex grouped into 4-byte (8-hex) chunks separated by spaces.
 /// Example: [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC] -> "12345678 9abc"
-pub(crate) fn format_hex_with_spaces(data: &[u8]) -> String {
+/// This is used for displaying binary data in a human-readable format.
+///
+/// Example:
+/// ```
+///  let data = [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC];
+///  let formatted = cmx::format_hex_with_spaces(&data);
+///  assert_eq!(formatted, "12345678 9abc");
+/// ```
+///
+/// Note: The last chunk may be shorter than 8 characters if the data length is not a multiple of 4.
+///
+pub fn format_hex_with_spaces(data: &[u8]) -> String {
     let hex = hex::encode(data);
 
     // Split into chunks of 8 characters and join with spaces
@@ -257,6 +268,29 @@ pub(crate) fn format_hex_with_spaces(data: &[u8]) -> String {
         .map(|chunk| std::str::from_utf8(chunk).unwrap())
         .collect::<Vec<&str>>()
         .join(" ")
+}
+
+/// Parse a hex string with optional spaces into a byte vector.
+/// Example: "12345678 9abc" -> [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC]
+/// This is used for converting human-readable hex strings back into binary data.
+///
+/// Example:
+/// ```
+///   let hex_str = "12345678 9abc";
+///   let bytes = cmx::parse_hex_string(hex_str).unwrap();
+///   assert_eq!(bytes, vec![0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC]);
+/// ```
+///
+/// Notes:
+/// * The input string can contain spaces and is case-insensitive.
+/// * Non-hex characters and whitespace are ignored.
+///
+pub fn parse_hex_string(s: &str) -> Result<Vec<u8>, hex::FromHexError> {
+    let cleaned: String = s
+        .chars()
+        .filter(|c| !c.is_whitespace() && c.is_ascii_hexdigit())
+        .collect();
+    hex::decode(cleaned)
 }
 
 use zerocopy::{BigEndian, FromBytes, Immutable, IntoBytes, KnownLayout, Unaligned, I32};

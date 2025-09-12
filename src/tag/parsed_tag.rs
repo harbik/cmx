@@ -7,7 +7,7 @@ use crate::tag::{
     tagdata::{
         chromaticity::ChromaticityType, curve::CurveType, lut16::Lut16Type, lut8::Lut8Type,
         measurement::MeasurementType, multi_localized_unicode::MultiLocalizedUnicodeType,
-        named_color2::NamedColor2Type, parametric_curve::ParametricCurveType, raw::UnparsedType,
+        named_color2::NamedColor2Type, parametric_curve::ParametricCurveType, raw::RawType,
         s15fixed16array::S15Fixed16ArrayType, signature::SignatureType, text::TextType,
         text_description::TextDescriptionType, vcgt::VcgtType, xyz_array::XYZArrayType,
     },
@@ -54,7 +54,7 @@ pub enum ParsedTag {
     XYZArray(XYZArrayType),
 
     // Graceful fallback for unrecognized or unsupported tags
-    Unparsed(UnparsedType),
+    Raw(RawType),
 }
 
 /// Converts a `TagData`, which is enum collection of encapsulated TagDatas,
@@ -84,7 +84,7 @@ impl From<&TagData> for ParsedTag {
             TagData::XYZArray(xyz) => ParsedTag::XYZArray(xyz.into()),
 
             // Graceful fallback: don't panic, just emit the unparsed data
-            _ => ParsedTag::Unparsed(UnparsedType::from(tag)),
+            _ => ParsedTag::Raw(RawType::from(tag)),
         }
     }
 }

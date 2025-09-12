@@ -68,7 +68,7 @@ pub struct RawProfile {
     #[serde(skip)]
     shared_tags: bool,
     // whether to share tag data for identical tags
-    // this is normally true, but can be set to false for for round trip testing
+    // this is normally true, but can be set to false for round trip testing
     // as not all profiles use tag data sharing.
 }
 
@@ -284,7 +284,7 @@ impl RawProfile {
         // Update offsets and sizes of tags based on their data
         // Tag offsets and sizes are updated, with offsets increasing with position of the tag
         // in the indexmap, and sizes being the length of the tag data.
-        // The tag table entries have the same order as the tag table, with all tages
+        // The tag table entries have the same order as the tag table, with all tags
         // lined up in the order they were added to the profile.
 
         self = self.with_updated_tagrecord_offsets_and_sizes();
@@ -347,7 +347,7 @@ impl RawProfile {
 
                 // Append the tag data
                 buf.extend_from_slice(tag.tag.as_slice());
-            } // else do nothing, tag data is shared and already written.``
+            } // else do nothing, tag data is shared and already written.
         }
 
         // All Tags written to buf, add padding if needed if the last tag does not end on a 4-byte boundary.
@@ -374,7 +374,7 @@ impl RawProfile {
         Ok(String::from_utf8_lossy(&bytes).into_owned())
     }
 
-    // In a RawProfile, as defined in this library, the tag table information is embeded
+    // In a RawProfile, as defined in this library, the tag table information is embedded
     // in the `tags` field, which contains the offsets and sizes of the tags, as well as the
     // tag data itself.
     // The offsets and sizes are copied from the tag table when reading a binary profile from file
