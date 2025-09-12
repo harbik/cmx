@@ -4,7 +4,7 @@
 //! `DisplayProfile` module, with its definition and various constructors,
 //! in particular, small, bar-bones ICC 4.3 instances for the sRGB, DisplayP3, and AdobeRgb
 //! color spaces:
-//! 
+//!
 //! * [`DisplayProfile::cmx_srgb`] for sRGB,
 //! * [`DisplayProfile::cmx_adobe_rgb`] for AdobeRGB,
 //! * and [`DisplayProfile::cmx_display_p3`] for the DisplayP3 space.
@@ -21,27 +21,27 @@ use super::RawProfile;
 /// A `DisplayProfile` represents display devices such as monitors.
 /// Most common is the three-component matrix-based type, often used as embedded profile in image files such as PNG,
 /// but the standard also defines types for  N-component LUT-based, and monochrome display devices.
-/// 
+///
 /// It is a wrapper around `RawProfile`, where most of the functionally is delegated to.
-/// 
+///
 /// # Required Tags
 ///
 /// * profileDescriptionTag
 /// * copyrightTag
 /// * mediaWhitePointTag
-/// 
+///
 /// ## Three-component matrix-based Display profiles
 ///
 /// * redMatrixColumnTag, greenMatrixColumnTag, and blueMatrixColumnTag,
 /// * redTRCTag, greenTRCTag, and blueTRCTag
-/// 
-/// ## N-Component LUT-based Display profiles 
-/// 
+///
+/// ## N-Component LUT-based Display profiles
+///
 /// * AToB0Tag
 /// * BToA0Tag
-/// 
+///
 /// ## Monochrome Displays
-/// 
+///
 /// * grayTRCTag
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct DisplayProfile(pub(crate) RawProfile);
