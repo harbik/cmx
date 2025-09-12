@@ -23,8 +23,8 @@ mod checksum_edge_cases_test {
             test_data[i] = 0xFF;
         }
         
-        // Store original data for comparison
-        let original_data = test_data.clone();
+        // Store original data for comparison (unused but kept for potential debugging)
+        let _original_data = test_data.clone();
         
         // Calculate checksum
         let checksum = md5checksum(&mut test_data);
