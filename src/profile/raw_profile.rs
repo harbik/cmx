@@ -70,6 +70,9 @@ pub struct RawProfile {
     // whether to share tag data for identical tags
     // this is normally true, but can be set to false for round trip testing
     // as not all profiles use tag data sharing.
+    // NOTE: This field is automatically detected from the profile structure during from_bytes(),
+    // and may change during roundtrip (e.g., minimal profiles start with true but become false
+    // after serialization, which is correct behavior as they don't actually have shared tags).
 }
 
 /// A record representing a tag in an ICC profile.
