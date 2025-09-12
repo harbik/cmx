@@ -1,6 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
+//! `DisplayProfile` module, with its definition and various constructors,
+//! in particular, small, bar-bones ICC 4.3 instances for the sRGB, DisplayP3, and AdobeRgb
+//! color spaces:
+//! 
+//! * [`DisplayProfile::cmx_srgb`] for sRGB,
+//! * [`DisplayProfile::cmx_adobe_rgb`] for AdobeRGB,
+//! * and [`DisplayProfile::cmx_display_p3`] for the DisplayP3 space.
+
 use serde::Serialize;
 
 use crate::{
@@ -10,6 +18,31 @@ use crate::{
 
 use super::RawProfile;
 
+/// A `DisplayProfile` represents display devices such as monitors.
+/// Most common is the three-component matrix-based type, often used as embedded profile in image files such as PNG,
+/// but the standard also defines types for  N-component LUT-based, and monochrome display devices.
+/// 
+/// It is a wrapper around `RawProfile`, where most of the functionally is delegated to.
+/// 
+/// # Required Tags
+///
+/// * profileDescriptionTag
+/// * copyrightTag
+/// * mediaWhitePointTag
+/// 
+/// ## Three-component matrix-based Display profiles
+///
+/// * redMatrixColumnTag, greenMatrixColumnTag, and blueMatrixColumnTag,
+/// * redTRCTag, greenTRCTag, and blueTRCTag
+/// 
+/// ## N-Component LUT-based Display profiles 
+/// 
+/// * AToB0Tag
+/// * BToA0Tag
+/// 
+/// ## Monochrome Displays
+/// 
+/// * grayTRCTag
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct DisplayProfile(pub(crate) RawProfile);
 
@@ -42,7 +75,7 @@ impl DisplayProfile {
         )
     }
 
-    /// Creates an output profile from a Colorimetry::RgbSpace.
+    /// Creates an display profile from a Colorimetry::RgbSpace.
     ///
     /// This type of profile is typically used to embed in image files,
     /// such as a PNG.
@@ -313,12 +346,12 @@ mod tests {
     };
 
     #[test]
-    fn test_input_profile_from_display_p3() {
-        let input_profile = DisplayProfile::from_rgb_space(
+    fn test_display_profile_from_display_p3() {
+        let display_profile = DisplayProfile::from_rgb_space(
             colorimetry::rgb::RgbSpace::DisplayP3,
             RenderingIntent::RelativeColorimetric,
         );
-        let bytes = input_profile.to_bytes().unwrap();
+        let bytes = display_profile.to_bytes().unwrap();
         let display_profile_2 =
             DisplayProfile::try_from(Profile::from_bytes(&bytes).unwrap()).unwrap();
         let ts: TagSignature = RedTRCTag.into();
@@ -334,7 +367,7 @@ mod tests {
     }
 
     #[test]
-    fn test_display_profile_from_srgb() {
+    fn test_display_profile_from_rgb() {
         let display_profile = DisplayProfile::from_rgb_space(
             colorimetry::rgb::RgbSpace::Adobe,
             RenderingIntent::RelativeColorimetric,

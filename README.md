@@ -71,7 +71,7 @@ g = 2.60001
  ```
 </details>
 
-<details><summary><strong>Create ICC profiles programmatically</strong></summary>
+<details><summary><strong>Generate ICC profiles</strong></summary>
 
 You can also use the `cmx` library to create ICC profiles from scratch, or read existing
 profiles and change them, using Rust.
