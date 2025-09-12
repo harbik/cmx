@@ -69,7 +69,6 @@ impl RawData {
 mod raw_test {
     use crate::tag::{TagDataTraits, TagSignature};
 
-
     #[test]
     fn test_raw_tag() {
         let profile = crate::profile::DisplayProfile::default()
