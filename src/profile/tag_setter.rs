@@ -104,6 +104,13 @@ impl HasRawProfile for super::Profile {
 }
 
 pub trait IsMultiLocalizedUnicodeTag {}
+impl IsMultiLocalizedUnicodeTag for crate::tag::tags::CopyrightTag {}
+impl IsMultiLocalizedUnicodeTag for crate::tag::tags::ProfileDescriptionTag {}
+impl IsMultiLocalizedUnicodeTag for crate::tag::tags::DeviceMfgDescTag {}
+impl IsMultiLocalizedUnicodeTag for crate::tag::tags::DeviceModelDescTag {}
+impl IsMultiLocalizedUnicodeTag for crate::tag::tags::ViewingCondDescTag {}
+#[cfg(feature = "v5")]
+impl IsMultiLocalizedUnicodeTag for crate::tag::tags::ScreeningDescTag {}
 
 pub trait IsCurveTag {}
 impl IsCurveTag for crate::tag::tags::BlueTRCTag {}
@@ -278,6 +285,19 @@ where
             raw.0 = initial_data;
         }
         configure(raw);
+        self.profile
+    }
+
+    pub fn as_multi_localized_unicode<F>(mut self, configure: F) -> P
+    where
+        S: IsMultiLocalizedUnicodeTag,
+        F: FnOnce(&mut crate::tag::tagdata::MultiLocalizedUnicodeData),
+    {
+        let mlu = self
+            .profile
+            .raw_mut()
+            .ensure_multi_localized_unicode_mut(self.tag.into());
+        configure(mlu);
         self.profile
     }
 }
