@@ -205,21 +205,9 @@ compatibility with existing profiles.
 
 pub mod error;
 pub mod header;
-//pub mod language;
 pub mod profile;
 pub mod signatures;
 pub mod tag;
-
-/*
-#[cfg(test)]
-mod profile_id_test;
-#[cfg(test)]
-mod checksum_edge_cases_test;
-#[cfg(test)]
-mod roundtrip_edge_cases_test;
-#[cfg(test)]
-mod shared_tags_test;
- */
 
 use std::fmt::Display;
 
