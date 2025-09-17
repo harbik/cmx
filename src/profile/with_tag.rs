@@ -76,6 +76,12 @@ tag_kind!(
 
 tag_kind!(RawKind, Raw, crate::tag::tagdata::RawData);
 
+tag_kind!(
+    MultiLocalizedUnicodeKind,
+    MultiLocalizedUnicode,
+    crate::tag::tagdata::MultiLocalizedUnicodeData
+);
+
 // Add: macro to generate {get, get_mut, ensure_mut} accessors.
 // This reduces boilerplate for simple per-variant accessors on RawProfile.
 macro_rules! tag_accessors {
@@ -234,5 +240,14 @@ impl RawProfile {
         Raw,
         crate::tag::tagdata::RawData,
         RawKind
+    );
+
+    tag_accessors!(
+        multi_localized_unicode,
+        multi_localized_unicode_mut,
+        ensure_multi_localized_unicode_mut,
+        MultiLocalizedUnicode,
+        crate::tag::tagdata::MultiLocalizedUnicodeData,
+        MultiLocalizedUnicodeKind
     );
 }
