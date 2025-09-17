@@ -11,10 +11,18 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 * **Fixed**: for any bug fixes.
 * **Security**: in case of vulnerabilities.
 
-## [0.0.5]
+## [0.0.5] - 2025-09-17
 
 ### Added
 
+* `mluc` MultiLocalizedUnicode type builder pattern, allowing to set localized
+  strings for a large collection of tags.
+* `as_raw` tag setter in builder pattern, allowing setting low level tag data
+  as byte array or hex-string.
+* `DisplayProfile` constructors `cmx_srgb`, `cmx_adobe_rgb`, and `cmx_display_p3`;
+  lightweight bare bone profiles with CC0 1.0 Public Domain License, for use for
+  embedding into images.
+* GitHub Build and Test Actions, to qualify contributed code.
 * `examples/primaries.rs`, creates RGB test patches with different embedded profiles
 * `DisplayProfile::from_rgb_space`, to create a display profile associated with a `Colorimetry` color space
 
