@@ -36,8 +36,8 @@ impl MultiLocalizedUnicodeType {
     }
 
     /// Convert the entries map into a Vec of (language, country, utf16be_data)
-    /// language and country are [u8;2] arrays
-    /// utf16be_data is a Vec<u8> containing the UTF-16BE encoded string
+    /// language and country are `[u8;2]` arrays
+    /// utf16be_data is a `Vec<u8>` containing the UTF-16BE encoded string
     /// The order of entries in the Vec is the same as the order in the BTreeMap (i.e. sorted by key)
     /// This is an intermediate step before constructing the final binary data.
     pub fn to_icc_data(&self) -> Vec<([u8; 2], [u8; 2], Vec<u8>)> {
@@ -284,7 +284,7 @@ impl From<&MultiLocalizedUnicodeType> for MultiLocalizedUnicodeData {
     /// Serialize a structured `MultiLocalizedUnicodeType` into binary `MultiLocalizedUnicodeData`.
     ///
     /// Writes the 16‑byte MLUC header, then the records table (12 bytes per record),
-    /// then the contiguous UTF‑16BE string data produced by [`records_table_and_data`].
+    /// then the contiguous UTF‑16BE string data produced by `records_table_and_data`.
     ///
     /// Invariants:
     /// - Offsets/lengths are `U32<BigEndian>` per ICC.
