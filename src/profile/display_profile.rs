@@ -90,7 +90,7 @@ impl DisplayProfile {
         let pcs_illuminant = display_profile.pcs_illuminant(); // always D50
         let obs = colorimetry::observer::Observer::Cie1931;
         let pcs_illuminant_xyz = colorimetry::xyz::XYZ::new(pcs_illuminant, obs);
-        let media_white_xyz = rgb_space.white_point(obs).set_illuminance(1.0).values();
+        let media_white_xyz = rgb_space.white_point(obs).set_illuminance(1.0).to_array();
         let m_rgb = obs.calc_rgb2xyz_matrix_with_alt_white(rgb_space, Some(pcs_illuminant_xyz));
         let r_xyz = m_rgb.column(0);
         let g_xyz = m_rgb.column(1);
