@@ -2,6 +2,7 @@
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
 pub mod chromaticity;
+pub mod dict;
 pub mod curve;
 pub mod lut16;
 pub mod lut8;

@@ -123,6 +123,12 @@ impl IsMultiLocalizedUnicodeTag for crate::tag::tags::ViewingCondDescTag {}
 #[cfg(feature = "v5")]
 impl IsMultiLocalizedUnicodeTag for crate::tag::tags::ScreeningDescTag {}
 
+/// Marker trait for tags whose data is stored as `DictData` (ICC type `dict`).
+///
+/// Only the `MetadataTag` (`meta`, ICC v4.4+) uses `dictType`.
+pub trait IsDictTag {}
+impl IsDictTag for crate::tag::tags::MetadataTag {}
+
 /// Marker trait for tone-reproduction-curve tags whose data is stored as a
 /// `CurveData` (ICC type `curv`): `RedTRCTag`, `GreenTRCTag`,
 /// `BlueTRCTag`, `GrayTRCTag`.
@@ -374,6 +380,42 @@ where
             raw.0 = initial_data;
         }
         configure(raw);
+        self.profile
+    }
+
+    /// Set the tag's data as a `DictData` (ICC type `dict`, ICC v4.4+).
+    ///
+    /// Available for: `MetadataTag` (`meta`).
+    ///
+    /// Use [`DictData::insert`](crate::tag::tagdata::DictData::insert) inside the closure to
+    /// add key/value pairs.  Keys and values are Unicode strings stored as UTF-16BE.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use cmx::profile::DisplayProfile;
+    /// use cmx::tag::tags::MetadataTag;
+    ///
+    /// let profile = DisplayProfile::new()
+    ///     .with_tag(MetadataTag)
+    ///     .as_dict(|d| {
+    ///         d.insert("CMF_product", "MyApp");
+    ///         d.insert("CMF_version", "1.0");
+    ///     });
+    ///
+    /// let bytes = profile.to_bytes().unwrap();
+    /// assert!(bytes.len() > 128);
+    /// ```
+    pub fn as_dict<F>(mut self, configure: F) -> P
+    where
+        S: IsDictTag,
+        F: FnOnce(&mut crate::tag::tagdata::DictData),
+    {
+        let dict = self
+            .profile
+            .raw_mut()
+            .ensure_dict_mut(self.tag.into());
+        configure(dict);
         self.profile
     }
 

@@ -13,6 +13,16 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+* **`dictType` parser and builder** — ICC `meta` tag (`dictType`, §10.12) now
+  has a full parser (`DictType` struct, `IndexMap`-backed key/value pairs encoded
+  as UTF-16BE), a serializer (`DictType → DictData`), and builder methods
+  `DictData::insert`, `DictData::remove`, and `DictData::clear`.  Profiles
+  containing a `meta` tag now serialize to readable TOML (flat key/value map)
+  instead of raw hex.  The builder API is available via
+  `TagSetter::as_dict(|d| { … })` on `MetadataTag`.
+
 ## [0.1.0] - 2026-04-24
 
 ### Fixed

@@ -5,11 +5,12 @@ use serde::Serialize;
 
 use crate::tag::{
     tagdata::{
-        chromaticity::ChromaticityType, curve::CurveType, lut16::Lut16Type, lut8::Lut8Type,
-        measurement::MeasurementType, multi_localized_unicode::MultiLocalizedUnicodeType,
-        named_color2::NamedColor2Type, parametric_curve::ParametricCurveType, raw::RawType,
-        s15fixed16array::S15Fixed16ArrayType, signature::SignatureType, text::TextType,
-        text_description::TextDescriptionType, vcgt::VcgtType, xyz_array::XYZArrayType,
+        chromaticity::ChromaticityType, curve::CurveType, dict::DictType, lut16::Lut16Type,
+        lut8::Lut8Type, measurement::MeasurementType,
+        multi_localized_unicode::MultiLocalizedUnicodeType, named_color2::NamedColor2Type,
+        parametric_curve::ParametricCurveType, raw::RawType, s15fixed16array::S15Fixed16ArrayType,
+        signature::SignatureType, text::TextType, text_description::TextDescriptionType,
+        vcgt::VcgtType, xyz_array::XYZArrayType,
     },
     TagData,
 };
@@ -39,6 +40,7 @@ use crate::tag::{
 pub enum ParsedTag {
     Chromaticity(ChromaticityType),
     Curve(CurveType),
+    Dict(DictType),
     Lut8(Lut8Type),
     Lut16(Lut16Type),
     Measurement(MeasurementType),
@@ -69,6 +71,7 @@ impl From<&TagData> for ParsedTag {
         match tag {
             TagData::Chromaticity(chromaticity) => ParsedTag::Chromaticity(chromaticity.into()),
             TagData::Curve(curve) => ParsedTag::Curve(curve.into()),
+            TagData::Dict(dict) => ParsedTag::Dict(dict.into()),
             TagData::Lut8(lut8) => ParsedTag::Lut8(lut8.into()),
             TagData::Lut16(lut16) => ParsedTag::Lut16(lut16.into()),
             TagData::Measurement(measurement) => ParsedTag::Measurement(measurement.into()),
