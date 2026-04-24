@@ -13,8 +13,22 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-24
+
 ### Added
 
+* **`cmx-icc` npm package** — new workspace crate publishing WebAssembly bindings
+  via `wasm-bindgen`.  Exposes `DisplayProfile` (preset constructors for sRGB,
+  Display P3, Adobe RGB, plus a full flat-setter builder API), `Profile` (parse and
+  round-trip any ICC profile from a `Uint8Array`), and `RenderingIntent` enum.
+  Published to npm as [`cmx-icc`](https://www.npmjs.com/package/cmx-icc).
+* **`cargo xtask publish-npm`** — builds the WASM package with `wasm-pack` and
+  publishes it to npm; regenerates `cmx-icc/README.md` via `cargo rdme` first.
+* **`cargo xtask publish-crate`** — runs full pre-publish checks (tests, clippy,
+  doc, README) then publishes `cmx` to crates.io.
+* **Lock-step versioning** — `[workspace.package]` in the root `Cargo.toml` keeps
+  `cmx` (crates.io) and `cmx-icc` (npm) on the same version number.
+* **`Profile::rendering_intent()`** — new public accessor on the `Profile` enum.
 * **`dictType` parser and builder** — ICC `meta` tag (`dictType`, §10.12) now
   has a full parser (`DictType` struct, `IndexMap`-backed key/value pairs encoded
   as UTF-16BE), a serializer (`DictType → DictData`), and builder methods
