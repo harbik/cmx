@@ -94,7 +94,7 @@ impl Commands {
                     run_in(
                         &root,
                         "npm",
-                        &["publish", "cmx-icc/pkg", "--access", "public"],
+                        &["publish", "./cmx-icc/pkg", "--access", "public"],
                     );
                     println!("✅ Published cmx-icc to npm");
                 }
