@@ -214,14 +214,21 @@ impl From<&super::MultiLocalizedUnicodeData> for MultiLocalizedUnicodeType {
                 return MultiLocalizedUnicodeType::new();
             }
 
-            // Parse the header data
-            let header = HeaderLayout::try_ref_from_bytes(&data[..16]).unwrap();
+            // Parse the header data — length already checked >= 16 above.
+            let header = HeaderLayout::try_ref_from_bytes(&data[..16])
+                .expect("mluc: data too short for header (already checked)");
             let n = header.number_of_records.get() as usize;
 
-            // Parse the records table
+            // Parse the records table — guard against truncated data.
             let record_size = header.record_size.get() as usize;
-            let table_end = 16 + n * record_size;
-            let table = RecordsLayout::try_ref_from_bytes(&data[16..table_end]).unwrap();
+            let table_end = 16usize.saturating_add(n.saturating_mul(record_size));
+            if table_end > data.len() {
+                return MultiLocalizedUnicodeType::new();
+            }
+            let table = match RecordsLayout::try_ref_from_bytes(&data[16..table_end]) {
+                Ok(t) => t,
+                Err(_) => return MultiLocalizedUnicodeType::new(),
+            };
 
             let mut mluc = MultiLocalizedUnicodeType::new();
 
@@ -246,20 +253,33 @@ impl From<&super::MultiLocalizedUnicodeData> for MultiLocalizedUnicodeType {
                         .to_ascii_lowercase()
                 };
 
-                // Extract the UTF-16BE string
+                // Extract the UTF-16BE string — guard against out-of-bounds offset/length.
                 let offset = r.offset.get() as usize;
                 let length = r.length.get() as usize;
-                let value_bytes = &data[offset..offset + length];
+                let end = match offset.checked_add(length) {
+                    Some(e) if e <= data.len() => e,
+                    _ => continue, // malformed record — skip
+                };
+                let value_bytes = &data[offset..end];
                 total_string_length += length;
 
-                // Convert UTF-16BE bytes to Rust String
-                let value = String::from_utf16(
-                    &value_bytes
-                        .chunks(2)
-                        .map(|x| u16::from_be_bytes([x[0], x[1]]))
-                        .collect::<Vec<u16>>(),
-                )
-                .unwrap();
+                // Require an even byte count for valid UTF-16BE (2 bytes per code unit).
+                debug_assert_eq!(
+                    value_bytes.len() % 2,
+                    0,
+                    "mluc: string byte length {} is not a multiple of 2",
+                    value_bytes.len()
+                );
+
+                // Convert UTF-16BE bytes to Rust String.
+                // chunks_exact(2) drops a trailing odd byte; invalid sequences become the
+                // replacement character rather than panicking.
+                let utf16: Vec<u16> = value_bytes
+                    .chunks_exact(2)
+                    .map(|x| u16::from_be_bytes([x[0], x[1]]))
+                    .collect();
+                let value = String::from_utf16(&utf16)
+                    .unwrap_or_else(|_| String::from_utf16_lossy(&utf16).to_owned());
 
                 // Add the entry to the map
                 unique_strings.insert(value.clone());

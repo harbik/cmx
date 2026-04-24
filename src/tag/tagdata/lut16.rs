@@ -31,7 +31,8 @@ pub struct Lut16Type {
 
 impl From<&Lut16Data> for Lut16Type {
     fn from(lut16: &Lut16Data) -> Self {
-        let (layout, _) = Lut16HeaderLayout::try_ref_from_prefix(&lut16.0).unwrap();
+        let (layout, _) = Lut16HeaderLayout::try_ref_from_prefix(&lut16.0)
+            .expect("lut16Type: data too short to contain header");
 
         // Header validation (debug-only): signature must be "mft2", reserved/padding must be zero.
         debug_assert_eq!(&layout.signature, b"mft2", "lut16Type: invalid signature");

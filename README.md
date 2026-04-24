@@ -1,23 +1,39 @@
 # CMX: Rust Spectral Color Management Library
 <!-- cargo-rdme start -->
 
-This crate provides utilities for working with ICC color profiles
-and integrates with the Colorimetry Library.
+`cmx` is a Rust library for reading, writing, and constructing [ICC color profiles][icc-spec]
+(versions 2.0–5.0).  ICC profiles describe how color values produced by a device (camera,
+display, printer) relate to a standard reference color space, making them essential for
+accurate color reproduction across devices and applications.
 
-### Use Cases
-<details><summary><strong>Parsing ICC profiles and conversion to TOML format for analysis</strong></summary>
-After installing the library, you can parse an ICC profile and convert it to a TOML format using the `cmx` command-line tool:
+[icc-spec]: https://www.color.org/specification/ICC.1-2022-05.pdf
 
-```bash
-cmx profile.icc -o profile.toml
+## Quick Start
+
+### Read a profile from disk
+
+```rust
+use cmx::profile::Profile;
+
+let profile = Profile::read("profile.icc")?;
+println!("Color space : {:?}", profile.data_color_space());
+println!("PCS         : {:?}", profile.pcs());
+println!("Version     : {:?}", profile.version()?);
 ```
 
-Each ICC profile tag is mapped to a key in the TOML file, with the
-corresponding values serialized as key-value pairs.
-All values are written as single-line entries to ensure the TOML output
-remains human-readable and easy to inspect.
+### Dump a profile as TOML
 
-Example of a parsed ICC profile in TOML format:
+The [`fmt::Display`](std::fmt::Display) implementation on every profile type serialises it
+to TOML — the same output produced by the `cmx` CLI tool:
+
+```rust
+use cmx::profile::Profile;
+
+let profile = Profile::read("profile.icc")?;
+println!("{profile}");
+```
+
+The output looks like:
 
 ```toml
 profile_size = 548
@@ -37,20 +53,8 @@ profile_id = "53410ea9facdd9fb57cc74868defc33f"
 [desc]
 ascii = "SMPTE RP 431-2-2007 DCI (P3)"
 
-[cprt]
-text = "Copyright Apple Inc., 2015"
-
 [wtpt]
 xyz = [0.894592, 1.0, 0.954422]
-
-[rXYZ]
-xyz = [0.48616, 0.226685, -0.000809]
-
-[gXYZ]
-xyz = [0.323853, 0.710327, 0.043228]
-
-[bXYZ]
-xyz = [0.15419, 0.062988, 0.782471]
 
 [rTRC]
 g = 2.60001
@@ -61,32 +65,19 @@ matrix = [
     [0.055573, 0.963989, -0.014343],
     [-0.004272, 0.005295, 0.862778]
 ]
+```
 
-[bTRC]
-g = 2.60001
+### Build a profile from scratch
 
-[gTRC]
-g = 2.60001
-
- ```
-</details>
-
-<details><summary><strong>Generate ICC profiles</strong></summary>
-
-You can also use the `cmx` library to create ICC profiles from scratch, or read existing
-profiles and change them, using Rust.
-
-The library provides a builder-style API for constructing, or read and change profiles,
-allowing you to set or change various tags and properties.
-
-Here is an example for creating a Display P3 ICC profile:
+The consuming builder API sets tags one by one and computes the profile ID at the end:
 
 ```rust
 use chrono::{DateTime, TimeZone};
 use cmx::tag::tags::*;
 use cmx::profile::DisplayProfile;
+
 let display_p3_example = DisplayProfile::new()
-    // set creation date, if omitted, the current date and time are used
+    // set creation date — current date/time is used if omitted
     .with_creation_date(chrono::Utc.with_ymd_and_hms(2025, 8, 28, 0, 0, 0).unwrap())
     .with_tag(ProfileDescriptionTag)
         .as_text_description(|text| {
@@ -132,72 +123,151 @@ let display_p3_example = DisplayProfile::new()
                 -0.009232, 0.015076,  0.751678
             ]);
         })
-    .with_profile_id() // calculate and add profile ID to the profile
-    ;
+    .with_profile_id(); // compute and embed the MD5 profile ID
 
-display_p3_example.write("tmp/display_p3_example.icc").unwrap();
-let display_p3_read_back = cmx::profile::Profile::read("tmp/display_p3_example.icc").unwrap();
-assert_eq!(
-    display_p3_read_back.profile_id_as_hex_string(),
-    "617028e1 e1014e15 91f178a9 fb8efc92"
-);
-assert_eq!(display_p3_read_back.profile_size(), 524);
+// Serialise to bytes without touching the filesystem
+let bytes = display_p3_example.to_bytes().unwrap();
+assert_eq!(bytes.len(), 524);
 ```
 
-Not all ICC tag types are supported yet, but please submit a pull request, or an issue, on our
-[GitHub CMX repo](https://github.com/harbik/cmx) if you want additional tag types to be supported.
+### Modify an existing profile
 
-However, you can use the `as_raw` method to set raw data for tags that are not yet supported.
+Read a profile, change a tag, and write it back:
 
-</details>
+```rust
+use cmx::profile::Profile;
+use cmx::tag::tags::CopyrightTag;
 
+Profile::read("input.icc")?
+    .with_tag(CopyrightTag)
+        .as_text(|t| t.set_text("Copyright 2025 Acme Corp."))
+    .write("output.icc")?;
+```
 
+## Modules
 
-### Installation
+| Module | Contents |
+|---|---|
+| [`profile`] | `Profile` enum and per-device-class types (`DisplayProfile`, `InputProfile`, …) |
+| [`tag`] | Tag signatures, tag data types, and the `TagSetter` builder |
+| [`header`] | ICC 128-byte header fields and accessors |
+| [`signatures`] | ICC 4-byte signature enums (`ColorSpace`, `DeviceClass`, `RenderingIntent`, …) |
+| [`error`] | [`Error`] type returned by public API functions |
 
-Install the `cmx` tool using Cargo:
+## ICC Profile Concepts
+
+An ICC profile is a binary file with three sections:
+
+1. **128-byte header** — fixed fields: device class, color space, PCS, version, creation date, etc.
+2. **Tag table** — a list of `(signature, offset, size)` entries pointing into the data block.
+3. **Tag data** — the actual payload for each tag (matrices, curves, look-up tables, text, …).
+
+### Device Classes
+
+The ICC specification defines eight device classes.  This crate provides a dedicated type for each:
+
+| Type | ICC class code | Typical use |
+|---|---|---|
+| [`profile::DisplayProfile`] | `mntr` | Monitors, projectors |
+| [`profile::InputProfile`] | `scnr` | Cameras, scanners |
+| [`profile::OutputProfile`] | `prtr` | Printers |
+| [`profile::DeviceLinkProfile`] | `link` | Direct device-to-device transforms |
+| [`profile::AbstractProfile`] | `abst` | Abstract color transforms |
+| [`profile::ColorSpaceProfile`] | `spac` | Color space definitions |
+| [`profile::NamedColorProfile`] | `nmcl` | Named color palettes |
+| [`profile::SpectralProfile`] | `cenc` | Spectral data (ICC v5) |
+
+All types wrap a [`profile::RawProfile`] which holds the raw binary data and
+preserves unknown tags verbatim, guaranteeing lossless round-trips.
+
+### Profile Connection Space (PCS)
+
+Profiles connect device-specific color values to a common reference color space called the
+**Profile Connection Space (PCS)**.  Two PCS values are defined by the ICC specification:
+
+- `XYZ` — CIE 1931 XYZ, used by most display and output profiles.
+- `Lab` — CIELAB (L\*a\*b\*), used by some output and abstract profiles.
+
+### Rendering Intents
+
+The rendering intent controls how out-of-gamut colors are handled during color conversion.
+Four intents are defined:
+
+| Intent | Typical use |
+|---|---|
+| Perceptual | Photographic images — compresses the gamut smoothly |
+| Relative Colorimetric | Graphics — clips and maps the source white point |
+| Saturation | Business graphics — maximises saturation |
+| Absolute Colorimetric | Proofing — preserves absolute colorimetric values |
+
+### Tags
+
+Tags are identified by a 4-byte signature (e.g. `rXYZ`, `rTRC`, `desc`).  Each tag carries a
+payload of a specific ICC type — an XYZ triplet, a tone-reproduction curve, a text string, etc.
+All well-known tag signatures are re-exported from [`tag::tags`].
+
+Tag types supported for reading and writing include:
+
+| ICC type | Rust type | Common tags |
+|---|---|---|
+| `XYZ` | `XYZArrayData` | `rXYZ`, `gXYZ`, `bXYZ`, `wtpt` |
+| `para` | `ParametricCurveData` | `rTRC`, `gTRC`, `bTRC` |
+| `curv` | `CurveData` | `rTRC`, `gTRC`, `bTRC` |
+| `mluc` | `MultiLocalizedUnicodeData` | `desc` |
+| `desc` | `TextDescriptionData` | `desc` |
+| `sf32` | `S15Fixed16ArrayData` | `chad` |
+| `sig ` | `SignatureData` | `tech` |
+| `text` | `TextData` | `cprt` |
+| `mft1` | `Lut8Data` | `A2B0`, `B2A0` |
+| `mft2` | `Lut16Data` | `A2B0`, `B2A0` |
+
+Tags not yet parsed are stored as `RawData` and written back verbatim — no data is lost.
+
+## Key Types
+
+| Type | Description |
+|---|---|
+| [`S15Fixed16`] | ICC s15Fixed16 fixed-point number used in matrices and XYZ values |
+| [`profile::Profile`] | Parsed profile, dispatched to one of eight device-class variants |
+| [`profile::TagSetter`] | Consuming builder returned by `with_tag(…)` |
+| [`tag::TagSignature`] | 4-byte tag identifier; 70+ known signatures plus `Unknown(u32)` |
+| [`error::Error`] | Top-level error type |
+
+## Lossless Round-trips
+
+Any tag not recognised by this crate is preserved as raw bytes and written back verbatim.
+Reading a profile and re-serialising it produces byte-identical output.
+
+## CLI Tool
+
+The `cmx` binary prints any ICC profile as TOML:
 
 ```bash
 cargo install cmx
+cmx profile.icc               # print TOML to stdout
+cmx profile.icc -o out.toml   # write TOML to a file
 ```
 
-To use the `cmx` library in your Rust project:
+## Installation
+
+Add the library to your project:
 
 ```bash
 cargo add cmx
 ```
 
-Documentation is available at [docs.rs/cmx](https://docs.rs/cmx).
+Full API documentation is on [docs.rs/cmx](https://docs.rs/cmx).
 
-### Roadmap
+## Roadmap
 
-- [x] Parse full ICC profiles
-- [x] Convert to TOML format
-- [x] Add builder-style API for constructing ICC profiles
-- [x] Support basic ICC Type tags and color models
-- [ ] Read TOML Color profiles and convert to binary ICC profiles
-- [ ] Utilities for commandline profile conversion and manipulation
-- [ ] Calibration and profiling tools
-- [ ] X-Rite I1 Profiler support
-- [ ] Support all ICC Type tags
-- [ ] Enable spectral data and advanced color management
-
-
-
-### Overview
-
-Although the ICC specification is broad and complex, this crate aims
-to provide a robust foundation for working with ICC profiles in Rust.
-
-It supports parsing, constructing, and changing of the primary ICC-defined tags,
-as well as some commonly used non-standard tags.
-
-Even tags that cannot yet be parsed are still preserved when reading
-and serializing profiles, ensuring no data loss.
-
-The long-term goal is to fully support advanced ICC color management,
-including spectral data and extended color models, while maintaining
-compatibility with existing profiles.
+- [x] Parse full ICC profiles (versions 2.x–5.0)
+- [x] Lossless round-trips — unknown tags preserved verbatim
+- [x] Conversion to human-readable TOML format
+- [x] Builder-style API for constructing ICC profiles
+- [x] Support for the primary ICC tag types
+- [ ] Read TOML color profiles and convert back to binary ICC
+- [ ] Support all ICC tag types
+- [ ] Spectral data and ICC v5 color management
 
 <!-- cargo-rdme end -->
 

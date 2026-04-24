@@ -14,7 +14,7 @@ macro_rules! delegate_raw_profile_methods {
                     to self.0 {
                         pub fn apple_flags(&self) -> (crate::tag::Quality, crate::tag::Interpolate, crate::tag::GamutCheck);
                         pub fn cmm(&self) -> Option<crate::signatures::Cmm>;
-                        pub fn creation_date(&self) -> chrono::DateTime<chrono::Utc>;
+                        pub fn creation_date(&self) -> Result<chrono::DateTime<chrono::Utc>, crate::Error>;
                         pub fn data_color_space(&self) -> Option<crate::signatures::ColorSpace>;
                         pub fn flags(&self) -> (bool, bool);
                         pub fn manufacturer(&self) -> Option<crate::signatures::Signature>;

@@ -3,7 +3,7 @@
 
 use indexmap::IndexMap;
 use serde::Serialize;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Cursor, Read, Write};
 use std::path::Path;
@@ -128,15 +128,31 @@ impl Default for RawProfile {
 }
 
 // Accept a slice to avoid needless Vec typing.
-fn share_tags(tag_entries: &[(TagSignature, u32, u32)]) -> bool {
-    // Duplicate offsets in the tag table imply shared data blocks.
-    let mut seen_offsets = HashSet::new();
-    for &(_sig, offset, _size) in tag_entries {
-        if !seen_offsets.insert(offset) {
-            return true;
+// Returns Ok(true) when the profile uses shared tag data (multiple tag table entries pointing
+// to the same offset with the same size).
+// Returns Err if two entries share an offset but have different sizes — that is a corrupt profile.
+fn share_tags(tag_entries: &[(TagSignature, u32, u32)]) -> Result<bool, String> {
+    // Map from offset → size so we can detect both sharing and mismatches.
+    let mut seen: HashMap<u32, u32> = HashMap::new();
+    let mut any_shared = false;
+    for &(_sig, offset, size) in tag_entries {
+        match seen.get(&offset) {
+            None => {
+                seen.insert(offset, size);
+            }
+            Some(&prev_size) if prev_size == size => {
+                // Legitimate shared tag data block.
+                any_shared = true;
+            }
+            Some(&prev_size) => {
+                return Err(format!(
+                    "corrupt profile: two tags at offset {offset} claim different sizes \
+                     ({prev_size} vs {size})"
+                ));
+            }
         }
     }
-    false
+    Ok(any_shared)
 }
 
 /// Implementation of the `RawProfile` struct for handling ICC color profiles.
@@ -210,8 +226,12 @@ impl RawProfile {
             tag_entries.push((signature, offset, size));
         }
 
-        // Detect if the source profile used shared tag data (duplicate offsets)
-        let shared_tags = share_tags(&tag_entries);
+        // Detect if the source profile used shared tag data (duplicate offsets).
+        // Returns an error if two tags share an offset but claim different sizes (corrupt profile).
+        let shared_tags = share_tags(&tag_entries).map_err(|e| {
+            Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
+                as Box<dyn std::error::Error>
+        })?;
 
         // Create a map to hold the tags
         let mut tags = IndexMap::with_capacity(tag_count as usize);
@@ -356,8 +376,9 @@ impl RawProfile {
         // All Tags written to buf, add padding if needed if the last tag does not end on a 4-byte boundary.
         buf.extend(vec![0u8; crate::pad_size(buf.len())]);
 
-        // Update profile size
-        let length = buf.len() as u32;
+        // Update profile size — the ICC spec stores this as a u32, so reject anything larger.
+        let length = u32::try_from(buf.len())
+            .map_err(|_| crate::error::Error::ProfileTooLarge(buf.len()))?;
         buf[0..4].copy_from_slice(&length.to_be_bytes());
 
         // calculate the profile ID if requested

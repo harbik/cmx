@@ -11,6 +11,60 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 * **Fixed**: for any bug fixes.
 * **Security**: in case of vulnerabilities.
 
+## [Unreleased]
+
+## [0.1.0] - 2026-04-24
+
+### Fixed
+
+* **LUT8 parser** — replaced silent integer overflow in CLUT size calculation
+  (`g.pow(n) * m`) with `checked_pow` / `checked_mul`; added an `assert!` bounds
+  check before all slice indexing to prevent out-of-bounds panics on malformed
+  tag data.
+* **LUT8 / LUT16 parsers** — replaced `.unwrap()` on the `zerocopy` header
+  overlay with `.expect(…)` carrying a descriptive message.
+* **`RawProfile::creation_date()`** — changed return type from
+  `DateTime<Utc>` to `Result<DateTime<Utc>, Error>`; invalid header date fields
+  (e.g. month 13, hour 25) now return `Error::InvalidDate` instead of panicking.
+  All callers updated; `parsed_header` renders `<invalid: …>` for display.
+* **`RawProfile::with_now_as_creation_date()`** — replaced `.unwrap()` on
+  `with_nanosecond(0)` with `.expect(…)` and a comment explaining the invariant.
+* **Curve tag parser** — added a `debug_assert` to detect odd-length payloads
+  (which `chunks_exact(2)` would silently drop); clarified the safety invariant
+  for the `try_into().unwrap()` that follows.
+* **`ParametricCurveData::set_parameters_slice()`** — changed return type to
+  `Result<(), Error>`; invalid ICC parameter counts (anything other than 1, 3, 4,
+  5, or 7) now return `Error::UnsupportedParameterCount` instead of panicking.
+  `WriteLayoutHeader::new` updated accordingly; three internal call sites in
+  `DisplayProfile` updated to use `.expect(…)`.
+* **`RawProfile::into_bytes()`** — replaced silent `buf.len() as u32` cast with
+  `u32::try_from(buf.len())`, returning `Error::ProfileTooLarge` if the profile
+  exceeds the ICC-specified 4 GiB limit.
+* **MultiLocalizedUnicode parser** — added bounds checks on the records-table
+  slice and on each record's offset + length before indexing; replaced `.unwrap()`
+  on `String::from_utf16` with a lossy fallback; added a `debug_assert` to flag
+  non-even UTF-16 byte counts.
+* **`RawProfile::from_bytes()` tag-sharing detection** — `share_tags` now also
+  validates that duplicate tag-table offsets carry identical sizes; two tags at the
+  same offset but with different sizes are treated as a corrupt profile and an
+  `InvalidData` error is returned.
+
+### Added
+
+* `Error::InvalidDate(String)` — new error variant for out-of-range date/time
+  fields in ICC profile headers.
+* `Error::UnsupportedParameterCount(usize)` — new error variant for parametric
+  curve parameter counts that are not defined by the ICC specification.
+* `Error::ProfileTooLarge(usize)` — new error variant when a serialised profile
+  exceeds the ICC 4 GiB size limit.
+
+## [0.0.6] - 2026-04-20
+
+### Changed
+
+* Bumped `colorimetry` dependency from `0.0.8` to `0.0.9`; adapted call sites to
+  the renamed `XYZ::values()` → `XYZ::to_array()` method.
+
 ## [0.0.5] - 2025-09-17
 
 ### Added

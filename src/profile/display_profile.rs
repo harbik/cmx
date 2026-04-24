@@ -59,13 +59,15 @@ impl TryFrom<Profile> for DisplayProfile {
 }
 
 impl DisplayProfile {
-    /// Creates a new, empty, `InputProfile` with
+    /// Creates a new, empty `DisplayProfile` with:
     ///
-    /// - the default `RawProfile` with
-    ///   - the ICC profile signature
-    ///   - version set to 4.3
-    ///   - the current date
-    /// - `DeviceClass` set to `Display`
+    /// - the default [`RawProfile`] defaults: valid `acsp` signature, version 4.3,
+    ///   and the current date as the creation timestamp
+    /// - `DeviceClass` set to `Display` (`mntr`)
+    /// - `ColorSpace` set to `RGB`
+    ///
+    /// All tags must be added explicitly via the builder API before the profile
+    /// can be used with a Color Management System.
     pub fn new() -> Self {
         Self(
             Self(RawProfile::default())
@@ -90,7 +92,7 @@ impl DisplayProfile {
         let pcs_illuminant = display_profile.pcs_illuminant(); // always D50
         let obs = colorimetry::observer::Observer::Cie1931;
         let pcs_illuminant_xyz = colorimetry::xyz::XYZ::new(pcs_illuminant, obs);
-        let media_white_xyz = rgb_space.white_point(obs).set_illuminance(1.0).values();
+        let media_white_xyz = rgb_space.white_point(obs).set_illuminance(1.0).to_array();
         let m_rgb = obs.calc_rgb2xyz_matrix_with_alt_white(rgb_space, Some(pcs_illuminant_xyz));
         let r_xyz = m_rgb.column(0);
         let g_xyz = m_rgb.column(1);
@@ -133,15 +135,18 @@ impl DisplayProfile {
                 })
             .with_tag(RedTRCTag)
                 .as_parametric_curve(|para| {
-                    para.set_parameters_slice(gamma_values);
+                    para.set_parameters_slice(gamma_values)
+                        .expect("gamma_values has a valid ICC parametric curve parameter count");
                 })
             .with_tag(BlueTRCTag)
                 .as_parametric_curve(|para| {
-                    para.set_parameters_slice(gamma_values);
+                    para.set_parameters_slice(gamma_values)
+                        .expect("gamma_values has a valid ICC parametric curve parameter count");
                 })
             .with_tag(GreenTRCTag)
                 .as_parametric_curve(|para| {
-                    para.set_parameters_slice(gamma_values);
+                    para.set_parameters_slice(gamma_values)
+                        .expect("gamma_values has a valid ICC parametric curve parameter count");
                 })
             .with_profile_id()
     }

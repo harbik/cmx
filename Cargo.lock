@@ -220,7 +220,7 @@ checksum = "b94f61472cee1439c0b966b47e3aca9ae07e45d070759512cd390ea2bebc6675"
 
 [[package]]
 name = "cmx"
-version = "0.0.5"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "approx",
@@ -257,9 +257,9 @@ checksum = "b05b61dc5112cbb17e4b6cd61790d9845d13888356391624cbe7e41efeac1e75"
 
 [[package]]
 name = "colorimetry"
-version = "0.0.8"
+version = "0.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f00a838cbc1a52e72755ea0a25ed422f8be600d959c070b40ef1348c9a8ea98f"
+checksum = "414bd7683a5ae3971e6d15dd3abbdf0d336c55276934ee862e83ad8de7517e52"
 dependencies = [
  "approx",
  "geo",

@@ -2,6 +2,7 @@
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
 use crate::{
+    error::Error,
     is_zero,
     tag::tagdata::{DataSignature, ParametricCurveData},
     S15Fixed16,
@@ -32,21 +33,21 @@ struct WriteLayoutHeader {
 }
 
 impl WriteLayoutHeader {
-    pub fn new(size: usize) -> Self {
+    pub fn new(size: usize) -> Result<Self, Error> {
         let encoded_value = match size {
             1 => U16::<BigEndian>::new(0),
             3 => U16::<BigEndian>::new(1),
             4 => U16::<BigEndian>::new(2),
             5 => U16::<BigEndian>::new(3),
             7 => U16::<BigEndian>::new(4),
-            _ => panic!("Unsupported number of parameters: {size}"),
+            _ => return Err(Error::UnsupportedParameterCount(size)),
         };
-        Self {
+        Ok(Self {
             signature: DataSignature::ParametricCurveData.into(),
             _reserved: [0; 4],
             encoded_value,
             _reserved2: [0; 2],
-        }
+        })
     }
 }
 
@@ -67,13 +68,14 @@ struct WriteLayout<const N: usize> {
 impl<const N: usize> WriteLayout<N> {
     /// Creates a new `WriteLayout` with the signature 'para' and initializes
     pub fn new(params: [f64; N]) -> Self {
+        // N is a compile-time constant; only the five ICC-defined counts are valid.
         let encoded_value = match N {
             1 => U16::<BigEndian>::new(0),
             3 => U16::<BigEndian>::new(1),
             4 => U16::<BigEndian>::new(2),
             5 => U16::<BigEndian>::new(3),
             7 => U16::<BigEndian>::new(4),
-            _ => panic!("Unsupported number of parameters: {N}"),
+            _ => panic!("Unsupported number of parameters: {N} (must be 1, 3, 4, 5, or 7)"),
         };
 
         let mut parameters: [I32<BigEndian>; N] = [0.into(); N];
@@ -121,23 +123,44 @@ impl ParametricCurveType {
 }
 
 impl ParametricCurveData {
-    // TODO: rename to set_array, or remove all together in favor or set_slice
+    /// Set the parametric curve parameters using a compile-time fixed-size array.
+    ///
+    /// The number of parameters `N` must be one of the five ICC-defined counts:
+    /// `1`, `3`, `4`, `5`, or `7`.  Any other value causes a **panic** at
+    /// runtime (not a compile error) because const generics cannot be
+    /// constrained to a discrete set of values in stable Rust.  For a
+    /// checked, panic-free alternative use [`set_parameters_slice`](Self::set_parameters_slice).
+    ///
+    /// | N | ICC function type | Parameters |
+    /// |---|---|---|
+    /// | 1 | Simple gamma | `g` |
+    /// | 3 | CIE 122-1966 | `g, a, b` |
+    /// | 4 | IEC 61966-3 | `g, a, b, c` |
+    /// | 5 | IEC 61966-2.1 (sRGB) | `g, a, b, c, d` |
+    /// | 7 | Full | `g, a, b, c, d, e, f` |
     pub fn set_parameters<const N: usize>(&mut self, parameters: [f64; N]) {
         self.0 = WriteLayout::new(parameters).as_bytes().to_vec();
     }
 
-    pub fn set_parameters_slice(&mut self, values: &[f64]) {
+    /// Set the parametric curve parameters from a dynamically-sized slice,
+    /// returning an error if the slice length is not an ICC-defined count.
+    ///
+    /// Valid lengths are `1`, `3`, `4`, `5`, or `7`; any other length returns
+    /// [`Error::UnsupportedParameterCount`].  See [`set_parameters`](Self::set_parameters)
+    /// for the mapping between parameter count and ICC function type.
+    pub fn set_parameters_slice(&mut self, values: &[f64]) -> Result<(), Error> {
         let n = values.len();
         let mut bytes = Vec::with_capacity(
             std::mem::size_of::<WriteLayoutHeader>() + n * std::mem::size_of::<I32<BigEndian>>(),
         );
-        bytes.extend_from_slice(WriteLayoutHeader::new(n).as_bytes());
+        bytes.extend_from_slice(WriteLayoutHeader::new(n)?.as_bytes());
         let params: Vec<I32<BigEndian>> = values
             .iter()
             .map(|&v| crate::S15Fixed16::from(v).into())
             .collect();
         bytes.extend_from_slice(params.as_slice().as_bytes());
         self.0 = bytes;
+        Ok(())
     }
 }
 
@@ -145,7 +168,8 @@ impl ParametricCurveData {
 /// as used
 impl From<&ParametricCurveData> for ParametricCurveType {
     fn from(para: &ParametricCurveData) -> Self {
-        let layout = ReadLayout::ref_from_bytes(&para.0).unwrap();
+        let layout = ReadLayout::ref_from_bytes(&para.0)
+            .expect("parametricCurveType: data too short to contain header");
 
         // Flatten directly during the conversion
         let vec: Vec<f64> = layout
