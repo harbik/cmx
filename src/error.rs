@@ -40,9 +40,9 @@ pub enum Error {
     #[error("Is not a {0}")]
     IsNotA(&'static str),
 
-    /// The bytes passed to [`RawProfile::from_bytes`] do not begin with the
-    /// mandatory `acsp` file signature or otherwise fail the minimum structural
-    /// checks for a valid ICC profile.
+    /// The bytes passed to [`RawProfile::from_bytes`](crate::profile::RawProfile::from_bytes)
+    /// do not begin with the mandatory `acsp` file signature or otherwise fail the minimum
+    /// structural checks for a valid ICC profile.
     #[error("This is not a valid ICC profile")]
     InvalidICCProfile,
 
@@ -50,20 +50,20 @@ pub enum Error {
     /// out-of-range values (e.g. month 13, hour 25).  The inner string
     /// contains the raw date as read from the header.
     ///
-    /// Returned by [`RawProfile::creation_date`].
+    /// Returned by [`RawProfile::creation_date`](crate::profile::RawProfile::creation_date).
     #[error("Invalid date/time in ICC profile header: {0}")]
     InvalidDate(String),
 
-    /// [`ParametricCurveData::set_parameters_slice`] was called with a slice
-    /// whose length is not one of the five ICC-defined counts (1, 3, 4, 5, or 7).
-    /// Each count corresponds to a specific parametric curve function type in
-    /// the ICC specification (Table 68 in ICC.1:2022).
+    /// [`ParametricCurveData::set_parameters_slice`](crate::tag::tagdata::ParametricCurveData::set_parameters_slice)
+    /// was called with a slice whose length is not one of the five ICC-defined counts
+    /// (1, 3, 4, 5, or 7).  Each count corresponds to a specific parametric curve function
+    /// type in the ICC specification (Table 68 in ICC.1:2022).
     #[error("Unsupported parametric curve parameter count: {0} (must be 1, 3, 4, 5, or 7)")]
     UnsupportedParameterCount(usize),
 
-    /// [`RawProfile::into_bytes`] produced a serialised profile whose size
-    /// exceeds 2^32 − 1 bytes.  The ICC specification stores the profile size
-    /// in a 32-bit field, so larger profiles cannot be represented.
+    /// [`RawProfile::into_bytes`](crate::profile::RawProfile::into_bytes) produced a
+    /// serialised profile whose size exceeds 2^32 − 1 bytes.  The ICC specification stores
+    /// the profile size in a 32-bit field, so larger profiles cannot be represented.
     #[error("Profile exceeds maximum ICC size of 4 GiB ({0} bytes)")]
     ProfileTooLarge(usize),
 }

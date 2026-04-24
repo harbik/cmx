@@ -166,3 +166,107 @@ profile.write("output.icc")?;
 ## Testing Notes
 
 Integration tests in `tests/` use real `.icc` files stored under `tests/profiles/`. When adding new tag parsers or modifying serialization, always run the round-trip tests to confirm byte-identical output. The `displayP3` test compares a programmatically constructed profile against Apple's shipped Display P3 profile binary.
+
+---
+
+## Commit and PR Policy
+
+### Direct commits to `main`
+
+Permitted only for changes that carry no behavioral risk:
+
+- Typo or grammar fixes in documentation or comments
+- `CHANGELOG.md` updates (the release commit itself)
+- `Cargo.toml` version bump (the release commit itself)
+- CI / GitHub Actions configuration changes with no code impact
+- Dependency-only bumps that pass all tests and change no public API
+
+### Pull Requests (required)
+
+Everything else goes through a PR so that CI runs and a second pair of eyes can review before the change lands on `main`:
+
+- Any change to `src/` (new features, bug fixes, refactors, API changes)
+- New or modified integration tests in `tests/`
+- Changes to examples in `examples/`
+- Any change that touches public API surface (adding/removing/renaming types, methods, or error variants)
+
+Branch naming convention: `fix/<short-description>`, `feat/<short-description>`, `docs/<short-description>`.
+
+---
+
+## Release Process
+
+Follow these steps in order.  All commands run from the repository root on a clean `main` branch.
+
+### 1. Decide the new version number
+
+This crate uses [Semantic Versioning](https://semver.org/).  While the version is `0.0.x`
+(pre-1.0), any user-visible change — including new public API or bug fixes — warrants a
+patch increment.  Use a minor increment (`0.1.0`) when the public API is considered stable
+enough to declare a broader interface contract.
+
+| Change type | Version bump |
+|---|---|
+| Bug fixes, internal refactors, docs | patch (`0.0.x → 0.0.x+1`) |
+| New public API, new features | minor (`0.x.0 → 0.x+1.0`) |
+| Breaking API changes | major (`x.0.0 → x+1.0.0`) |
+
+### 2. Merge all pending PRs
+
+Ensure the `main` branch is up to date and all intended changes are merged.
+
+### 3. Update `CHANGELOG.md`
+
+- Rename the `## [Unreleased]` heading to `## [X.Y.Z] - YYYY-MM-DD` (today's date).
+- Add a fresh `## [Unreleased]` section above it (empty, ready for the next cycle).
+- Review the entries: make sure every user-visible change since the previous release is listed.
+  Compare against `git log vPREV..HEAD --oneline` to catch anything missing.
+
+### 4. Bump the version in `Cargo.toml`
+
+```bash
+# Edit the `version = "..."` field in [package]
+```
+
+Search the codebase for any hard-coded version strings in documentation and update them too:
+
+```bash
+grep -rn "0\.0\.X" --include="*.rs" --include="*.toml" --include="*.md"
+```
+
+### 5. Run the full test suite
+
+```bash
+cargo test                    # unit + integration tests
+cargo test --doc              # doc-tests
+cargo clippy -- -D warnings   # no new lints
+cargo doc --no-deps           # docs must build cleanly
+```
+
+All tests must pass before tagging.
+
+### 6. Commit the release
+
+Stage only the version-bump files:
+
+```bash
+git add Cargo.toml CHANGELOG.md
+git commit -m "chore: release v0.0.X"
+```
+
+Do **not** amend earlier commits or squash history — keep the release commit separate and minimal.
+
+### 7. Tag the release
+
+```bash
+git tag -a v0.0.X -m "Release v0.0.X"
+git push origin main --tags
+```
+
+### 8. Publish to crates.io
+
+```bash
+cargo publish
+```
+
+`cargo publish` performs a dry-run check internally; if it fails, fix the issue before pushing the tag.

@@ -205,10 +205,10 @@ pub trait IsRawTag {}
 /// - `S` — the tag signature type (one of the zero-sized structs in
 ///   [`cmx::tag::tags`](crate::tag::tags)).
 ///
-/// Each `as_*` method is gated by a marker trait (e.g. [`IsCurveTag`]) that is
+/// Each `as_*` method is gated by a marker trait (e.g. `IsCurveTag`) that is
 /// only implemented for the tag signatures where that data format is valid.
 /// Attempting to call `as_curve()` on a tag signature that does not implement
-/// [`IsCurveTag`] is a **compile-time error**, not a runtime one.
+/// `IsCurveTag` is a **compile-time error**, not a runtime one.
 ///
 /// Calling an `as_*` method consumes the `TagSetter` and returns the profile `P`,
 /// allowing builder chains:
@@ -382,8 +382,8 @@ where
     /// Available for: `CopyrightTag`, `ProfileDescriptionTag`,
     /// `DeviceMfgDescTag`, `DeviceModelDescTag`, `ViewingCondDescTag`.
     ///
-    /// Use [`MultiLocalizedUnicodeData::insert`] inside the closure to add
-    /// one or more locale/string pairs.
+    /// Use [`MultiLocalizedUnicodeData::insert`](crate::tag::tagdata::MultiLocalizedUnicodeData::insert)
+    /// inside the closure to add one or more locale/string pairs.
     pub fn as_multi_localized_unicode<F>(mut self, configure: F) -> P
     where
         S: IsMultiLocalizedUnicodeTag,

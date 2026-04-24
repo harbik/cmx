@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.0.7] - 2026-04-23
+
 ### Fixed
 
 * **LUT8 parser** — replaced silent integer overflow in CLUT size calculation
