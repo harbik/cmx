@@ -170,8 +170,8 @@ impl From<RenderingIntent> for WasmRenderingIntent {
 
 /// A parsed ICC color profile.
 ///
-/// Use [`WasmProfile.fromBytes`] to parse an existing ICC file that you have
-/// loaded as a `Uint8Array`, and [`WasmProfile.toBytes`] to serialize it back.
+/// Use [`WasmProfile::from_bytes`] to parse an existing ICC file that you have
+/// loaded as a `Uint8Array`, and [`WasmProfile::to_bytes`] to serialize it back.
 #[wasm_bindgen(js_name = "Profile")]
 pub struct WasmProfile {
     inner: cmx::profile::Profile,
@@ -289,7 +289,7 @@ impl WasmDisplayProfile {
     ///
     /// Writes a legacy `desc` (v2 `TextDescriptionData`) tag, which is the
     /// most broadly compatible format.  For v4 multi-language descriptions use
-    /// [`setProfileDescriptionMluc`].
+    /// [`WasmDisplayProfile::set_profile_description_mluc`].
     #[wasm_bindgen(js_name = setProfileDescription)]
     pub fn set_profile_description(&mut self, description: &str) {
         self.mutate(|p| {
@@ -401,43 +401,58 @@ impl WasmDisplayProfile {
     #[wasm_bindgen(js_name = setRedTrcParametric)]
     pub fn set_red_trc_parametric(&mut self, params: &[f64]) -> Result<(), JsError> {
         let params = params.to_vec();
+        let mut err: Option<JsError> = None;
         self.mutate(|p| {
             p.with_tag(RedTRCTag).as_parametric_curve(|c| {
-                c.set_parameters_slice(&params)
-                    .expect("invalid parametric curve parameter count");
+                if let Err(e) = c.set_parameters_slice(&params) {
+                    err = Some(JsError::new(&e.to_string()));
+                }
             })
         });
-        Ok(())
+        match err {
+            Some(e) => Err(e),
+            None => Ok(()),
+        }
     }
 
     /// Set the green TRC as a parametric curve (`para` tag).
     ///
-    /// See [`setRedTrcParametric`] for parameter details.
+    /// See [`WasmDisplayProfile::set_red_trc_parametric`] for parameter details.
     #[wasm_bindgen(js_name = setGreenTrcParametric)]
     pub fn set_green_trc_parametric(&mut self, params: &[f64]) -> Result<(), JsError> {
         let params = params.to_vec();
+        let mut err: Option<JsError> = None;
         self.mutate(|p| {
             p.with_tag(GreenTRCTag).as_parametric_curve(|c| {
-                c.set_parameters_slice(&params)
-                    .expect("invalid parametric curve parameter count");
+                if let Err(e) = c.set_parameters_slice(&params) {
+                    err = Some(JsError::new(&e.to_string()));
+                }
             })
         });
-        Ok(())
+        match err {
+            Some(e) => Err(e),
+            None => Ok(()),
+        }
     }
 
     /// Set the blue TRC as a parametric curve (`para` tag).
     ///
-    /// See [`setRedTrcParametric`] for parameter details.
+    /// See [`WasmDisplayProfile::set_red_trc_parametric`] for parameter details.
     #[wasm_bindgen(js_name = setBlueTrcParametric)]
     pub fn set_blue_trc_parametric(&mut self, params: &[f64]) -> Result<(), JsError> {
         let params = params.to_vec();
+        let mut err: Option<JsError> = None;
         self.mutate(|p| {
             p.with_tag(BlueTRCTag).as_parametric_curve(|c| {
-                c.set_parameters_slice(&params)
-                    .expect("invalid parametric curve parameter count");
+                if let Err(e) = c.set_parameters_slice(&params) {
+                    err = Some(JsError::new(&e.to_string()));
+                }
             })
         });
-        Ok(())
+        match err {
+            Some(e) => Err(e),
+            None => Ok(()),
+        }
     }
 
     // -- Finalization & serialization ----------------------------------------

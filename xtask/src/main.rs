@@ -102,16 +102,26 @@ impl Commands {
             Commands::PublishCrate { dry_run } => {
                 // ── Pre-publish checks (mirrors CLAUDE.md release checklist) ──
                 println!("Running tests...");
-                run("cargo", &["test"]);
+                run("cargo", &["test", "--all-features"]);
                 run("cargo", &["test", "--doc"]);
 
                 println!("Running clippy...");
-                run("cargo", &["clippy", "--", "-D", "warnings"]);
+                run(
+                    "cargo",
+                    &[
+                        "clippy",
+                        "--all-targets",
+                        "--all-features",
+                        "--",
+                        "-D",
+                        "warnings",
+                    ],
+                );
 
                 println!("Checking docs...");
                 run_env(
                     "cargo",
-                    &["doc", "--no-deps"],
+                    &["doc", "--all-features", "--no-deps"],
                     &[("RUSTDOCFLAGS", "--deny warnings")],
                 )
                 .expect("cargo doc failed");
