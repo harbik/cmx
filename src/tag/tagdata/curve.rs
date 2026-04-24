@@ -16,9 +16,17 @@ pub struct CurveType {
 
 impl From<&CurveData> for CurveType {
     fn from(curve: &CurveData) -> Self {
+        let payload = &curve.0[12..];
+        // chunks_exact(2) silently drops a trailing odd byte; assert alignment in debug builds.
+        debug_assert_eq!(
+            payload.len() % 2,
+            0,
+            "curveType: payload length {} is not a multiple of 2 (malformed tag)",
+            payload.len()
+        );
         let data: Vec<u16> = {
-            //let count = u32::from_be_bytes(self.0[8..=11].try_into().unwrap());
-            curve.0[12..]
+            // Each chunk is exactly 2 bytes (guaranteed by chunks_exact), so try_into is infallible.
+            payload
                 .chunks_exact(2)
                 .map(|chunk| u16::from_be_bytes(chunk.try_into().unwrap()))
                 .collect()

@@ -119,7 +119,10 @@ impl From<&super::RawProfile> for Header {
             device_class: raw_profile.device_class().to_string(),
             color_space: raw_profile.data_color_space().map(|c| c.to_string()),
             pcs: raw_profile.pcs().unwrap().to_string(),
-            creation_datetime: raw_profile.creation_date().to_string(),
+            creation_datetime: raw_profile
+                .creation_date()
+                .map(|d| d.to_string())
+                .unwrap_or_else(|e| format!("<invalid: {e}>")),
             primary_platform: raw_profile.primary_platform().map(|c| c.to_string()),
             embedded,
             use_embedded_only,

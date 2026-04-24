@@ -293,17 +293,22 @@ impl RawProfile {
     /// Returns the creation date of the profile.
     /// This method extracts the creation date from the profile header and returns it as a `DateTime<chrono::Utc>`.
     ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidDate`] if the header contains out-of-range date/time fields
+    /// (e.g. month 13, hour 25).
+    ///
     /// # Example:
     /// ```rust
     /// use cmx::profile::RawProfile;
     /// use chrono::{DateTime, Datelike, Utc};
     /// let profile = RawProfile::read("tests/profiles/Display P3.icc").unwrap();
-    /// let creation_date = profile.creation_date();
+    /// let creation_date = profile.creation_date().unwrap();
     /// assert_eq!(creation_date.year(), 2017);
     /// assert_eq!(creation_date.month(), 7);
     /// assert_eq!(creation_date.day(), 7);
     /// ```
-    pub fn creation_date(&self) -> DateTime<chrono::Utc> {
+    pub fn creation_date(&self) -> Result<DateTime<chrono::Utc>, Error> {
         let header = self.header();
         let year = header.creation_year.get() as i32;
         let month = header.creation_month.get() as u32;
@@ -313,9 +318,12 @@ impl RawProfile {
         let second = header.creation_seconds.get() as u32;
         let naive = chrono::NaiveDate::from_ymd_opt(year, month, day)
             .and_then(|d| d.and_hms_opt(hour, minute, second))
-            .unwrap_or_else(|| panic!("Invalid date in ICC header: {year}-{month:02}-{day:02} {hour:02}:{minute:02}:{second:02}"));
-        // .expect(format!("Invalid date in ICC header: {year}-{month:02}-{day:02} {hour:02}:{minute:02}:{second:02}").as_ref());
-        DateTime::from_naive_utc_and_offset(naive, chrono::Utc)
+            .ok_or_else(|| {
+                Error::InvalidDate(format!(
+                    "{year}-{month:02}-{day:02} {hour:02}:{minute:02}:{second:02}"
+                ))
+            })?;
+        Ok(DateTime::from_naive_utc_and_offset(naive, chrono::Utc))
     }
 
     /// Sets the creation date of the profile.
@@ -336,7 +344,10 @@ impl RawProfile {
     }
 
     pub fn with_now_as_creation_date(self) -> Self {
-        let now = chrono::Utc::now().with_nanosecond(0).unwrap();
+        // with_nanosecond(0) only returns None for out-of-range values; 0 is always valid.
+        let now = chrono::Utc::now()
+            .with_nanosecond(0)
+            .expect("nanosecond 0 is always valid");
         self.with_creation_date(now)
     }
 

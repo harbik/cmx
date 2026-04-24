@@ -11,7 +11,13 @@ use crate::{
     },
 };
 
-// Provide a way to access the inner RawProfile from wrappers and Profile enum.
+/// Provides uniform access to the underlying [`RawProfile`] from any profile
+/// wrapper type or from the [`Profile`](super::Profile) enum.
+///
+/// This trait is implemented for [`RawProfile`] itself, for every device-class
+/// wrapper ([`DisplayProfile`](super::DisplayProfile), etc.), and for the
+/// [`Profile`](super::Profile) enum, allowing the builder API to work generically
+/// over all of them.
 pub trait HasRawProfile {
     fn raw(&self) -> &RawProfile;
     fn raw_mut(&mut self) -> &mut RawProfile;
@@ -103,6 +109,11 @@ impl HasRawProfile for super::Profile {
     }
 }
 
+/// Marker trait for tag signatures whose data is stored as a
+/// `MultiLocalizedUnicodeData` (ICC type `mluc`).
+///
+/// Implemented for: `CopyrightTag`, `ProfileDescriptionTag`,
+/// `DeviceMfgDescTag`, `DeviceModelDescTag`, `ViewingCondDescTag`.
 pub trait IsMultiLocalizedUnicodeTag {}
 impl IsMultiLocalizedUnicodeTag for crate::tag::tags::CopyrightTag {}
 impl IsMultiLocalizedUnicodeTag for crate::tag::tags::ProfileDescriptionTag {}
@@ -112,18 +123,27 @@ impl IsMultiLocalizedUnicodeTag for crate::tag::tags::ViewingCondDescTag {}
 #[cfg(feature = "v5")]
 impl IsMultiLocalizedUnicodeTag for crate::tag::tags::ScreeningDescTag {}
 
+/// Marker trait for tone-reproduction-curve tags whose data is stored as a
+/// `CurveData` (ICC type `curv`): `RedTRCTag`, `GreenTRCTag`,
+/// `BlueTRCTag`, `GrayTRCTag`.
 pub trait IsCurveTag {}
 impl IsCurveTag for crate::tag::tags::BlueTRCTag {}
 impl IsCurveTag for crate::tag::tags::GreenTRCTag {}
 impl IsCurveTag for crate::tag::tags::RedTRCTag {}
 impl IsCurveTag for crate::tag::tags::GrayTRCTag {}
 
+/// Marker trait for tone-reproduction-curve tags whose data is stored as a
+/// `ParametricCurveData` (ICC type `para`): `RedTRCTag`, `GreenTRCTag`,
+/// `BlueTRCTag`, `GrayTRCTag`.
 pub trait IsParametricCurveTag {}
 impl IsParametricCurveTag for crate::tag::tags::BlueTRCTag {}
 impl IsParametricCurveTag for crate::tag::tags::GreenTRCTag {}
 impl IsParametricCurveTag for crate::tag::tags::RedTRCTag {}
 impl IsParametricCurveTag for crate::tag::tags::GrayTRCTag {}
 
+/// Marker trait for tags whose data is stored as a `SignatureData`
+/// (ICC type `sig `): `TechnologyTag`,
+/// `ColorimetricIntentImageStateTag`, `PerceptualRenderingIntentGamutTag`.
 pub trait IsSignatureTag {}
 impl IsSignatureTag for crate::tag::tags::ColorimetricIntentImageStateTag {}
 impl IsSignatureTag for crate::tag::tags::TechnologyTag {}
@@ -131,6 +151,8 @@ impl IsSignatureTag for crate::tag::tags::TechnologyTag {}
 impl IsSignatureTag for crate::tag::tags::SaturationRenderingIntentGamutTag {}
 impl IsSignatureTag for crate::tag::tags::PerceptualRenderingIntentGamutTag {}
 
+/// Marker trait for tags whose data is stored as an `XYZArrayData`
+/// (ICC type `XYZ `): matrix column tags, luminance, white-point, black-point.
 pub trait IsXYZArrayTag {}
 impl IsXYZArrayTag for crate::tag::tags::RedMatrixColumnTag {}
 impl IsXYZArrayTag for crate::tag::tags::GreenMatrixColumnTag {}
@@ -139,6 +161,8 @@ impl IsXYZArrayTag for crate::tag::tags::LuminanceTag {}
 impl IsXYZArrayTag for crate::tag::tags::MediaWhitePointTag {}
 impl IsXYZArrayTag for crate::tag::tags::MediaBlackPointTag {}
 
+/// Marker trait for tags whose data is stored as a `TextDescriptionData`
+/// (legacy ICC v2 type `desc`).
 pub trait IsTextDescriptionTag {}
 impl IsTextDescriptionTag for crate::tag::tags::ProfileDescriptionTag {}
 impl IsTextDescriptionTag for crate::tag::tags::CopyrightTag {}
@@ -148,23 +172,57 @@ impl IsTextDescriptionTag for crate::tag::tags::DeviceModelDescTag {}
 impl IsTextDescriptionTag for crate::tag::tags::ScreeningDescTag {}
 impl IsTextDescriptionTag for crate::tag::tags::ViewingCondDescTag {}
 
+/// Marker trait for tags whose data is stored as plain ASCII `TextData`
+/// (ICC type `text`): `CopyrightTag`, `CharTargetTag`.
 pub trait IsTextTag {}
 impl IsTextTag for crate::tag::tags::CopyrightTag {}
 impl IsTextTag for crate::tag::tags::CharTargetTag {}
 
+/// Marker trait for tags whose data is stored as an `S15Fixed16ArrayData`
+/// (ICC type `sf32`): `ChromaticAdaptationTag`.
 pub trait IsS15Fixed16ArrayTag {}
 impl IsS15Fixed16ArrayTag for crate::tag::tags::ChromaticAdaptationTag {}
 
+/// Marker trait for tags whose data is stored as `Lut8Data` (ICC type `mft1`).
 pub trait IsLut8DataTag {}
+/// Marker trait for tags whose data is stored as `Lut16Data` (ICC type `mft2`).
 pub trait IsLut16DataTag {}
+/// Marker trait for tags whose data uses the `LutAtoB` format (ICC type `mAB `).
 pub trait IsLutAtoBDataTag {}
+/// Marker trait for tags whose data uses the `LutBtoA` format (ICC type `mBA `).
 pub trait IsLutBtoADataTag {}
 
+/// Marker trait that allows any tag to be set using raw bytes via
+/// [`TagSetter::as_raw`].  Implemented for all tag signatures.
 pub trait IsRawTag {}
 
-/// A helper for safely setting the data for a specific tag signature.
-/// It is generic over the signature type `S` to enable compile-time checks,
-/// and generic over the profile type `P` to return the correct P for chaining.
+/// An intermediate builder returned by [`with_tag`](super::Profile::with_tag) that
+/// provides type-safe methods for setting the data of a specific ICC tag.
+///
+/// `TagSetter<P, S>` is generic over:
+/// - `P` — the profile type being built (e.g. [`DisplayProfile`](super::DisplayProfile),
+///   [`Profile`](super::Profile), or [`RawProfile`]).
+/// - `S` — the tag signature type (one of the zero-sized structs in
+///   [`cmx::tag::tags`](crate::tag::tags)).
+///
+/// Each `as_*` method is gated by a marker trait (e.g. [`IsCurveTag`]) that is
+/// only implemented for the tag signatures where that data format is valid.
+/// Attempting to call `as_curve()` on a tag signature that does not implement
+/// [`IsCurveTag`] is a **compile-time error**, not a runtime one.
+///
+/// Calling an `as_*` method consumes the `TagSetter` and returns the profile `P`,
+/// allowing builder chains:
+///
+/// ```rust
+/// use cmx::profile::DisplayProfile;
+/// use cmx::tag::tags::{RedTRCTag, GreenTRCTag};
+///
+/// let profile = DisplayProfile::new()
+///     .with_tag(RedTRCTag)
+///     .as_curve(|c| c.set_gamma(2.2))
+///     .with_tag(GreenTRCTag)
+///     .as_curve(|c| c.set_gamma(2.2));
+/// ```
 pub struct TagSetter<P: HasRawProfile, S> {
     profile: P,
     tag: S,
@@ -191,6 +249,13 @@ where
         self.profile
     }
 
+    /// Set the tag's data as a `ParametricCurveData` (ICC type `para`).
+    ///
+    /// Available for TRC tags: `RedTRCTag`, `GreenTRCTag`, `BlueTRCTag`,
+    /// `GrayTRCTag`.  Use [`ParametricCurveData::set_parameters`] for a
+    /// fixed-size array or [`ParametricCurveData::set_parameters_slice`] for a
+    /// dynamically-sized slice (the slice variant validates the parameter count
+    /// and returns a `Result`).
     pub fn as_parametric_curve<F>(mut self, configure: F) -> P
     where
         S: IsParametricCurveTag,
@@ -204,6 +269,10 @@ where
         self.profile
     }
 
+    /// Set the tag's data as a `SignatureData` (ICC type `sig `).
+    ///
+    /// Available for: `TechnologyTag`, `ColorimetricIntentImageStateTag`,
+    /// `PerceptualRenderingIntentGamutTag`.
     pub fn as_signature<F>(mut self, configure: F) -> P
     where
         S: IsSignatureTag,
@@ -214,6 +283,11 @@ where
         self.profile
     }
 
+    /// Set the tag's data as an `XYZArrayData` (ICC type `XYZ `).
+    ///
+    /// Available for: `RedMatrixColumnTag`, `GreenMatrixColumnTag`,
+    /// `BlueMatrixColumnTag`, `LuminanceTag`, `MediaWhitePointTag`,
+    /// `MediaBlackPointTag`.
     pub fn as_xyz_array<F>(mut self, configure: F) -> P
     where
         S: IsXYZArrayTag,
@@ -224,6 +298,14 @@ where
         self.profile
     }
 
+    /// Set the tag's data as a `TextDescriptionData` (legacy ICC v2 type `desc`).
+    ///
+    /// Available for: `ProfileDescriptionTag`, `CopyrightTag`,
+    /// `DeviceMfgDescTag`, `DeviceModelDescTag`, `ViewingCondDescTag`.
+    ///
+    /// For new ICC v4 profiles prefer [`as_multi_localized_unicode`](Self::as_multi_localized_unicode),
+    /// which supports multiple languages.  `TextDescriptionData` is provided for
+    /// compatibility with tools that require v2-style description tags.
     pub fn as_text_description<F>(mut self, configure: F) -> P
     where
         S: IsTextDescriptionTag,
@@ -237,6 +319,9 @@ where
         self.profile
     }
 
+    /// Set the tag's data as plain ASCII `TextData` (ICC type `text`).
+    ///
+    /// Available for: `CopyrightTag`, `CharTargetTag`.
     pub fn as_text<F>(mut self, configure: F) -> P
     where
         S: IsTextTag,
@@ -247,6 +332,10 @@ where
         self.profile
     }
 
+    /// Set the tag's data as an `S15Fixed16ArrayData` (ICC type `sf32`).
+    ///
+    /// Available for: `ChromaticAdaptationTag` (a 3×3 matrix stored as nine
+    /// s15Fixed16 values in row-major order).
     pub fn as_sf15_fixed_16_array<F>(mut self, configure: F) -> P
     where
         S: IsS15Fixed16ArrayTag,
@@ -288,6 +377,13 @@ where
         self.profile
     }
 
+    /// Set the tag's data as a `MultiLocalizedUnicodeData` (ICC type `mluc`).
+    ///
+    /// Available for: `CopyrightTag`, `ProfileDescriptionTag`,
+    /// `DeviceMfgDescTag`, `DeviceModelDescTag`, `ViewingCondDescTag`.
+    ///
+    /// Use [`MultiLocalizedUnicodeData::insert`] inside the closure to add
+    /// one or more locale/string pairs.
     pub fn as_multi_localized_unicode<F>(mut self, configure: F) -> P
     where
         S: IsMultiLocalizedUnicodeTag,

@@ -36,7 +36,8 @@ fn reshape_by_grid_points(multi_lut: &[u8], m: usize) -> Vec<Vec<u8>> {
 
 impl From<&Lut8Data> for Lut8Type {
     fn from(lut8: &Lut8Data) -> Self {
-        let (layout, _) = Lut8HeaderLayout::try_ref_from_prefix(&lut8.0).unwrap();
+        let (layout, _) = Lut8HeaderLayout::try_ref_from_prefix(&lut8.0)
+            .expect("lut8Type: data too short to contain header");
         let n = layout.n as usize;
         let m = layout.m as usize;
         let g = layout.g as usize;
@@ -51,10 +52,26 @@ impl From<&Lut8Data> for Lut8Type {
             .unwrap();
 
         // Calculate sizes and offsets
-        let header_size = 48; // 8 + 4 + 36
+        let header_size = std::mem::size_of::<Lut8HeaderLayout>();
         let input_luts_size = n * 256;
-        let clut_size = g.pow(n as u32) * m;
+        let clut_size = g
+            .checked_pow(n as u32)
+            .and_then(|v| v.checked_mul(m))
+            .expect("lut8Type: CLUT size overflow");
         let output_luts_size = m * 256;
+
+        // Bounds check: ensure the payload is large enough before any slicing
+        let total_size = header_size
+            .checked_add(input_luts_size)
+            .and_then(|v| v.checked_add(clut_size))
+            .and_then(|v| v.checked_add(output_luts_size))
+            .expect("lut8Type: total size overflow");
+        assert!(
+            lut8.0.len() >= total_size,
+            "lut8Type: truncated data (have {}, need >= {})",
+            lut8.0.len(),
+            total_size
+        );
 
         // Calculate offsets
         let input_luts_offset = header_size;

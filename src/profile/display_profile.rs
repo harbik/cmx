@@ -59,13 +59,15 @@ impl TryFrom<Profile> for DisplayProfile {
 }
 
 impl DisplayProfile {
-    /// Creates a new, empty, `InputProfile` with
+    /// Creates a new, empty `DisplayProfile` with:
     ///
-    /// - the default `RawProfile` with
-    ///   - the ICC profile signature
-    ///   - version set to 4.3
-    ///   - the current date
-    /// - `DeviceClass` set to `Display`
+    /// - the default [`RawProfile`] defaults: valid `acsp` signature, version 4.3,
+    ///   and the current date as the creation timestamp
+    /// - `DeviceClass` set to `Display` (`mntr`)
+    /// - `ColorSpace` set to `RGB`
+    ///
+    /// All tags must be added explicitly via the builder API before the profile
+    /// can be used with a Color Management System.
     pub fn new() -> Self {
         Self(
             Self(RawProfile::default())
@@ -133,15 +135,18 @@ impl DisplayProfile {
                 })
             .with_tag(RedTRCTag)
                 .as_parametric_curve(|para| {
-                    para.set_parameters_slice(gamma_values);
+                    para.set_parameters_slice(gamma_values)
+                        .expect("gamma_values has a valid ICC parametric curve parameter count");
                 })
             .with_tag(BlueTRCTag)
                 .as_parametric_curve(|para| {
-                    para.set_parameters_slice(gamma_values);
+                    para.set_parameters_slice(gamma_values)
+                        .expect("gamma_values has a valid ICC parametric curve parameter count");
                 })
             .with_tag(GreenTRCTag)
                 .as_parametric_curve(|para| {
-                    para.set_parameters_slice(gamma_values);
+                    para.set_parameters_slice(gamma_values)
+                        .expect("gamma_values has a valid ICC parametric curve parameter count");
                 })
             .with_profile_id()
     }

@@ -45,6 +45,27 @@ use crate::{header::Header, tag::ParsedTag};
 
 pub use {checksum::md5checksum, checksum::set_profile_id};
 
+/// A parsed ICC color profile, represented as one of the eight device classes
+/// defined by the ICC specification, plus a catch-all [`Profile::Raw`] variant
+/// for profiles whose device-class field is not recognised.
+///
+/// Use [`Profile::read`] or [`Profile::from_bytes`] to parse an existing profile.
+/// Use the device-class constructors (e.g. [`DisplayProfile::new`]) and the builder
+/// API when constructing a new profile from scratch.
+///
+/// # Device classes
+///
+/// | Variant | ICC class | Typical use |
+/// |---|---|---|
+/// | [`Profile::Input`] | `scnr` | Scanners, cameras |
+/// | [`Profile::Display`] | `mntr` | Monitors, displays |
+/// | [`Profile::Output`] | `prtr` | Printers |
+/// | [`Profile::DeviceLink`] | `link` | Direct device-to-device conversion |
+/// | [`Profile::Abstract`] | `abst` | Abstract color transform |
+/// | [`Profile::ColorSpace`] | `spac` | Color space definition |
+/// | [`Profile::NamedColor`] | `nmcl` | Named color palettes |
+/// | [`Profile::Spectral`] | `cenc` | Spectral data (ICC v5) |
+/// | [`Profile::Raw`] | — | Unrecognised device class |
 #[derive(Debug)]
 pub enum Profile {
     Input(InputProfile),
@@ -59,6 +80,7 @@ pub enum Profile {
 }
 
 impl Profile {
+    /// Unwrap into the underlying [`RawProfile`], consuming `self`.
     fn into_raw_profile(self) -> RawProfile {
         match self {
             Profile::Input(p) => p.0,
@@ -87,7 +109,7 @@ impl Profile {
         }
     }
 
-    // Add mutable access to the underlying RawProfile for enum variants.
+    /// Return a shared reference to the underlying [`RawProfile`].
     fn as_raw_profile_mut(&mut self) -> &mut RawProfile {
         match self {
             Profile::Input(p) => &mut p.0,
@@ -102,7 +124,13 @@ impl Profile {
         }
     }
 
-    // Read-only getters delegated to RawProfile.
+    // -----------------------------------------------------------------------
+    // Read-only accessors — all delegate to the underlying RawProfile.
+    // -----------------------------------------------------------------------
+
+    /// Returns the ICC profile version as `(major, minor)`.
+    /// Errors if the version stored in the header is not one of the values
+    /// recognised by this crate (2.x, 4.x, 5.0).
     pub fn version(&self) -> Result<(u8, u8), crate::Error> {
         self.as_raw_profile().version()
     }
@@ -125,20 +153,30 @@ impl Profile {
         self.as_raw_profile().model()
     }
 
+    /// Parse an ICC profile from a raw byte slice, returning the appropriate
+    /// device-class variant.  Unknown device classes are returned as
+    /// [`Profile::Raw`].
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Box<dyn std::error::Error>> {
         let raw = RawProfile::from_bytes(bytes)?;
         Ok(raw.into_class_profile())
     }
 
+    /// Read an ICC profile from a file on disk, returning the appropriate
+    /// device-class variant.
     pub fn read(path: impl AsRef<std::path::Path>) -> Result<Self, Box<dyn std::error::Error>> {
         let raw = RawProfile::read(path)?;
         Ok(raw.into_class_profile())
     }
 
+    /// Serialise the profile to a byte vector ready for writing to disk or
+    /// embedding in an image.  Recalculates tag offsets and, if
+    /// [`with_profile_id`](RawProfile::with_profile_id) was called, the MD5
+    /// profile ID.
     pub fn into_bytes(self) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         self.into_raw_profile().into_bytes()
     }
 
+    /// Serialise the profile and write it to the given path.
     pub fn write(
         self,
         path: impl AsRef<std::path::Path>,
@@ -146,6 +184,8 @@ impl Profile {
         self.into_raw_profile().write(path)
     }
 
+    /// Returns the raw 16-byte profile ID (MD5 checksum of the profile bytes
+    /// with the ID field zeroed).  All zeros means no ID has been computed.
     pub fn profile_id(&self) -> [u8; 16] {
         self.as_raw_profile().profile_id()
     }
@@ -154,7 +194,7 @@ impl Profile {
         self.as_raw_profile().profile_id_as_hex_string()
     }
 
-    pub fn creation_date(&self) -> chrono::DateTime<chrono::Utc> {
+    pub fn creation_date(&self) -> Result<chrono::DateTime<chrono::Utc>, crate::Error> {
         self.as_raw_profile().creation_date()
     }
     pub fn pcs_illuminant(&self) -> [f64; 3] {
@@ -167,7 +207,12 @@ impl Profile {
         self.as_raw_profile().cmm()
     }
 
-    // Consuming builders: forward to the matching wrapper and re-wrap.
+    // -----------------------------------------------------------------------
+    // Consuming builders — forward to the matching device-class wrapper and re-wrap.
+    // -----------------------------------------------------------------------
+
+    /// Set the ICC version.  Returns an error for any version not recognised
+    /// by this crate.  See [`RawProfile::with_version`] for supported values.
     pub fn with_version(self, major: u8, minor: u8) -> Result<Self, crate::Error> {
         Ok(match self {
             Profile::Input(p) => Profile::Input(p.with_version(major, minor)?),
@@ -196,7 +241,18 @@ impl Profile {
         }
     }
 
-    // Consuming builder entry for tags, returning TagSetter bound to this enum.
+    /// Begin setting the data for a specific tag, returning a [`TagSetter`]
+    /// that provides type-safe `as_*` methods for the chosen tag.
+    ///
+    /// # Example
+    /// ```rust
+    /// use cmx::profile::DisplayProfile;
+    /// use cmx::tag::tags::MediaWhitePointTag;
+    ///
+    /// let profile = DisplayProfile::new()
+    ///     .with_tag(MediaWhitePointTag)
+    ///     .as_xyz_array(|xyz| xyz.set([0.9505, 1.0, 1.0890]));
+    /// ```
     pub fn with_tag<S: Into<crate::tag::TagSignature> + Copy>(
         self,
         signature: S,
