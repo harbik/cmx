@@ -17,24 +17,24 @@
 //! ## Quick start
 //!
 //! ```js
-//! import init, { WasmProfile, WasmDisplayProfile, WasmRenderingIntent } from 'cmx-icc';
+//! import init, { Profile, DisplayProfile, RenderingIntent } from 'cmx-icc';
 //!
 //! await init(); // load the .wasm binary once
 //!
 //! // ── Parse an existing profile ─────────────────────────────────────────────
 //! // iccBytes is a Uint8Array, e.g. from fetch() or FileReader
-//! const profile = WasmProfile.fromBytes(iccBytes);
-//! const intent  = profile.renderingIntent(); // WasmRenderingIntent enum value
+//! const profile = Profile.fromBytes(iccBytes);
+//! const intent  = profile.renderingIntent(); // RenderingIntent enum value
 //! const bytes   = profile.toBytes();         // Uint8Array — byte-identical round-trip
 //!
 //! // ── Use a built-in preset ─────────────────────────────────────────────────
-//! const srgb  = WasmDisplayProfile.srgb(WasmRenderingIntent.RelativeColorimetric);
-//! const p3    = WasmDisplayProfile.displayP3(WasmRenderingIntent.RelativeColorimetric);
-//! const adobe = WasmDisplayProfile.adobeRgb(WasmRenderingIntent.RelativeColorimetric);
+//! const srgb  = DisplayProfile.srgb(RenderingIntent.RelativeColorimetric);
+//! const p3    = DisplayProfile.displayP3(RenderingIntent.RelativeColorimetric);
+//! const adobe = DisplayProfile.adobeRgb(RenderingIntent.RelativeColorimetric);
 //!
 //! // ── Build a custom matrix display profile ────────────────────────────────
-//! const custom = new WasmDisplayProfile();
-//! custom.setRenderingIntent(WasmRenderingIntent.RelativeColorimetric);
+//! const custom = new DisplayProfile();
+//! custom.setRenderingIntent(RenderingIntent.RelativeColorimetric);
 //! custom.setProfileDescription("My Custom Profile");
 //! custom.setCopyright("CC0 1.0");
 //! custom.setWhitePoint(0.950455, 1.0, 1.08905);          // D50 XYZ
@@ -63,26 +63,26 @@
 //!
 //! | Class | Purpose |
 //! |---|---|
-//! | `WasmProfile` | Parse an existing ICC profile from a `Uint8Array` |
-//! | `WasmDisplayProfile` | Build a display-class ICC profile from scratch |
-//! | `WasmRenderingIntent` | Enum: `Perceptual`, `RelativeColorimetric`, `Saturation`, `AbsoluteColorimetric` |
+//! | `Profile` | Parse an existing ICC profile from a `Uint8Array` |
+//! | `DisplayProfile` | Build a display-class ICC profile from scratch |
+//! | `RenderingIntent` | Enum: `Perceptual`, `RelativeColorimetric`, `Saturation`, `AbsoluteColorimetric` |
 //!
-//! ### `WasmProfile`
+//! ### `Profile`
 //!
 //! | Method | Description |
 //! |---|---|
-//! | `WasmProfile.fromBytes(data)` | Parse a `Uint8Array`; throws on invalid data |
+//! | `Profile.fromBytes(data)` | Parse a `Uint8Array`; throws on invalid data |
 //! | `profile.toBytes()` | Serialize back to `Uint8Array` (byte-identical round-trip) |
 //! | `profile.renderingIntent()` | Read the rendering intent from the header |
 //!
-//! ### `WasmDisplayProfile`
+//! ### `DisplayProfile`
 //!
 //! | Method | Description |
 //! |---|---|
-//! | `new WasmDisplayProfile()` | Empty profile — set all tags manually |
-//! | `WasmDisplayProfile.srgb(intent)` | sRGB preset |
-//! | `WasmDisplayProfile.displayP3(intent)` | Display P3 preset |
-//! | `WasmDisplayProfile.adobeRgb(intent)` | Adobe RGB preset |
+//! | `new DisplayProfile()` | Empty profile — set all tags manually |
+//! | `DisplayProfile.srgb(intent)` | sRGB preset |
+//! | `DisplayProfile.displayP3(intent)` | Display P3 preset |
+//! | `DisplayProfile.adobeRgb(intent)` | Adobe RGB preset |
 //! | `setRenderingIntent(intent)` | Header rendering intent |
 //! | `setProfileDescription(text)` | ASCII description tag |
 //! | `setProfileDescriptionMluc(lang, country, text)` | v4 multi-language description |
@@ -126,7 +126,7 @@ use cmx::{
 
 /// ICC rendering intent, controlling how out-of-gamut colors are handled
 /// when converting between color spaces.
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = "RenderingIntent")]
 #[derive(Clone, Copy)]
 pub enum WasmRenderingIntent {
     Perceptual = 0,
@@ -165,7 +165,7 @@ impl From<RenderingIntent> for WasmRenderingIntent {
 ///
 /// Use [`WasmProfile.fromBytes`] to parse an existing ICC file that you have
 /// loaded as a `Uint8Array`, and [`WasmProfile.toBytes`] to serialize it back.
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = "Profile")]
 pub struct WasmProfile {
     inner: cmx::profile::Profile,
 }
@@ -213,7 +213,7 @@ impl WasmProfile {
 /// - [`WasmDisplayProfile.srgb`]
 /// - [`WasmDisplayProfile.displayP3`]
 /// - [`WasmDisplayProfile.adobeRgb`]
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = "DisplayProfile")]
 pub struct WasmDisplayProfile {
     // Option lets us temporarily take ownership to drive the consuming builder.
     inner: Option<DisplayProfile>,
