@@ -54,7 +54,8 @@ src/
   tag/tagdata/              # Individual tag data types
 tests/                      # Integration tests + test .icc files
 examples/                   # Runnable example programs
-xtask/                      # Code generation / maintenance utilities
+cmx-icc/                    # WebAssembly / npm bindings (published as cmx-icc)
+xtask/                      # Custom build and publish tasks (cargo xtask)
 ```
 
 ---
@@ -224,8 +225,12 @@ Ensure the `main` branch is up to date and all intended changes are merged.
 
 ### 4. Bump the version in `Cargo.toml`
 
+The version is defined once in `[workspace.package]` in the root `Cargo.toml`.
+Both `cmx` (crates.io) and `cmx-icc` (npm) inherit it via `version.workspace = true`,
+so a single edit keeps everything in lock-step.
+
 ```bash
-# Edit the `version = "..."` field in [package]
+# Edit the `version = "..."` field in [workspace.package]
 ```
 
 Search the codebase for any hard-coded version strings in documentation and update them too:
@@ -236,26 +241,24 @@ grep -rn "0\.0\.X" --include="*.rs" --include="*.toml" --include="*.md"
 
 ### 5. Run the full test suite and quality checks
 
+Use the xtask dry-run, which covers tests, doc-tests, clippy, cargo doc, and README in one step:
+
 ```bash
-cargo test                    # unit + integration tests
-cargo test --doc              # doc-tests
-cargo clippy -- -D warnings   # must produce zero warnings
-cargo doc --no-deps           # must produce zero warnings
+cargo xtask publish-crate --dry-run
 ```
 
-All tests must pass and both `clippy` and `cargo doc` must be warning-free before tagging.
+All checks must be green before tagging. Fix any failures before proceeding.
 
 ### 6. Regenerate README.md
 
-The `README.md` is generated from the crate-level doc comment in `src/lib.rs` using
-[`cargo-rdme`](https://github.com/orium/cargo-rdme).  Run it after any change to `src/lib.rs`,
-and always as part of a release:
+`cargo xtask publish-crate --dry-run` (step 5) regenerates `README.md` automatically via
+[`cargo-rdme`](https://github.com/orium/cargo-rdme) if it is out of date.  Review the diff
+before staging:
 
 ```bash
-cargo rdme
+git diff README.md
 ```
 
-Review the diff (`git diff README.md`) to confirm the output looks correct, then stage the file.
 If `cargo-rdme` is not installed: `cargo install cargo-rdme`.
 
 ### 7. Commit the release
@@ -279,7 +282,29 @@ git push origin main --tags
 ### 9. Publish to crates.io
 
 ```bash
-cargo publish
+cargo xtask publish-crate
 ```
 
-`cargo publish` performs a dry-run check internally; if it fails, fix the issue before pushing the tag.
+This re-runs all checks (tests, clippy, doc, README) and then calls `cargo publish -p cmx`.
+If anything fails, fix it before re-running — do not push the tag until this step succeeds.
+
+### 10. Publish to npm (cmx-icc)
+
+```bash
+cargo xtask publish-npm
+```
+
+This does three things in order:
+
+1. Regenerates `cmx-icc/README.md` from the doc comment in `cmx-icc/src/lib.rs`
+   via `cargo rdme -w cmx-icc` (the README is the npm package page).
+2. Runs `wasm-pack build cmx-icc --target bundler --release`, which compiles the
+   `.wasm` binary and copies `cmx-icc/README.md` into `cmx-icc/pkg/`.
+3. Runs `npm publish cmx-icc/pkg --access public`.
+
+Requires `wasm-pack` and an active `npm login` session.  The published package
+name is `cmx-icc` at the same version as the Rust crate.
+
+To update the npm README, edit the module doc comment (`//!`) at the top of
+`cmx-icc/src/lib.rs` — do not edit `cmx-icc/README.md` directly, as it is
+generated and will be overwritten.

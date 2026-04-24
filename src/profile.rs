@@ -128,6 +128,11 @@ impl Profile {
     // Read-only accessors — all delegate to the underlying RawProfile.
     // -----------------------------------------------------------------------
 
+    /// Returns the rendering intent stored in the profile header.
+    pub fn rendering_intent(&self) -> crate::tag::RenderingIntent {
+        self.as_raw_profile().rendering_intent()
+    }
+
     /// Returns the ICC profile version as `(major, minor)`.
     /// Errors if the version stored in the header is not one of the values
     /// recognised by this crate (2.x, 4.x, 5.0).

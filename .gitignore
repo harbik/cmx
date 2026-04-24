@@ -1,4 +1,5 @@
 /target
+/cmx-icc/pkg
 **/.DS_Store
 /.vscode/
 /.cargo/
