@@ -92,12 +92,16 @@ impl From<&MakeAndModelData> for MakeAndModelType {
 // ── Builder methods on MakeAndModelData ──────────────────────────────────────
 
 impl MakeAndModelData {
-    /// Initialize the binary payload with the `mmod` type signature and zeroed fields.
+    /// Ensure the payload is at least 40 bytes, preserving any existing content.
+    ///
+    /// Bytes 0–3 are always set to the `mmod` type signature and bytes 4–7 are
+    /// always zeroed (reserved), regardless of the prior buffer length.
     fn init(&mut self) {
         if self.0.len() < 40 {
-            self.0 = vec![0u8; 40];
-            self.0[0..4].copy_from_slice(&0x6D6D6F64u32.to_be_bytes()); // 'mmod'
+            self.0.resize(40, 0);
         }
+        self.0[0..4].copy_from_slice(&0x6D6D6F64u32.to_be_bytes()); // 'mmod'
+        self.0[4..8].fill(0); // reserved
     }
 
     /// Set the manufacturer identifier (bytes 8–11).
