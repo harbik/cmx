@@ -1,18 +1,26 @@
 [package]
 name = "cmx"
-version = "0.1.0"
+version.workspace = true
 description = "Rust Spectral Color Management Library"
-authors = ["Gerard Harbers", "Harbers Bik LLC"]
-repository = "https://github.com/harbik/cmx"
+authors.workspace = true
+repository.workspace = true
 keywords = ["color_management", "icc_profiles", "iccmax"]
-edition = "2021"
-license = "MIT OR Apache-2.0"
+edition.workspace = true
+license.workspace = true
 
 [workspace]
 members = [
     "xtask",
-    "."  # main crate
+    ".",         # main crate
+    "cmx-icc",   # WebAssembly bindings
 ]
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Gerard Harbers", "Harbers Bik LLC"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/harbik/cmx"
+edition = "2021"
 
 [features]
 v5 = []
@@ -20,7 +28,7 @@ v5 = []
 [dependencies]
 anyhow = "1.0.99"
 approx = "0.5.1"
-chrono = { version = "0.4.19", features = ["serde"] }
+chrono = { version = "0.4.19", features = ["serde", "wasmbind"] }
 clap = { version = "4.3", features = ["derive"] }
 colorimetry = "0.0.9"
 delegate = "0.13.4"

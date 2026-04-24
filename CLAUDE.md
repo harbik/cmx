@@ -3,13 +3,15 @@
 ## What This Is
 
 CMX is a Rust library for working with ICC color profiles (versions 2.0–5.0). It supports:
+
 - **Parsing** binary ICC profiles from files or byte slices
 - **Constructing** profiles from scratch via a builder-style API
 - **Modifying** existing profiles programmatically
 - **Converting** profiles to human-readable TOML format
 - A **CLI tool** (`cmx`) to convert ICC profiles to TOML
 
-It integrates with the [`colorimetry`](https://crates.io/crates/colorimetry) crate for color space operations and uses `zerocopy` for memory-safe binary data handling.
+It integrates with the [`colorimetry`](https://crates.io/crates/colorimetry) crate for color space
+operations and uses `zerocopy` for memory-safe binary data handling.
 
 ---
 
@@ -42,7 +44,7 @@ cargo doc --open
 
 ## Project Layout
 
-```
+```text
 src/
   lib.rs                    # Library root, utility functions
   error.rs                  # Error types
@@ -54,7 +56,8 @@ src/
   tag/tagdata/              # Individual tag data types
 tests/                      # Integration tests + test .icc files
 examples/                   # Runnable example programs
-xtask/                      # Code generation / maintenance utilities
+cmx-icc/                    # WebAssembly / npm bindings (published as cmx-icc)
+xtask/                      # Custom build and publish tasks (cargo xtask)
 ```
 
 ---
@@ -66,7 +69,7 @@ xtask/                      # Code generation / maintenance utilities
 The `Profile` enum wraps eight device-class-specific structs, all backed by `RawProfile`:
 
 | Struct | Device class |
-|---|---|
+| --- | --- |
 | `DisplayProfile` | Monitors, projectors |
 | `InputProfile` | Cameras, scanners |
 | `OutputProfile` | Printers |
@@ -76,7 +79,8 @@ The `Profile` enum wraps eight device-class-specific structs, all backed by `Raw
 | `NamedColorProfile` | Named color palettes |
 | `SpectralProfile` | Spectral data (future) |
 
-Each wrapper enforces ICC spec constraints for that class. `RawProfile` holds the actual binary data (bytes + `IndexMap` of tag records). `HasRawProfile` is the delegation trait.
+Each wrapper enforces ICC spec constraints for that class. `RawProfile` holds the actual binary
+data (bytes + `IndexMap` of tag records). `HasRawProfile` is the delegation trait.
 
 ### Builder / Tag Setter Pattern
 
@@ -91,7 +95,8 @@ let profile = DisplayProfile::new()
     .with_profile_id();  // computes MD5 checksum in place
 ```
 
-`TagSetter<P, S>` is the intermediate builder type. It uses generic marker types and capability traits to enforce at compile time which tag data types are valid for a given tag signature.
+`TagSetter<P, S>` is the intermediate builder type. It uses generic marker types and capability
+traits to enforce at compile time which tag data types are valid for a given tag signature.
 
 ### Tag Data Types
 
@@ -113,14 +118,16 @@ Unknown/vendor tags are preserved via `RawData` — round-trips are lossless.
 
 ### Binary Safety
 
-Uses `zerocopy` for zero-copy overlay of the 128-byte ICC header — no unsafe code required. `IndexMap` preserves tag insertion order from the source profile, which is critical for deterministic round-trips and offset recalculation.
+Uses `zerocopy` for zero-copy overlay of the 128-byte ICC header — no unsafe code required.
+`IndexMap` preserves tag insertion order from the source profile, which is critical for
+deterministic round-trips and offset recalculation.
 
 ---
 
 ## Dependencies (Notable)
 
 | Crate | Purpose |
-|---|---|
+| --- | --- |
 | `colorimetry = "0.0.9"` | Color space definitions (RgbSpace, etc.) |
 | `zerocopy = "0.8"` | Safe binary overlay for ICC header |
 | `nalgebra = "0.33"` | Matrix math |
@@ -137,10 +144,14 @@ Uses `zerocopy` for zero-copy overlay of the 128-byte ICC header — no unsafe c
 
 ## Key Conventions
 
-- **Lossless round-trips**: Unknown tags are stored as `RawData` and written back verbatim. Any test that reads a real ICC file and re-serializes it must produce byte-identical output.
-- **Profile ID**: Call `.with_profile_id()` at the end of profile construction to compute and embed the MD5 checksum (fields 84–99 of the header, zeroed during computation per the ICC spec).
-- **Tag data sharing**: Multiple tag signatures can reference the same offset in the file. The library detects and preserves this optimization.
-- **Consuming builder**: `with_tag(...)` and `as_*` methods consume `self` and return a new value. Do not attempt to reuse intermediate `TagSetter` values.
+- **Lossless round-trips**: Unknown tags are stored as `RawData` and written back verbatim.
+  Any test that reads a real ICC file and re-serializes it must produce byte-identical output.
+- **Profile ID**: Call `.with_profile_id()` at the end of profile construction to compute and
+  embed the MD5 checksum (fields 84–99 of the header, zeroed during computation per the ICC spec).
+- **Tag data sharing**: Multiple tag signatures can reference the same offset in the file.
+  The library detects and preserves this optimization.
+- **Consuming builder**: `with_tag(...)` and `as_*` methods consume `self` and return a new value.
+  Do not attempt to reuse intermediate `TagSetter` values.
 - **Feature flags**: ICC v5 support is gated behind a `v5` feature flag.
 
 ---
@@ -165,7 +176,10 @@ profile.write("output.icc")?;
 
 ## Testing Notes
 
-Integration tests in `tests/` use real `.icc` files stored under `tests/profiles/`. When adding new tag parsers or modifying serialization, always run the round-trip tests to confirm byte-identical output. The `displayP3` test compares a programmatically constructed profile against Apple's shipped Display P3 profile binary.
+Integration tests in `tests/` use real `.icc` files stored under `tests/profiles/`. When adding
+new tag parsers or modifying serialization, always run the round-trip tests to confirm
+byte-identical output. The `displayP3` test compares a programmatically constructed profile
+against Apple's shipped Display P3 profile binary.
 
 ---
 
@@ -206,7 +220,7 @@ patch increment.  Use a minor increment (`0.1.0`) when the public API is conside
 enough to declare a broader interface contract.
 
 | Change type | Version bump |
-|---|---|
+| --- | --- |
 | Bug fixes, internal refactors, docs | patch (`0.0.x → 0.0.x+1`) |
 | New public API, new features | minor (`0.x.0 → 0.x+1.0`) |
 | Breaking API changes | major (`x.0.0 → x+1.0.0`) |
@@ -224,8 +238,12 @@ Ensure the `main` branch is up to date and all intended changes are merged.
 
 ### 4. Bump the version in `Cargo.toml`
 
+The version is defined once in `[workspace.package]` in the root `Cargo.toml`.
+Both `cmx` (crates.io) and `cmx-icc` (npm) inherit it via `version.workspace = true`,
+so a single edit keeps everything in lock-step.
+
 ```bash
-# Edit the `version = "..."` field in [package]
+# Edit the `version = "..."` field in [workspace.package]
 ```
 
 Search the codebase for any hard-coded version strings in documentation and update them too:
@@ -236,26 +254,24 @@ grep -rn "0\.0\.X" --include="*.rs" --include="*.toml" --include="*.md"
 
 ### 5. Run the full test suite and quality checks
 
+Use the xtask dry-run, which covers tests, doc-tests, clippy, cargo doc, and README in one step:
+
 ```bash
-cargo test                    # unit + integration tests
-cargo test --doc              # doc-tests
-cargo clippy -- -D warnings   # must produce zero warnings
-cargo doc --no-deps           # must produce zero warnings
+cargo xtask publish-crate --dry-run
 ```
 
-All tests must pass and both `clippy` and `cargo doc` must be warning-free before tagging.
+All checks must be green before tagging. Fix any failures before proceeding.
 
 ### 6. Regenerate README.md
 
-The `README.md` is generated from the crate-level doc comment in `src/lib.rs` using
-[`cargo-rdme`](https://github.com/orium/cargo-rdme).  Run it after any change to `src/lib.rs`,
-and always as part of a release:
+`cargo xtask publish-crate --dry-run` (step 5) regenerates `README.md` automatically via
+[`cargo-rdme`](https://github.com/orium/cargo-rdme) if it is out of date.  Review the diff
+before staging:
 
 ```bash
-cargo rdme
+git diff README.md
 ```
 
-Review the diff (`git diff README.md`) to confirm the output looks correct, then stage the file.
 If `cargo-rdme` is not installed: `cargo install cargo-rdme`.
 
 ### 7. Commit the release
@@ -279,7 +295,29 @@ git push origin main --tags
 ### 9. Publish to crates.io
 
 ```bash
-cargo publish
+cargo xtask publish-crate
 ```
 
-`cargo publish` performs a dry-run check internally; if it fails, fix the issue before pushing the tag.
+This re-runs all checks (tests, clippy, doc, README) and then calls `cargo publish -p cmx`.
+If anything fails, fix it before re-running — do not push the tag until this step succeeds.
+
+### 10. Publish to npm (cmx-icc)
+
+```bash
+cargo xtask publish-npm
+```
+
+This does three things in order:
+
+1. Regenerates `cmx-icc/README.md` from the doc comment in `cmx-icc/src/lib.rs`
+   via `cargo rdme -w cmx-icc` (the README is the npm package page).
+2. Runs `wasm-pack build cmx-icc --target bundler --release`, which compiles the
+   `.wasm` binary and copies `cmx-icc/README.md` into `cmx-icc/pkg/`.
+3. Runs `npm publish cmx-icc/pkg --access public`.
+
+Requires `wasm-pack` and an active `npm login` session.  The published package
+name is `cmx-icc` at the same version as the Rust crate.
+
+To update the npm README, edit the module doc comment (`//!`) at the top of
+`cmx-icc/src/lib.rs` — do not edit `cmx-icc/README.md` directly, as it is
+generated and will be overwritten.

@@ -416,10 +416,7 @@ where
         S: IsDictTag,
         F: FnOnce(&mut crate::tag::tagdata::DictData),
     {
-        let dict = self
-            .profile
-            .raw_mut()
-            .ensure_dict_mut(self.tag.into());
+        let dict = self.profile.raw_mut().ensure_dict_mut(self.tag.into());
         configure(dict);
         self.profile
     }

@@ -153,7 +153,7 @@ Profile::read("input.icc")?
 # Modules
 
 | Module | Contents |
-|---|---|
+| --- | --- |
 | [`profile`] | `Profile` enum and per-device-class types (`DisplayProfile`, `InputProfile`, …) |
 | [`tag`] | Tag signatures, tag data types, and the `TagSetter` builder |
 | [`header`] | ICC 128-byte header fields and accessors |
@@ -173,7 +173,7 @@ An ICC profile is a binary file with three sections:
 The ICC specification defines eight device classes.  This crate provides a dedicated type for each:
 
 | Type | ICC class code | Typical use |
-|---|---|---|
+| --- | --- | --- |
 | [`profile::DisplayProfile`] | `mntr` | Monitors, projectors |
 | [`profile::InputProfile`] | `scnr` | Cameras, scanners |
 | [`profile::OutputProfile`] | `prtr` | Printers |
@@ -200,7 +200,7 @@ The rendering intent controls how out-of-gamut colors are handled during color c
 Four intents are defined:
 
 | Intent | Typical use |
-|---|---|
+| --- | --- |
 | Perceptual | Photographic images — compresses the gamut smoothly |
 | Relative Colorimetric | Graphics — clips and maps the source white point |
 | Saturation | Business graphics — maximises saturation |
@@ -215,14 +215,14 @@ All well-known tag signatures are re-exported from [`tag::tags`].
 Tag types supported for reading and writing include:
 
 | ICC type | Rust type | Common tags |
-|---|---|---|
+| --- | --- | --- |
 | `XYZ` | `XYZArrayData` | `rXYZ`, `gXYZ`, `bXYZ`, `wtpt` |
 | `para` | `ParametricCurveData` | `rTRC`, `gTRC`, `bTRC` |
 | `curv` | `CurveData` | `rTRC`, `gTRC`, `bTRC` |
 | `mluc` | `MultiLocalizedUnicodeData` | `desc` |
 | `desc` | `TextDescriptionData` | `desc` |
 | `sf32` | `S15Fixed16ArrayData` | `chad` |
-| `sig ` | `SignatureData` | `tech` |
+| `sig` | `SignatureData` | `tech` |
 | `text` | `TextData` | `cprt` |
 | `mft1` | `Lut8Data` | `A2B0`, `B2A0` |
 | `mft2` | `Lut16Data` | `A2B0`, `B2A0` |
@@ -232,7 +232,7 @@ Tags not yet parsed are stored as `RawData` and written back verbatim — no dat
 # Key Types
 
 | Type | Description |
-|---|---|
+| --- | --- |
 | [`S15Fixed16`] | ICC s15Fixed16 fixed-point number used in matrices and XYZ values |
 | [`profile::Profile`] | Parsed profile, dispatched to one of eight device-class variants |
 | [`profile::TagSetter`] | Consuming builder returned by `with_tag(…)` |
