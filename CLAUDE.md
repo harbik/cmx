@@ -234,36 +234,49 @@ Search the codebase for any hard-coded version strings in documentation and upda
 grep -rn "0\.0\.X" --include="*.rs" --include="*.toml" --include="*.md"
 ```
 
-### 5. Run the full test suite
+### 5. Run the full test suite and quality checks
 
 ```bash
 cargo test                    # unit + integration tests
 cargo test --doc              # doc-tests
-cargo clippy -- -D warnings   # no new lints
-cargo doc --no-deps           # docs must build cleanly
+cargo clippy -- -D warnings   # must produce zero warnings
+cargo doc --no-deps           # must produce zero warnings
 ```
 
-All tests must pass before tagging.
+All tests must pass and both `clippy` and `cargo doc` must be warning-free before tagging.
 
-### 6. Commit the release
+### 6. Regenerate README.md
 
-Stage only the version-bump files:
+The `README.md` is generated from the crate-level doc comment in `src/lib.rs` using
+[`cargo-rdme`](https://github.com/orium/cargo-rdme).  Run it after any change to `src/lib.rs`,
+and always as part of a release:
 
 ```bash
-git add Cargo.toml CHANGELOG.md
+cargo rdme
+```
+
+Review the diff (`git diff README.md`) to confirm the output looks correct, then stage the file.
+If `cargo-rdme` is not installed: `cargo install cargo-rdme`.
+
+### 7. Commit the release
+
+Stage only the version-bump and generated files:
+
+```bash
+git add Cargo.toml CHANGELOG.md README.md
 git commit -m "chore: release v0.0.X"
 ```
 
 Do **not** amend earlier commits or squash history — keep the release commit separate and minimal.
 
-### 7. Tag the release
+### 8. Tag the release
 
 ```bash
 git tag -a v0.0.X -m "Release v0.0.X"
 git push origin main --tags
 ```
 
-### 8. Publish to crates.io
+### 9. Publish to crates.io
 
 ```bash
 cargo publish
