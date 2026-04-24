@@ -132,10 +132,13 @@ impl Commands {
                 // ── Publish ───────────────────────────────────────────────────
                 if *dry_run {
                     run("cargo", &["publish", "-p", "cmx", "--dry-run"]);
+                    run("cargo", &["publish", "-p", "cmx-icc", "--dry-run"]);
                     println!("✅ Dry run complete — no files uploaded");
                 } else {
                     run("cargo", &["publish", "-p", "cmx"]);
                     println!("✅ Published cmx to crates.io");
+                    run("cargo", &["publish", "-p", "cmx-icc"]);
+                    println!("✅ Published cmx-icc to crates.io");
                 }
             }
         }
