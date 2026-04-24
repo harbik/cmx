@@ -74,12 +74,19 @@ pub struct DictType {
 
 // ── Parser: DictData → DictType ─────────────────────────────────────────────
 
-fn decode_utf16be(bytes: &[u8]) -> String {
+/// Decode a UTF-16BE byte slice into a `String`.
+///
+/// Returns `None` if `bytes` has an odd length, which would indicate corrupt tag
+/// data (all UTF-16BE strings must have an even byte count).
+fn decode_utf16be(bytes: &[u8]) -> Option<String> {
+    if bytes.len() % 2 != 0 {
+        return None;
+    }
     let words: Vec<u16> = bytes
         .chunks_exact(2)
         .map(|c| u16::from_be_bytes([c[0], c[1]]))
         .collect();
-    String::from_utf16_lossy(&words).to_string()
+    Some(String::from_utf16_lossy(&words))
 }
 
 impl From<&DictData> for DictType {
@@ -129,8 +136,13 @@ impl From<&DictData> for DictType {
                 continue;
             }
 
-            let key = decode_utf16be(&bytes[key_off..key_end]);
-            let value = decode_utf16be(&bytes[val_off..val_end]);
+            // Skip this record if either string has an odd byte count (corrupt data).
+            let (Some(key), Some(value)) = (
+                decode_utf16be(&bytes[key_off..key_end]),
+                decode_utf16be(&bytes[val_off..val_end]),
+            ) else {
+                continue;
+            };
             entries.insert(key, value);
         }
 
@@ -161,10 +173,15 @@ impl From<&DictType> for DictData {
         let mut records: Vec<Record> = Vec::with_capacity(n);
         let mut cursor = string_data_start;
         for (key_bytes, val_bytes) in &encoded {
+            let val_offset = cursor + key_bytes.len();
+            debug_assert!(cursor <= u32::MAX as usize, "dictType key offset overflows u32");
+            debug_assert!(val_offset <= u32::MAX as usize, "dictType value offset overflows u32");
+            debug_assert!(key_bytes.len() <= u32::MAX as usize, "dictType key length overflows u32");
+            debug_assert!(val_bytes.len() <= u32::MAX as usize, "dictType value length overflows u32");
             records.push(Record {
                 key_offset: U32::new(cursor as u32),
                 key_length: U32::new(key_bytes.len() as u32),
-                value_offset: U32::new((cursor + key_bytes.len()) as u32),
+                value_offset: U32::new(val_offset as u32),
                 value_length: U32::new(val_bytes.len() as u32),
             });
             cursor += key_bytes.len() + val_bytes.len();
@@ -302,6 +319,24 @@ mod tests {
         // Too short to contain a header.
         let d = DictData(vec![0x64, 0x69, 0x63, 0x74, 0x00]);
         let parsed = DictType::from(&d);
+        assert!(parsed.entries.is_empty());
+    }
+
+    #[test]
+    fn odd_length_string_record_is_skipped() {
+        // Build a valid 1-record dict, then corrupt the key length to be odd (3 instead of 4).
+        let mut d = DictData(Vec::new());
+        d.insert("ab", "cd"); // key = 4 bytes UTF-16BE, value = 4 bytes UTF-16BE
+
+        // key_length is at bytes 20–23 of the payload (header=16, rec[0].key_length offset=4).
+        // Force it to 3 (odd) to simulate corrupt tag data.
+        d.0[20] = 0x00;
+        d.0[21] = 0x00;
+        d.0[22] = 0x00;
+        d.0[23] = 0x03;
+
+        let parsed = DictType::from(&d);
+        // The corrupted record must be silently skipped.
         assert!(parsed.entries.is_empty());
     }
 }
