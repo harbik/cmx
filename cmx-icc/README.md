@@ -4,8 +4,13 @@ WebAssembly bindings for the [cmx](https://crates.io/crates/cmx) ICC color
 profile library, published to npm as
 [`cmx-icc`](https://www.npmjs.com/package/cmx-icc).
 
-Parse, inspect, and build ICC color profiles entirely in the browser or
-Node.js — no native dependencies required.
+CMX is an advanced spectral color management system built on the
+[Rust Colorimetry library](https://crates.io/crates/colorimetry), which
+uses spectral representations of light to model color with physical
+accuracy — going beyond the tristimulus approximations used in traditional
+ICC workflows.  This package exposes the ICC profile layer of CMX: parse,
+inspect, and build ICC color profiles entirely in the browser or Node.js,
+with no native dependencies required.
 
 ## Installation
 
