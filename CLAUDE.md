@@ -238,13 +238,20 @@ Ensure the `main` branch is up to date and all intended changes are merged.
 
 ### 4. Bump the version in `Cargo.toml`
 
-The version is defined once in `[workspace.package]` in the root `Cargo.toml`.
-Both `cmx` (crates.io) and `cmx-icc` (npm) inherit it via `version.workspace = true`,
-so a single edit keeps everything in lock-step.
+Two lines in the root `Cargo.toml` must be updated together:
 
-```bash
-# Edit the `version = "..."` field in [workspace.package]
+```toml
+[workspace.package]
+version = "X.Y.Z"          # package version — inherited by all crates
+
+[workspace.dependencies]
+cmx = { version = "X.Y.Z" }  # used by cmx-icc via { workspace = true }
 ```
+
+The `[patch.crates-io]` entry (`cmx = { path = "." }`) provides the local
+path override during development and does not need changing.
+`cmx-icc/Cargo.toml` never needs a version bump — it inherits via
+`cmx = { workspace = true }`.
 
 Search the codebase for any hard-coded version strings in documentation and update them too:
 
