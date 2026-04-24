@@ -198,6 +198,11 @@ pub trait IsLutAtoBDataTag {}
 /// Marker trait for tags whose data uses the `LutBtoA` format (ICC type `mBA `).
 pub trait IsLutBtoADataTag {}
 
+/// Marker trait for the Apple `mmod` (Make and Model) tag whose data is stored
+/// as `MakeAndModelData`: `MakeAndModelTag`.
+pub trait IsMakeAndModelTag {}
+impl IsMakeAndModelTag for crate::tag::tags::MakeAndModelTag {}
+
 /// Marker trait that allows any tag to be set using raw bytes via
 /// [`TagSetter::as_raw`].  Implemented for all tag signatures.
 pub trait IsRawTag {}
@@ -438,6 +443,43 @@ where
         configure(mlu);
         self.profile
     }
+
+    /// Set the tag's data as Apple `MakeAndModelData` (private type `mmod`).
+    ///
+    /// Available for: `MakeAndModelTag`.
+    ///
+    /// Use [`MakeAndModelData::set_manufacturer`](crate::tag::tagdata::MakeAndModelData::set_manufacturer),
+    /// [`MakeAndModelData::set_model`](crate::tag::tagdata::MakeAndModelData::set_model), and related
+    /// methods inside the closure to populate the hardware identifiers.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use cmx::profile::DisplayProfile;
+    /// use cmx::tag::tags::MakeAndModelTag;
+    ///
+    /// let profile = DisplayProfile::new()
+    ///     .with_tag(MakeAndModelTag)
+    ///     .as_make_and_model(|m| {
+    ///         m.set_manufacturer(0x00004c2d);
+    ///         m.set_model(0x00000587);
+    ///     });
+    ///
+    /// let bytes = profile.to_bytes().unwrap();
+    /// assert!(bytes.len() > 128);
+    /// ```
+    pub fn as_make_and_model<F>(mut self, configure: F) -> P
+    where
+        S: IsMakeAndModelTag,
+        F: FnOnce(&mut crate::tag::tagdata::MakeAndModelData),
+    {
+        let mmod = self
+            .profile
+            .raw_mut()
+            .ensure_make_and_model_mut(self.tag.into());
+        configure(mmod);
+        self.profile
+    }
 }
 
 #[cfg(test)]
@@ -470,5 +512,38 @@ mod tests {
             });
 
         Ok(())
+    }
+
+    #[test]
+    fn test_as_make_and_model() {
+        use crate::profile::DisplayProfile;
+        use crate::tag::tagdata::MakeAndModelData;
+        use crate::tag::{TagDataTraits, TagSignature};
+
+        let profile = DisplayProfile::new()
+            .with_tag(MakeAndModelTag)
+            .as_make_and_model(|m| {
+                m.set_manufacturer(0x00004c2d);
+                m.set_model(0x00000587);
+                m.set_serial_number(0x4d593234);
+                m.set_manufacture_date(0xc76c2600);
+            });
+
+        let sig: TagSignature = MakeAndModelTag.into();
+        let data = profile.0.tags.get(&sig).unwrap().tag.data();
+        let bytes = data.as_slice();
+
+        // Type signature 'mmod' at bytes 0–3
+        assert_eq!(&bytes[0..4], &0x6D6D6F64u32.to_be_bytes());
+        // Reserved bytes 4–7 must be zero
+        assert_eq!(&bytes[4..8], &[0u8; 4]);
+        // Manufacturer at bytes 8–11
+        assert_eq!(&bytes[8..12], &0x00004c2du32.to_be_bytes());
+        // Model at bytes 12–15
+        assert_eq!(&bytes[12..16], &0x00000587u32.to_be_bytes());
+        // Serial number at bytes 16–19
+        assert_eq!(&bytes[16..20], &0x4d593234u32.to_be_bytes());
+        // Manufacture date at bytes 20–23
+        assert_eq!(&bytes[20..24], &0xc76c2600u32.to_be_bytes());
     }
 }

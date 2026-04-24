@@ -640,8 +640,7 @@ define_tags!(
     (SurfaceMap, SurfaceMapTag, SurfaceMap, 0x736D6170),
     #[cfg(feature = "v5")]
     (UcrBg, UcrBgTag, UcrBg, 0x62666420),
-    #[cfg(feature = "v5")]
-    (MakeAndModel, MakeAndModelTag, MakeAndModel, 0x6D6D6F64),
+    (MakeAndModel, MakeAndModelTag, MakeAndModel, 0x6D6D6F64), // Apple private, not ICC
     #[cfg(feature = "v5")]
     (
         EmbeddedV5Profile,

@@ -22,6 +22,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
   containing a `meta` tag now serialize to readable TOML (flat key/value map)
   instead of raw hex.  The builder API is available via
   `TagSetter::as_dict(|d| { … })` on `MetadataTag`.
+* **`mmod` decoder** — Apple `mmod` (Make and Model) tag now decodes to structured
+  TOML fields (`manufacturer`, `model`, `serial_number`, `manufacture_date`) rendered
+  as `"0xNNNNNNNN"` hex strings, instead of a raw hex dump.
 
 ## [0.1.0] - 2026-04-24
 
