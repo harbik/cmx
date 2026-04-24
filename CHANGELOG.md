@@ -58,6 +58,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 * `Error::ProfileTooLarge(usize)` — new error variant when a serialised profile
   exceeds the ICC 4 GiB size limit.
 
+## [0.0.6] - 2026-04-20
+
+### Changed
+
+* Bumped `colorimetry` dependency from `0.0.8` to `0.0.9`; adapted call sites to
+  the renamed `XYZ::values()` → `XYZ::to_array()` method.
+
 ## [0.0.5] - 2025-09-17
 
 ### Added
