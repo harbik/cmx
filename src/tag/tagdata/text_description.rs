@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-// Copyright (c) 2021-2025, Harbers Bik LLC
+// Copyright (c) 2021-2026, Harbers Bik LLC
 
 //! This module provides a fully parsed representation of an ICC `textDescriptionData` tag.
 //! It includes methods to parse the tag from bytes and retrieve the ASCII and Unicode descriptions.

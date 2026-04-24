@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
-// Copyright (c) 2021-2025, Harbers Bik LLC
+// Copyright (c) 2021-2026, Harbers Bik LLC
 
 //! `DisplayProfile` module, with its definition and various constructors,
 //! in particular, small, bar-bones ICC 4.3 instances for the sRGB, DisplayP3, and AdobeRgb
