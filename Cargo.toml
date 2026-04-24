@@ -22,6 +22,12 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/harbik/cmx"
 edition = "2021"
 
+[workspace.dependencies]
+cmx = { version = "0.2.0" }
+
+[patch.crates-io]
+cmx = { path = "." }
+
 [features]
 v5 = []
 
