@@ -76,6 +76,8 @@ tag_kind!(
 
 tag_kind!(RawKind, Raw, crate::tag::tagdata::RawData);
 
+tag_kind!(DictKind, Dict, crate::tag::tagdata::DictData);
+
 tag_kind!(
     MultiLocalizedUnicodeKind,
     MultiLocalizedUnicode,
@@ -249,5 +251,15 @@ impl RawProfile {
         MultiLocalizedUnicode,
         crate::tag::tagdata::MultiLocalizedUnicodeData,
         MultiLocalizedUnicodeKind
+    );
+
+    // Dict accessors (ICC dictType, used by the `meta` tag)
+    tag_accessors!(
+        dict,
+        dict_mut,
+        ensure_dict_mut,
+        Dict,
+        crate::tag::tagdata::DictData,
+        DictKind
     );
 }
