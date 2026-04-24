@@ -174,10 +174,22 @@ impl From<&DictType> for DictData {
         let mut cursor = string_data_start;
         for (key_bytes, val_bytes) in &encoded {
             let val_offset = cursor + key_bytes.len();
-            debug_assert!(cursor <= u32::MAX as usize, "dictType key offset overflows u32");
-            debug_assert!(val_offset <= u32::MAX as usize, "dictType value offset overflows u32");
-            debug_assert!(key_bytes.len() <= u32::MAX as usize, "dictType key length overflows u32");
-            debug_assert!(val_bytes.len() <= u32::MAX as usize, "dictType value length overflows u32");
+            debug_assert!(
+                cursor <= u32::MAX as usize,
+                "dictType key offset overflows u32"
+            );
+            debug_assert!(
+                val_offset <= u32::MAX as usize,
+                "dictType value offset overflows u32"
+            );
+            debug_assert!(
+                key_bytes.len() <= u32::MAX as usize,
+                "dictType key length overflows u32"
+            );
+            debug_assert!(
+                val_bytes.len() <= u32::MAX as usize,
+                "dictType value length overflows u32"
+            );
             records.push(Record {
                 key_offset: U32::new(cursor as u32),
                 key_length: U32::new(key_bytes.len() as u32),
@@ -207,7 +219,11 @@ impl From<&DictType> for DictData {
             buf.extend_from_slice(val_bytes);
         }
 
-        debug_assert_eq!(buf.len(), total, "dictType serialisation: buffer size mismatch");
+        debug_assert_eq!(
+            buf.len(),
+            total,
+            "dictType serialisation: buffer size mismatch"
+        );
         DictData(buf)
     }
 }

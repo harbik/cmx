@@ -182,8 +182,8 @@ impl WasmProfile {
     /// Throws a `TypeError` if the bytes do not contain a valid ICC profile.
     #[wasm_bindgen(js_name = fromBytes)]
     pub fn from_bytes(data: &[u8]) -> Result<WasmProfile, JsError> {
-        let inner = cmx::profile::Profile::from_bytes(data)
-            .map_err(|e| JsError::new(&e.to_string()))?;
+        let inner =
+            cmx::profile::Profile::from_bytes(data).map_err(|e| JsError::new(&e.to_string()))?;
         Ok(WasmProfile { inner })
     }
 
@@ -313,10 +313,7 @@ impl WasmDisplayProfile {
     /// Set the copyright string (plain ASCII `text` tag).
     #[wasm_bindgen(js_name = setCopyright)]
     pub fn set_copyright(&mut self, text: &str) {
-        self.mutate(|p| {
-            p.with_tag(CopyrightTag)
-                .as_text(|t| t.set_text(text))
-        });
+        self.mutate(|p| p.with_tag(CopyrightTag).as_text(|t| t.set_text(text)));
     }
 
     // -- Colorimetric tags ---------------------------------------------------
@@ -378,28 +375,19 @@ impl WasmDisplayProfile {
     /// Set the red TRC as a simple power-law gamma curve.
     #[wasm_bindgen(js_name = setRedTrcGamma)]
     pub fn set_red_trc_gamma(&mut self, gamma: f64) {
-        self.mutate(|p| {
-            p.with_tag(RedTRCTag)
-                .as_curve(|c| c.set_gamma(gamma))
-        });
+        self.mutate(|p| p.with_tag(RedTRCTag).as_curve(|c| c.set_gamma(gamma)));
     }
 
     /// Set the green TRC as a simple power-law gamma curve.
     #[wasm_bindgen(js_name = setGreenTrcGamma)]
     pub fn set_green_trc_gamma(&mut self, gamma: f64) {
-        self.mutate(|p| {
-            p.with_tag(GreenTRCTag)
-                .as_curve(|c| c.set_gamma(gamma))
-        });
+        self.mutate(|p| p.with_tag(GreenTRCTag).as_curve(|c| c.set_gamma(gamma)));
     }
 
     /// Set the blue TRC as a simple power-law gamma curve.
     #[wasm_bindgen(js_name = setBlueTrcGamma)]
     pub fn set_blue_trc_gamma(&mut self, gamma: f64) {
-        self.mutate(|p| {
-            p.with_tag(BlueTRCTag)
-                .as_curve(|c| c.set_gamma(gamma))
-        });
+        self.mutate(|p| p.with_tag(BlueTRCTag).as_curve(|c| c.set_gamma(gamma)));
     }
 
     // -- TRC tags (parametric curve) -----------------------------------------
@@ -468,8 +456,6 @@ impl WasmDisplayProfile {
             .inner
             .take()
             .ok_or_else(|| JsError::new("profile already consumed"))?;
-        profile
-            .to_bytes()
-            .map_err(|e| JsError::new(&e.to_string()))
+        profile.to_bytes().map_err(|e| JsError::new(&e.to_string()))
     }
 }

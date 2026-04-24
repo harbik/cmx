@@ -17,8 +17,15 @@ fn preset_srgb_serializes() {
     let p = WasmDisplayProfile::srgb(WasmRenderingIntent::RelativeColorimetric);
     let bytes = p.to_bytes().expect("sRGB preset should serialize");
     // ICC profiles always start with the 4-byte profile size followed by 'acsp'
-    assert!(bytes.len() > 128, "serialized profile must be larger than the 128-byte header");
-    assert_eq!(&bytes[36..40], b"acsp", "ICC file signature must be 'acsp' at offset 36");
+    assert!(
+        bytes.len() > 128,
+        "serialized profile must be larger than the 128-byte header"
+    );
+    assert_eq!(
+        &bytes[36..40],
+        b"acsp",
+        "ICC file signature must be 'acsp' at offset 36"
+    );
 }
 
 #[wasm_bindgen_test]
@@ -26,7 +33,11 @@ fn preset_display_p3_serializes() {
     let p = WasmDisplayProfile::display_p3(WasmRenderingIntent::Perceptual);
     let bytes = p.to_bytes().expect("Display P3 preset should serialize");
     assert!(bytes.len() > 128);
-    assert_eq!(&bytes[36..40], b"acsp", "ICC file signature must be 'acsp' at offset 36");
+    assert_eq!(
+        &bytes[36..40],
+        b"acsp",
+        "ICC file signature must be 'acsp' at offset 36"
+    );
 }
 
 #[wasm_bindgen_test]
@@ -34,7 +45,11 @@ fn preset_adobe_rgb_serializes() {
     let p = WasmDisplayProfile::adobe_rgb(WasmRenderingIntent::Saturation);
     let bytes = p.to_bytes().expect("Adobe RGB preset should serialize");
     assert!(bytes.len() > 128);
-    assert_eq!(&bytes[36..40], b"acsp", "ICC file signature must be 'acsp' at offset 36");
+    assert_eq!(
+        &bytes[36..40],
+        b"acsp",
+        "ICC file signature must be 'acsp' at offset 36"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -85,7 +100,10 @@ fn rendering_intent_relative_colorimetric() {
         .expect("serialize");
     let p = WasmProfile::from_bytes(&bytes).expect("parse");
     assert!(
-        matches!(p.rendering_intent(), WasmRenderingIntent::RelativeColorimetric),
+        matches!(
+            p.rendering_intent(),
+            WasmRenderingIntent::RelativeColorimetric
+        ),
         "rendering intent should round-trip through serialization"
     );
 }
@@ -96,7 +114,10 @@ fn rendering_intent_perceptual() {
         .to_bytes()
         .expect("serialize");
     let p = WasmProfile::from_bytes(&bytes).expect("parse");
-    assert!(matches!(p.rendering_intent(), WasmRenderingIntent::Perceptual));
+    assert!(matches!(
+        p.rendering_intent(),
+        WasmRenderingIntent::Perceptual
+    ));
 }
 
 // ---------------------------------------------------------------------------
@@ -120,7 +141,11 @@ fn custom_profile_builds_and_parses() {
 
     let bytes = p.to_bytes().expect("custom profile should serialize");
     assert!(bytes.len() > 128);
-    assert_eq!(&bytes[36..40], b"acsp", "ICC file signature must be 'acsp' at offset 36");
+    assert_eq!(
+        &bytes[36..40],
+        b"acsp",
+        "ICC file signature must be 'acsp' at offset 36"
+    );
 
     // Must also parse back cleanly
     WasmProfile::from_bytes(&bytes).expect("custom profile bytes must parse back");
@@ -145,7 +170,9 @@ fn parametric_trc_builds_and_parses() {
         .expect("valid sRGB parametric params");
     p.finalize();
 
-    let bytes = p.to_bytes().expect("parametric TRC profile should serialize");
+    let bytes = p
+        .to_bytes()
+        .expect("parametric TRC profile should serialize");
     WasmProfile::from_bytes(&bytes).expect("parametric TRC profile bytes must parse back");
 }
 
@@ -166,5 +193,8 @@ fn chromatic_adaptation_correct_size_succeeds() {
         0.029587, 0.990479, -0.017059,
        -0.009232, 0.015076,  0.751678,
     ]);
-    assert!(result.is_ok(), "9-element Bradford matrix should be accepted");
+    assert!(
+        result.is_ok(),
+        "9-element Bradford matrix should be accepted"
+    );
 }

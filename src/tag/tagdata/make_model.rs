@@ -70,7 +70,10 @@ pub struct MakeAndModelType {
 impl From<&MakeAndModelData> for MakeAndModelType {
     fn from(data: &MakeAndModelData) -> Self {
         // We need at least the 24-byte prefix (header + 4 identifier fields).
-        let Some(layout) = data.0.get(..24).and_then(|b| Layout::try_ref_from_bytes(b).ok())
+        let Some(layout) = data
+            .0
+            .get(..24)
+            .and_then(|b| Layout::try_ref_from_bytes(b).ok())
         else {
             return MakeAndModelType {
                 manufacturer: "0x00000000".to_string(),

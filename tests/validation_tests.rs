@@ -73,10 +73,12 @@ fn parametric_curve_valid_counts_succeed() {
     assert!(para.set_parameters_slice(&[2.2]).is_ok()); // 1 — simple gamma
     assert!(para.set_parameters_slice(&[2.2, 0.9, 0.1]).is_ok()); // 3
     assert!(para.set_parameters_slice(&[2.2, 0.9, 0.1, 0.03]).is_ok()); // 4
-    assert!(para.set_parameters_slice(&[2.4, 0.948, 0.052, 0.077, 0.040]).is_ok()); // 5 (sRGB)
-    assert!(
-        para.set_parameters_slice(&[2.4, 0.948, 0.052, 0.077, 0.040, 0.0, 0.0]).is_ok()
-    ); // 7
+    assert!(para
+        .set_parameters_slice(&[2.4, 0.948, 0.052, 0.077, 0.040])
+        .is_ok()); // 5 (sRGB)
+    assert!(para
+        .set_parameters_slice(&[2.4, 0.948, 0.052, 0.077, 0.040, 0.0, 0.0])
+        .is_ok()); // 7
 }
 
 // ---------------------------------------------------------------------------
@@ -139,7 +141,9 @@ fn creation_date_valid_date_succeeds() {
     bytes[128..132].copy_from_slice(&0u32.to_be_bytes());
 
     let profile = RawProfile::from_bytes(&bytes).expect("profile should parse");
-    let date = profile.creation_date().expect("valid date should not error");
+    let date = profile
+        .creation_date()
+        .expect("valid date should not error");
     use chrono::Datelike;
     assert_eq!(date.year(), 2024);
     assert_eq!(date.month(), 6);
@@ -193,7 +197,10 @@ fn share_tags_same_offset_different_size_is_rejected() {
         (*b"gXYZ", offset, 16), // ← mismatch: same offset, different size
     ]);
     let result = RawProfile::from_bytes(&buf);
-    assert!(result.is_err(), "mismatched sizes at same offset should be rejected");
+    assert!(
+        result.is_err(),
+        "mismatched sizes at same offset should be rejected"
+    );
     let msg = result.unwrap_err().to_string();
     assert!(
         msg.contains("corrupt") || msg.contains("offset") || msg.contains("size"),
@@ -231,7 +238,7 @@ fn build_mluc(records: &[([u8; 2], [u8; 2], u32, u32)], string_bytes: &[u8]) -> 
     buf.extend_from_slice(&0u32.to_be_bytes());
     buf.extend_from_slice(&n.to_be_bytes());
     buf.extend_from_slice(&12u32.to_be_bytes()); // record size
-    // Records: lang(2) + country(2) + length(4) + offset(4)
+                                                 // Records: lang(2) + country(2) + length(4) + offset(4)
     for (lang, ctry, length, offset) in records {
         buf.extend_from_slice(lang);
         buf.extend_from_slice(ctry);
@@ -252,8 +259,12 @@ fn mluc_oob_offset_skips_record_gracefully() {
     let mluc = MultiLocalizedUnicodeData(data);
     // Trigger the From conversion (used internally during TOML serialisation).
     // The bad record should be silently skipped; the result is an empty MLUC.
-    let mluc_type = cmx::tag::tagdata::multi_localized_unicode::MultiLocalizedUnicodeType::from(&mluc);
-    assert!(mluc_type.is_empty(), "bad record should be skipped, leaving an empty MLUC");
+    let mluc_type =
+        cmx::tag::tagdata::multi_localized_unicode::MultiLocalizedUnicodeType::from(&mluc);
+    assert!(
+        mluc_type.is_empty(),
+        "bad record should be skipped, leaving an empty MLUC"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -265,13 +276,11 @@ fn mluc_invalid_utf16_uses_lossy_fallback() {
     // String data: 0xD800 (lone high surrogate) followed by 0x000A (newline) — invalid UTF-16.
     // Record claims offset = 28 (right after the 16-byte header + 12-byte record).
     let string_bytes: &[u8] = &[0xD8, 0x00, 0x00, 0x0A];
-    let data = build_mluc(
-        &[(*b"en", [0, 0], 4, 28)],
-        string_bytes,
-    );
+    let data = build_mluc(&[(*b"en", [0, 0], 4, 28)], string_bytes);
     let mluc = MultiLocalizedUnicodeData(data);
     // Should not panic; the lossy fallback replaces the invalid code unit.
-    let mluc_type = cmx::tag::tagdata::multi_localized_unicode::MultiLocalizedUnicodeType::from(&mluc);
+    let mluc_type =
+        cmx::tag::tagdata::multi_localized_unicode::MultiLocalizedUnicodeType::from(&mluc);
     // One entry should be present (lossy decoding, not skipped).
     assert!(
         !mluc_type.is_empty(),
@@ -288,7 +297,7 @@ fn mluc_invalid_utf16_uses_lossy_fallback() {
 fn lut8_header_bytes(n: u8, m: u8, g: u8) -> Vec<u8> {
     let mut h = vec![0u8; 48];
     h[0..4].copy_from_slice(b"mft1"); // signature
-    // _reserved bytes 4-7 = 0
+                                      // _reserved bytes 4-7 = 0
     h[8] = n;
     h[9] = m;
     h[10] = g;
@@ -322,7 +331,7 @@ fn lut8_truncated_data_panics_with_message() {
 /// plus an optional trailing odd byte to break alignment.
 fn curve_data_bytes(points: u32, extra_byte: bool) -> Vec<u8> {
     let mut buf = Vec::new();
-    buf.extend_from_slice(b"curv");    // signature
+    buf.extend_from_slice(b"curv"); // signature
     buf.extend_from_slice(&0u32.to_be_bytes()); // reserved
     buf.extend_from_slice(&points.to_be_bytes()); // count
     for i in 0..points {
