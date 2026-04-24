@@ -109,7 +109,7 @@ impl Profile {
         }
     }
 
-    /// Return a shared reference to the underlying [`RawProfile`].
+    /// Return a mutable reference to the underlying [`RawProfile`].
     fn as_raw_profile_mut(&mut self) -> &mut RawProfile {
         match self {
             Profile::Input(p) => &mut p.0,

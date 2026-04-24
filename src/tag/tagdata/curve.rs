@@ -16,7 +16,12 @@ pub struct CurveType {
 
 impl From<&CurveData> for CurveType {
     fn from(curve: &CurveData) -> Self {
-        let payload = &curve.0[12..];
+        let Some(payload) = curve.0.get(12..) else {
+            return CurveType {
+                points: None,
+                gamma: None,
+            };
+        };
         // chunks_exact(2) silently drops a trailing odd byte; assert alignment in debug builds.
         debug_assert_eq!(
             payload.len() % 2,

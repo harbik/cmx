@@ -5,7 +5,7 @@ use crate::signatures::Signature;
 
 /// The top-level error type returned by most public API functions in this crate.
 ///
-/// All variants are non-exhaustive — new variants may be added in future releases
+/// This enum is non-exhaustive — new variants may be added in future releases
 /// without a semver-breaking change.
 #[derive(thiserror::Error, Debug, PartialEq)]
 #[non_exhaustive]
