@@ -3,13 +3,15 @@
 ## What This Is
 
 CMX is a Rust library for working with ICC color profiles (versions 2.0–5.0). It supports:
+
 - **Parsing** binary ICC profiles from files or byte slices
 - **Constructing** profiles from scratch via a builder-style API
 - **Modifying** existing profiles programmatically
 - **Converting** profiles to human-readable TOML format
 - A **CLI tool** (`cmx`) to convert ICC profiles to TOML
 
-It integrates with the [`colorimetry`](https://crates.io/crates/colorimetry) crate for color space operations and uses `zerocopy` for memory-safe binary data handling.
+It integrates with the [`colorimetry`](https://crates.io/crates/colorimetry) crate for color space
+operations and uses `zerocopy` for memory-safe binary data handling.
 
 ---
 
@@ -42,7 +44,7 @@ cargo doc --open
 
 ## Project Layout
 
-```
+```text
 src/
   lib.rs                    # Library root, utility functions
   error.rs                  # Error types
@@ -67,7 +69,7 @@ xtask/                      # Custom build and publish tasks (cargo xtask)
 The `Profile` enum wraps eight device-class-specific structs, all backed by `RawProfile`:
 
 | Struct | Device class |
-|---|---|
+| --- | --- |
 | `DisplayProfile` | Monitors, projectors |
 | `InputProfile` | Cameras, scanners |
 | `OutputProfile` | Printers |
@@ -77,7 +79,8 @@ The `Profile` enum wraps eight device-class-specific structs, all backed by `Raw
 | `NamedColorProfile` | Named color palettes |
 | `SpectralProfile` | Spectral data (future) |
 
-Each wrapper enforces ICC spec constraints for that class. `RawProfile` holds the actual binary data (bytes + `IndexMap` of tag records). `HasRawProfile` is the delegation trait.
+Each wrapper enforces ICC spec constraints for that class. `RawProfile` holds the actual binary
+data (bytes + `IndexMap` of tag records). `HasRawProfile` is the delegation trait.
 
 ### Builder / Tag Setter Pattern
 
@@ -92,7 +95,8 @@ let profile = DisplayProfile::new()
     .with_profile_id();  // computes MD5 checksum in place
 ```
 
-`TagSetter<P, S>` is the intermediate builder type. It uses generic marker types and capability traits to enforce at compile time which tag data types are valid for a given tag signature.
+`TagSetter<P, S>` is the intermediate builder type. It uses generic marker types and capability
+traits to enforce at compile time which tag data types are valid for a given tag signature.
 
 ### Tag Data Types
 
@@ -114,14 +118,16 @@ Unknown/vendor tags are preserved via `RawData` — round-trips are lossless.
 
 ### Binary Safety
 
-Uses `zerocopy` for zero-copy overlay of the 128-byte ICC header — no unsafe code required. `IndexMap` preserves tag insertion order from the source profile, which is critical for deterministic round-trips and offset recalculation.
+Uses `zerocopy` for zero-copy overlay of the 128-byte ICC header — no unsafe code required.
+`IndexMap` preserves tag insertion order from the source profile, which is critical for
+deterministic round-trips and offset recalculation.
 
 ---
 
 ## Dependencies (Notable)
 
 | Crate | Purpose |
-|---|---|
+| --- | --- |
 | `colorimetry = "0.0.9"` | Color space definitions (RgbSpace, etc.) |
 | `zerocopy = "0.8"` | Safe binary overlay for ICC header |
 | `nalgebra = "0.33"` | Matrix math |
@@ -138,10 +144,14 @@ Uses `zerocopy` for zero-copy overlay of the 128-byte ICC header — no unsafe c
 
 ## Key Conventions
 
-- **Lossless round-trips**: Unknown tags are stored as `RawData` and written back verbatim. Any test that reads a real ICC file and re-serializes it must produce byte-identical output.
-- **Profile ID**: Call `.with_profile_id()` at the end of profile construction to compute and embed the MD5 checksum (fields 84–99 of the header, zeroed during computation per the ICC spec).
-- **Tag data sharing**: Multiple tag signatures can reference the same offset in the file. The library detects and preserves this optimization.
-- **Consuming builder**: `with_tag(...)` and `as_*` methods consume `self` and return a new value. Do not attempt to reuse intermediate `TagSetter` values.
+- **Lossless round-trips**: Unknown tags are stored as `RawData` and written back verbatim.
+  Any test that reads a real ICC file and re-serializes it must produce byte-identical output.
+- **Profile ID**: Call `.with_profile_id()` at the end of profile construction to compute and
+  embed the MD5 checksum (fields 84–99 of the header, zeroed during computation per the ICC spec).
+- **Tag data sharing**: Multiple tag signatures can reference the same offset in the file.
+  The library detects and preserves this optimization.
+- **Consuming builder**: `with_tag(...)` and `as_*` methods consume `self` and return a new value.
+  Do not attempt to reuse intermediate `TagSetter` values.
 - **Feature flags**: ICC v5 support is gated behind a `v5` feature flag.
 
 ---
@@ -166,7 +176,10 @@ profile.write("output.icc")?;
 
 ## Testing Notes
 
-Integration tests in `tests/` use real `.icc` files stored under `tests/profiles/`. When adding new tag parsers or modifying serialization, always run the round-trip tests to confirm byte-identical output. The `displayP3` test compares a programmatically constructed profile against Apple's shipped Display P3 profile binary.
+Integration tests in `tests/` use real `.icc` files stored under `tests/profiles/`. When adding
+new tag parsers or modifying serialization, always run the round-trip tests to confirm
+byte-identical output. The `displayP3` test compares a programmatically constructed profile
+against Apple's shipped Display P3 profile binary.
 
 ---
 
@@ -207,7 +220,7 @@ patch increment.  Use a minor increment (`0.1.0`) when the public API is conside
 enough to declare a broader interface contract.
 
 | Change type | Version bump |
-|---|---|
+| --- | --- |
 | Bug fixes, internal refactors, docs | patch (`0.0.x → 0.0.x+1`) |
 | New public API, new features | minor (`0.x.0 → 0.x+1.0`) |
 | Breaking API changes | major (`x.0.0 → x+1.0.0`) |
