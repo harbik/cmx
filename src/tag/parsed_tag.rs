@@ -6,7 +6,7 @@ use serde::Serialize;
 use crate::tag::{
     tagdata::{
         chromaticity::ChromaticityType, curve::CurveType, dict::DictType, lut16::Lut16Type,
-        lut8::Lut8Type, measurement::MeasurementType,
+        lut8::Lut8Type, make_model::MakeAndModelType, measurement::MeasurementType,
         multi_localized_unicode::MultiLocalizedUnicodeType, named_color2::NamedColor2Type,
         parametric_curve::ParametricCurveType, raw::RawType, s15fixed16array::S15Fixed16ArrayType,
         signature::SignatureType, text::TextType, text_description::TextDescriptionType,
@@ -43,6 +43,7 @@ pub enum ParsedTag {
     Dict(DictType),
     Lut8(Lut8Type),
     Lut16(Lut16Type),
+    MakeAndModel(MakeAndModelType),
     Measurement(MeasurementType),
     NamedColor2(NamedColor2Type),
     MultiLocalizedUnicode(MultiLocalizedUnicodeType),
@@ -74,6 +75,7 @@ impl From<&TagData> for ParsedTag {
             TagData::Dict(dict) => ParsedTag::Dict(dict.into()),
             TagData::Lut8(lut8) => ParsedTag::Lut8(lut8.into()),
             TagData::Lut16(lut16) => ParsedTag::Lut16(lut16.into()),
+            TagData::MakeAndModel(mmod) => ParsedTag::MakeAndModel(mmod.into()),
             TagData::Measurement(measurement) => ParsedTag::Measurement(measurement.into()),
             TagData::MultiLocalizedUnicode(mluc) => ParsedTag::MultiLocalizedUnicode(mluc.into()),
             TagData::NamedColor2(named_color2) => ParsedTag::NamedColor2(named_color2.into()),

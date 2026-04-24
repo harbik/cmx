@@ -198,6 +198,11 @@ pub trait IsLutAtoBDataTag {}
 /// Marker trait for tags whose data uses the `LutBtoA` format (ICC type `mBA `).
 pub trait IsLutBtoADataTag {}
 
+/// Marker trait for the Apple `mmod` (Make and Model) tag whose data is stored
+/// as `MakeAndModelData`: `MakeAndModelTag`.
+pub trait IsMakeAndModelTag {}
+impl IsMakeAndModelTag for crate::tag::tags::MakeAndModelTag {}
+
 /// Marker trait that allows any tag to be set using raw bytes via
 /// [`TagSetter::as_raw`].  Implemented for all tag signatures.
 pub trait IsRawTag {}
@@ -436,6 +441,43 @@ where
             .raw_mut()
             .ensure_multi_localized_unicode_mut(self.tag.into());
         configure(mlu);
+        self.profile
+    }
+
+    /// Set the tag's data as Apple `MakeAndModelData` (private type `mmod`).
+    ///
+    /// Available for: `MakeAndModelTag`.
+    ///
+    /// Use [`MakeAndModelData::set_manufacturer`](crate::tag::tagdata::MakeAndModelData::set_manufacturer),
+    /// [`MakeAndModelData::set_model`](crate::tag::tagdata::MakeAndModelData::set_model), and related
+    /// methods inside the closure to populate the hardware identifiers.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use cmx::profile::DisplayProfile;
+    /// use cmx::tag::tags::MakeAndModelTag;
+    ///
+    /// let profile = DisplayProfile::new()
+    ///     .with_tag(MakeAndModelTag)
+    ///     .as_make_and_model(|m| {
+    ///         m.set_manufacturer(0x00004c2d);
+    ///         m.set_model(0x00000587);
+    ///     });
+    ///
+    /// let bytes = profile.to_bytes().unwrap();
+    /// assert!(bytes.len() > 128);
+    /// ```
+    pub fn as_make_and_model<F>(mut self, configure: F) -> P
+    where
+        S: IsMakeAndModelTag,
+        F: FnOnce(&mut crate::tag::tagdata::MakeAndModelData),
+    {
+        let mmod = self
+            .profile
+            .raw_mut()
+            .ensure_make_and_model_mut(self.tag.into());
+        configure(mmod);
         self.profile
     }
 }

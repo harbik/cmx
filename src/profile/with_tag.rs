@@ -84,6 +84,12 @@ tag_kind!(
     crate::tag::tagdata::MultiLocalizedUnicodeData
 );
 
+tag_kind!(
+    MakeAndModelKind,
+    MakeAndModel,
+    crate::tag::tagdata::MakeAndModelData
+);
+
 // Add: macro to generate {get, get_mut, ensure_mut} accessors.
 // This reduces boilerplate for simple per-variant accessors on RawProfile.
 macro_rules! tag_accessors {
@@ -261,5 +267,15 @@ impl RawProfile {
         Dict,
         crate::tag::tagdata::DictData,
         DictKind
+    );
+
+    // MakeAndModel accessors (Apple `mmod` private tag)
+    tag_accessors!(
+        make_and_model,
+        make_and_model_mut,
+        ensure_make_and_model_mut,
+        MakeAndModel,
+        crate::tag::tagdata::MakeAndModelData,
+        MakeAndModelKind
     );
 }
