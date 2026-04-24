@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 // Copyright (c) 2021-2025, Harbers Bik LLC
 
+//! # cmx-icc
+//!
 //! WebAssembly bindings for the [cmx](https://crates.io/crates/cmx) ICC color
 //! profile library, published to npm as
 //! [`cmx-icc`](https://www.npmjs.com/package/cmx-icc).
@@ -67,7 +69,7 @@
 //! ## API summary
 //!
 //! | Class | Purpose |
-//! |---|---|
+//! | --- | --- |
 //! | `Profile` | Parse an existing ICC profile from a `Uint8Array` |
 //! | `DisplayProfile` | Build a display-class ICC profile from scratch |
 //! | `RenderingIntent` | Enum: `Perceptual`, `RelativeColorimetric`, `Saturation`, `AbsoluteColorimetric` |
@@ -75,7 +77,7 @@
 //! ### `Profile`
 //!
 //! | Method | Description |
-//! |---|---|
+//! | --- | --- |
 //! | `Profile.fromBytes(data)` | Parse a `Uint8Array`; throws on invalid data |
 //! | `profile.toBytes()` | Serialize back to `Uint8Array` (byte-identical round-trip) |
 //! | `profile.renderingIntent()` | Read the rendering intent from the header |
@@ -83,7 +85,7 @@
 //! ### `DisplayProfile`
 //!
 //! | Method | Description |
-//! |---|---|
+//! | --- | --- |
 //! | `new DisplayProfile()` | Empty profile — set all tags manually |
 //! | `DisplayProfile.srgb(intent)` | sRGB preset |
 //! | `DisplayProfile.displayP3(intent)` | Display P3 preset |
