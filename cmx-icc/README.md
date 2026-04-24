@@ -22,7 +22,7 @@ npm install cmx-icc
 
 ## Quick start
 
-```js
+```javascript
 import init, { Profile, DisplayProfile, RenderingIntent } from 'cmx-icc';
 
 await init(); // load the .wasm binary once
