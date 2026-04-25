@@ -25,6 +25,69 @@ println!("Version     : {:?}", profile.version()?);
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
+## Read header fields
+
+All header fields are available as typed accessors on every profile type — [`profile::Profile`],
+[`profile::RawProfile`], [`profile::DisplayProfile`], and all other device-class wrappers.
+They decode the 128-byte ICC header into Rust values:
+
+```no_run
+use cmx::profile::Profile;
+
+let profile = Profile::read("profile.icc")?;
+
+let (major, minor)     = profile.version()?;           // e.g. (4, 0)
+let color_space        = profile.data_color_space();   // Option<ColorSpace>
+let pcs                = profile.pcs();                // Option<Pcs>
+let intent             = profile.rendering_intent();   // RenderingIntent
+let created            = profile.creation_date()?;     // DateTime<Utc>
+let platform           = profile.primary_platform();   // Option<Platform>
+let cmm                = profile.cmm();                // Option<Cmm>
+let manufacturer       = profile.manufacturer();       // Option<Signature>
+let (embedded, excl)   = profile.flags();             // (bool, bool)
+let illuminant         = profile.pcs_illuminant();    // [f64; 3]
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+## Read tag values
+
+Tag data is accessible via `.tags()` on every profile type — [`profile::Profile`],
+[`profile::RawProfile`], [`profile::DisplayProfile`], and all other device-class wrappers.
+It returns an `IndexMap` keyed by [`tag::TagSignature`], with tags in the order they appear
+in the profile's tag table:
+
+```no_run
+use cmx::profile::Profile;
+use cmx::tag::TagSignature;
+use cmx::tag::tagdata::parametric_curve::ParametricCurveType;
+
+let profile = Profile::read("profile.icc")?;
+
+// Iterate every tag in the profile
+for (sig, record) in profile.tags() {
+    println!("{sig}: {} bytes", record.tag.len());
+}
+
+// Look up a specific tag and get a serializable representation
+if let Some(record) = profile.tags().get(&TagSignature::MediaWhitePoint) {
+    let parsed = record.tag.to_parsed(); // -> ParsedTag (implements serde::Serialize)
+}
+
+// Type-specific read: parametric curve parameters (gamma, a, b, c, d, e, f)
+if let Some(record) = profile.tags().get(&TagSignature::RedTRC) {
+    if let Some(curve_data) = record.tag.data().as_parametric_curve() {
+        let curve = ParametricCurveType::from(curve_data);
+        let [g, a, b, c, d, e, f] = curve.values();
+        println!("gamma = {g}");
+    }
+}
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+[`tag::ParsedTag`] is a `serde::Serialize`-able enum covering all supported tag types.
+For the quickest way to inspect all tags at once, serialize the whole profile to TOML
+(see [Dump a profile as TOML](#dump-a-profile-as-toml) below).
+
 ## Dump a profile as TOML
 
 The [`fmt::Display`](std::fmt::Display) implementation on every profile type serialises it
@@ -137,7 +200,7 @@ assert_eq!(bytes.len(), 524);
 
 ## Modify an existing profile
 
-Read a profile, change a tag, and write it back:
+Read a profile, change a tag, and write it back using the builder API:
 
 ```no_run
 use cmx::profile::Profile;
@@ -147,6 +210,18 @@ Profile::read("input.icc")?
     .with_tag(CopyrightTag)
         .as_text(|t| t.set_text("Copyright 2025 Acme Corp."))
     .write("output.icc")?;
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+Use [`profile::Profile::tags_mut`] to remove tags — something the builder API does not support:
+
+```no_run
+use cmx::profile::Profile;
+use cmx::tag::TagSignature;
+
+let mut profile = Profile::read("input.icc")?;
+profile.tags_mut().remove(&TagSignature::MakeAndModel);
+profile.write("output.icc")?;
 # Ok::<(), Box<dyn std::error::Error>>(())
 ```
 

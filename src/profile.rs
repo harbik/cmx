@@ -212,6 +212,29 @@ impl Profile {
         self.as_raw_profile().cmm()
     }
 
+    /// Returns a reference to the profile's tag map, keyed by [`crate::tag::TagSignature`].
+    ///
+    /// Each [`ProfileTagRecord`] holds the tag's offset, size, and typed [`crate::tag::Tag`]
+    /// value. Use [`crate::tag::Tag::to_parsed`] to obtain the fully parsed
+    /// [`crate::tag::ParsedTag`] representation when needed.
+    ///
+    /// Tags are stored in insertion order. For profiles read from disk, this initially
+    /// matches the order they appear in the original profile's tag table, before any
+    /// mutation via [`Self::tags_mut`].
+    pub fn tags(&self) -> &IndexMap<crate::tag::TagSignature, ProfileTagRecord> {
+        self.as_raw_profile().tags()
+    }
+
+    /// Returns a mutable reference to the profile's tag map, keyed by [`crate::tag::TagSignature`].
+    ///
+    /// Allows inserting, replacing, or removing tags directly. Removing and
+    /// reinserting tags may change their iteration order. Note that removing
+    /// required tags (e.g. `MediaWhitePoint` from a display profile) will produce a
+    /// profile that does not conform to the ICC specification.
+    pub fn tags_mut(&mut self) -> &mut IndexMap<crate::tag::TagSignature, ProfileTagRecord> {
+        self.as_raw_profile_mut().tags_mut()
+    }
+
     // -----------------------------------------------------------------------
     // Consuming builders — forward to the matching device-class wrapper and re-wrap.
     // -----------------------------------------------------------------------
