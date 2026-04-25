@@ -13,6 +13,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+* **`vcgp` decoder** — Apple `vcgp` (Video Card Gamma Profile) tag now decodes
+  to structured TOML with per-channel fields (`gamma_in`, `gamma_out`, `min`,
+  `max`) instead of a raw hex dump.  All four values are decoded as S15.16
+  fixed-point, consistent with the encoding used by the related `vcgt` formula
+  type.
+
 ## [0.2.0] - 2026-04-24
 
 ### Added
