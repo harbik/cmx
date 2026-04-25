@@ -24,6 +24,8 @@ macro_rules! delegate_raw_profile_methods {
                         pub fn primary_platform(&self) -> Option<crate::signatures::Platform>;
                         pub fn profile_size(&self) -> usize;
                         pub fn profile_id(&self) -> [u8; 16];
+                        pub fn tags(&self) -> &indexmap::IndexMap<crate::tag::TagSignature, crate::profile::ProfileTagRecord>;
+                        pub fn tags_mut(&mut self) -> &mut indexmap::IndexMap<crate::tag::TagSignature, crate::profile::ProfileTagRecord>;
                         pub fn version(&self) -> Result<(u8, u8), crate::Error>;
                         pub fn write<P: AsRef<Path>>(self, path: P) -> Result<(), Box<dyn std::error::Error>>;
                     }

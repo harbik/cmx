@@ -449,6 +449,24 @@ impl RawProfile {
         self.shared_tags
     }
 
+    /// Returns a reference to the profile's tag map, keyed by [`TagSignature`].
+    ///
+    /// Each [`ProfileTagRecord`] holds the tag's offset, size, and parsed [`Tag`] data.
+    /// Tags are stored in insertion order, which matches the order they appear in the
+    /// original profile's tag table.
+    pub fn tags(&self) -> &IndexMap<TagSignature, ProfileTagRecord> {
+        &self.tags
+    }
+
+    /// Returns a mutable reference to the profile's tag map, keyed by [`TagSignature`].
+    ///
+    /// Allows inserting, replacing, or removing tags directly.  Note that removing
+    /// required tags (e.g. `MediaWhitePoint` from a display profile) will produce a
+    /// profile that does not conform to the ICC specification.
+    pub fn tags_mut(&mut self) -> &mut IndexMap<TagSignature, ProfileTagRecord> {
+        &mut self.tags
+    }
+
     pub fn into_class_profile(self) -> Profile {
         match self.device_class() {
             DeviceClass::Input => Profile::Input(super::InputProfile(self)),
