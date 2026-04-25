@@ -451,16 +451,21 @@ impl RawProfile {
 
     /// Returns a reference to the profile's tag map, keyed by [`TagSignature`].
     ///
-    /// Each [`ProfileTagRecord`] holds the tag's offset, size, and parsed [`Tag`] data.
-    /// Tags are stored in insertion order, which matches the order they appear in the
-    /// original profile's tag table.
+    /// Each [`ProfileTagRecord`] holds the tag's offset, size, and typed [`Tag`] data.
+    /// Use [`Tag::to_parsed`] to obtain the fully parsed [`crate::tag::ParsedTag`]
+    /// representation when needed.
+    ///
+    /// Tags are stored in insertion order. Immediately after reading a profile from
+    /// disk, that order matches the order the tags appear in the original profile's
+    /// tag table. After modifications via [`Self::tags_mut`], the order may differ.
     pub fn tags(&self) -> &IndexMap<TagSignature, ProfileTagRecord> {
         &self.tags
     }
 
     /// Returns a mutable reference to the profile's tag map, keyed by [`TagSignature`].
     ///
-    /// Allows inserting, replacing, or removing tags directly.  Note that removing
+    /// Allows inserting, replacing, or removing tags directly. Removing and
+    /// reinserting tags may change their iteration order. Note that removing
     /// required tags (e.g. `MediaWhitePoint` from a display profile) will produce a
     /// profile that does not conform to the ICC specification.
     pub fn tags_mut(&mut self) -> &mut IndexMap<TagSignature, ProfileTagRecord> {
